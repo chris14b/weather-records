@@ -1,0 +1,135 @@
+<?xml version="1.0"?>
+<product xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="v1.7.1" xsi:noNamespaceSchemaLocation="http://www.bom.gov.au/schema/v1.7/product.xsd">
+  <amoc>
+    <source>
+      <sender>Australian Government Bureau of Meteorology</sender>
+      <region>New South Wales</region>
+      <office>NSWRO</office>
+      <copyright>http://www.bom.gov.au/other/copyright.shtml</copyright>
+      <disclaimer>http://www.bom.gov.au/other/disclaimer.shtml</disclaimer>
+    </source>
+    <identifier>IDN60920</identifier>
+    <issue-time-utc>2026-10-30T03:31:02+00:00</issue-time-utc>
+    <issue-time-local tz="EDT">2026-10-30T14:31:02+11:00</issue-time-local>
+    <sent-time>2026-10-30T03:33:38+00:00</sent-time>
+    <status>O</status>
+    <service>WSP</service>
+    <product-type>O</product-type>
+    <phase>NEW</phase>
+  </amoc>
+  <observations>
+    <station wmo-id="94768" bom-id="066214" tz="Australia/Sydney" stn-name="SYDNEY (OBSERVATORY HILL)" stn-height="43.37" type="AWS" lat="-33.8593" lon="151.2048" forecast-district-id="NSW_PW005" description="Sydney - Observatory Hill">
+      <period index="0" time-utc="2026-10-30T03:30:00+00:00" time-local="2026-10-30T14:30:00+11:00" wind-src="metar_10">
+        <level index="0" type="surface">
+          <element units="Celsius" type="apparent_temp">17.9</element>
+          <element units="Celsius" type="delta_t">5.1</element>
+          <element units="Celsius" type="air_temperature">22.2</element>
+          <element units="Celsius" type="dew_point">13.3</element>
+          <element units="hPa" type="pres">1022.3</element>
+          <element units="hPa" type="msl_pres">1022.3</element>
+          <element units="hPa" type="qnh_pres">1022.4</element>
+          <element units="mm" type="rain_hour">0.0</element>
+          <element units="mm" type="rain_ten">0.0</element>
+          <element units="%" type="rel-humidity">57</element>
+          <element type="wind_dir">NE</element>
+          <element units="deg" type="wind_dir_deg">55</element>
+          <element units="km/h" type="wind_spd_kmh">28</element>
+          <element units="knots" type="wind_spd">15</element>
+          <element start-time-local="2026-10-30T09:00:00+11:00" end-time-local="2026-10-30T14:33:00+11:00" duration="333" start-time-utc="2026-10-29T22:00:00+00:00" end-time-utc="2026-10-30T03:33:00+00:00" units="mm" type="rainfall">0.0</element>
+          <element start-time-local="2026-10-29T09:00:00+11:00" end-time-local="2026-10-30T09:00:00+11:00" duration="1440" start-time-utc="2026-10-28T22:00:00+00:00" end-time-utc="2026-10-29T22:00:00+00:00" units="mm" type="rainfall_24hr">0.0</element>
+          <element start-time-local="2026-10-30T06:00:00+11:00" end-time-local="2026-10-30T21:00:00+11:00" start-time-utc="2026-10-29T19:00:00+00:00" end-time-utc="2026-10-30T10:00:00+00:00" units="Celsius" type="maximum_air_temperature" instance="running" time-utc="2026-10-30T00:05:00+00:00" time-local="2026-10-30T11:05:00+11:00">23.9</element>
+          <element start-time-local="2026-10-29T18:00:00+11:00" end-time-local="2026-10-30T09:00:00+11:00" start-time-utc="2026-10-29T07:00:00+00:00" end-time-utc="2026-10-29T22:00:00+00:00" units="Celsius" type="minimum_air_temperature" instance="running" time-utc="2026-10-29T16:31:00+00:00" time-local="2026-10-30T03:31:00+11:00">16.8</element>
+        </level>
+      </period>
+    </station>
+    <station wmo-id="94926" bom-id="070351" tz="Australia/Sydney" stn-name="CANBERRA AIRPORT" stn-height="577.05" type="AWS" lat="-35.3106" lon="149.1970" forecast-district-id="NSW_PW017" description="Canberra">
+      <period index="0" time-utc="2026-10-30T03:30:00+00:00" time-local="2026-10-30T14:30:00+11:00" wind-src="metar_10">
+        <level index="0" type="surface">
+          <element units="Celsius" type="apparent_temp">18.6</element>
+          <element type="cloud">Clear</element>
+          <element type="cloud_oktas">0</element>
+          <element units="Celsius" type="delta_t">9.8</element>
+          <element units="km/h" type="gust_kmh">35</element>
+          <element units="knots" type="wind_gust_spd">19</element>
+          <element units="Celsius" type="air_temperature">23.9</element>
+          <element units="Celsius" type="dew_point">4.8</element>
+          <element units="hPa" type="pres">1020.9</element>
+          <element units="hPa" type="msl_pres">1020.9</element>
+          <element units="hPa" type="qnh_pres">1021.5</element>
+          <element units="mm" type="rain_hour">0.0</element>
+          <element units="mm" type="rain_ten">0.0</element>
+          <element units="%" type="rel-humidity">29</element>
+          <element units="km" type="vis_km">10</element>
+          <element type="wind_dir">NW</element>
+          <element units="deg" type="wind_dir_deg">319</element>
+          <element units="km/h" type="wind_spd_kmh">22</element>
+          <element units="knots" type="wind_spd">12</element>
+          <element start-time-local="2026-10-30T09:00:00+11:00" end-time-local="2026-10-30T14:33:00+11:00" duration="333" start-time-utc="2026-10-29T22:00:00+00:00" end-time-utc="2026-10-30T03:33:00+00:00" units="mm" type="rainfall">0.0</element>
+          <element start-time-local="2026-10-29T09:00:00+11:00" end-time-local="2026-10-30T09:00:00+11:00" duration="1440" start-time-utc="2026-10-28T22:00:00+00:00" end-time-utc="2026-10-29T22:00:00+00:00" units="mm" type="rainfall_24hr">0.0</element>
+          <element start-time-local="2026-10-30T06:00:00+11:00" end-time-local="2026-10-30T21:00:00+11:00" start-time-utc="2026-10-29T19:00:00+00:00" end-time-utc="2026-10-30T10:00:00+00:00" units="Celsius" type="maximum_air_temperature" instance="running" time-utc="2026-10-30T03:08:00+00:00" time-local="2026-10-30T14:08:00+11:00">24.8</element>
+          <element start-time-local="2026-10-29T18:00:00+11:00" end-time-local="2026-10-30T09:00:00+11:00" start-time-utc="2026-10-29T07:00:00+00:00" end-time-utc="2026-10-29T22:00:00+00:00" units="Celsius" type="minimum_air_temperature" instance="running" time-utc="2026-10-29T18:07:00+00:00" time-local="2026-10-30T05:07:00+11:00">6.5</element>
+          <element start-time-local="2026-10-30T00:00:00+11:00" end-time-local="2026-10-31T00:00:00+11:00" start-time-utc="2026-10-29T13:00:00+00:00" end-time-utc="2026-10-30T13:00:00+00:00" units="knots" type="maximum_gust_spd" instance="running" time-utc="2026-10-30T03:18:00+00:00" time-local="2026-10-30T14:18:00+11:00">20</element>
+          <element start-time-local="2026-10-30T00:00:00+11:00" end-time-local="2026-10-31T00:00:00+11:00" start-time-utc="2026-10-29T13:00:00+00:00" end-time-utc="2026-10-30T13:00:00+00:00" units="km/h" type="maximum_gust_kmh" instance="running" time-utc="2026-10-30T03:18:00+00:00" time-local="2026-10-30T14:18:00+11:00">37</element>
+          <element start-time-local="2026-10-30T00:00:00+11:00" end-time-local="2026-10-31T00:00:00+11:00" start-time-utc="2026-10-29T13:00:00+00:00" end-time-utc="2026-10-30T13:00:00+00:00" type="maximum_gust_dir" instance="running" time-utc="2026-10-30T03:18:00+00:00" time-local="2026-10-30T14:18:00+11:00">WNW</element>
+        </level>
+      </period>
+    </station>
+    <station wmo-id="94767" bom-id="066037" tz="Australia/Sydney" stn-name="SYDNEY AIRPORT AMO" stn-height="6.00" type="AWS" lat="-33.9465" lon="151.1731" forecast-district-id="NSW_PW005" description="Sydney Airport">
+      <period index="0" time-utc="2026-10-30T03:30:00+00:00" time-local="2026-10-30T14:30:00+11:00" wind-src="TMD">
+        <level index="0" type="surface">
+          <element units="Celsius" type="apparent_temp">18.5</element>
+          <element type="cloud">Clear</element>
+          <element type="cloud_oktas">0</element>
+          <element units="Celsius" type="delta_t">6.3</element>
+          <element units="km/h" type="gust_kmh">43</element>
+          <element units="knots" type="wind_gust_spd">23</element>
+          <element units="Celsius" type="air_temperature">24.1</element>
+          <element units="Celsius" type="dew_point">13.3</element>
+          <element units="hPa" type="pres">1022.2</element>
+          <element units="hPa" type="msl_pres">1022.2</element>
+          <element units="hPa" type="qnh_pres">1022.2</element>
+          <element units="%" type="rel-humidity">51</element>
+          <element units="km" type="vis_km">38</element>
+          <element type="wind_dir">NE</element>
+          <element units="deg" type="wind_dir_deg">53</element>
+          <element units="km/h" type="wind_spd_kmh">35</element>
+          <element units="knots" type="wind_spd">19</element>
+          <element start-time-local="2026-10-30T09:00:00+11:00" end-time-local="2026-10-30T14:33:00+11:00" duration="333" start-time-utc="2026-10-29T22:00:00+00:00" end-time-utc="2026-10-30T03:33:00+00:00" units="mm" type="rainfall">0.0</element>
+          <element start-time-local="2026-10-29T09:00:00+11:00" end-time-local="2026-10-30T09:00:00+11:00" duration="1440" start-time-utc="2026-10-28T22:00:00+00:00" end-time-utc="2026-10-29T22:00:00+00:00" units="mm" type="rainfall_24hr">0.0</element>
+          <element start-time-local="2026-10-30T06:00:00+11:00" end-time-local="2026-10-30T21:00:00+11:00" start-time-utc="2026-10-29T19:00:00+00:00" end-time-utc="2026-10-30T10:00:00+00:00" units="Celsius" type="maximum_air_temperature" instance="running" time-utc="2026-10-30T00:55:00+00:00" time-local="2026-10-30T11:55:00+11:00">24.5</element>
+          <element start-time-local="2026-10-29T18:00:00+11:00" end-time-local="2026-10-30T09:00:00+11:00" start-time-utc="2026-10-29T07:00:00+00:00" end-time-utc="2026-10-29T22:00:00+00:00" units="Celsius" type="minimum_air_temperature" instance="running" time-utc="2026-10-29T16:24:00+00:00" time-local="2026-10-30T03:24:00+11:00">17.9</element>
+          <element start-time-local="2026-10-30T00:00:00+11:00" end-time-local="2026-10-31T00:00:00+11:00" start-time-utc="2026-10-29T13:00:00+00:00" end-time-utc="2026-10-30T13:00:00+00:00" units="knots" type="maximum_gust_spd" instance="running" time-utc="2026-10-30T02:47:00+00:00" time-local="2026-10-30T13:47:00+11:00">24</element>
+          <element start-time-local="2026-10-30T00:00:00+11:00" end-time-local="2026-10-31T00:00:00+11:00" start-time-utc="2026-10-29T13:00:00+00:00" end-time-utc="2026-10-30T13:00:00+00:00" units="km/h" type="maximum_gust_kmh" instance="running" time-utc="2026-10-30T02:47:00+00:00" time-local="2026-10-30T13:47:00+11:00">44</element>
+          <element start-time-local="2026-10-30T00:00:00+11:00" end-time-local="2026-10-31T00:00:00+11:00" start-time-utc="2026-10-29T13:00:00+00:00" end-time-utc="2026-10-30T13:00:00+00:00" type="maximum_gust_dir" instance="running" time-utc="2026-10-30T02:47:00+00:00" time-local="2026-10-30T13:47:00+11:00">ENE</element>
+        </level>
+      </period>
+    </station>
+    <station wmo-id="95765" bom-id="066212" tz="Australia/Sydney" stn-name="SYDNEY OLYMPIC PARK AWS (ARCHERY CENTRE)" stn-height="4.00" type="AWS" lat="-33.8338" lon="151.0718" forecast-district-id="NSW_PW005" description="Sydney Olympic Park">
+      <period index="0" time-utc="2026-10-30T03:30:00+00:00" time-local="2026-10-30T14:30:00+11:00" wind-src="metar_10">
+        <level index="0" type="surface">
+          <element units="Celsius" type="apparent_temp">24.1</element>
+          <element units="Celsius" type="delta_t">6.2</element>
+          <element units="km/h" type="gust_kmh">28</element>
+          <element units="knots" type="wind_gust_spd">15</element>
+          <element units="Celsius" type="air_temperature">25.3</element>
+          <element units="Celsius" type="dew_point">15.0</element>
+          <element units="mm" type="rain_hour">0.0</element>
+          <element units="mm" type="rain_ten">0.0</element>
+          <element units="%" type="rel-humidity">53</element>
+          <element units="km" type="vis_km">10</element>
+          <element type="wind_dir">NE</element>
+          <element units="deg" type="wind_dir_deg">53</element>
+          <element units="km/h" type="wind_spd_kmh">15</element>
+          <element units="knots" type="wind_spd">8</element>
+          <element start-time-local="2026-10-30T09:00:00+11:00" end-time-local="2026-10-30T14:33:00+11:00" duration="333" start-time-utc="2026-10-29T22:00:00+00:00" end-time-utc="2026-10-30T03:33:00+00:00" units="mm" type="rainfall">0.0</element>
+          <element start-time-local="2026-10-29T09:00:00+11:00" end-time-local="2026-10-30T09:00:00+11:00" duration="1440" start-time-utc="2026-10-28T22:00:00+00:00" end-time-utc="2026-10-29T22:00:00+00:00" units="mm" type="rainfall_24hr">0.0</element>
+          <element start-time-local="2026-10-30T06:00:00+11:00" end-time-local="2026-10-30T21:00:00+11:00" start-time-utc="2026-10-29T19:00:00+00:00" end-time-utc="2026-10-30T10:00:00+00:00" units="Celsius" type="maximum_air_temperature" instance="running" time-utc="2026-10-30T03:24:00+00:00" time-local="2026-10-30T14:24:00+11:00">25.5</element>
+          <element start-time-local="2026-10-29T18:00:00+11:00" end-time-local="2026-10-30T09:00:00+11:00" start-time-utc="2026-10-29T07:00:00+00:00" end-time-utc="2026-10-29T22:00:00+00:00" units="Celsius" type="minimum_air_temperature" instance="running" time-utc="2026-10-29T18:17:00+00:00" time-local="2026-10-30T05:17:00+11:00">16.3</element>
+          <element start-time-local="2026-10-30T00:00:00+11:00" end-time-local="2026-10-31T00:00:00+11:00" start-time-utc="2026-10-29T13:00:00+00:00" end-time-utc="2026-10-30T13:00:00+00:00" units="knots" type="maximum_gust_spd" instance="running" time-utc="2026-10-30T02:56:00+00:00" time-local="2026-10-30T13:56:00+11:00">16</element>
+          <element start-time-local="2026-10-30T00:00:00+11:00" end-time-local="2026-10-31T00:00:00+11:00" start-time-utc="2026-10-29T13:00:00+00:00" end-time-utc="2026-10-30T13:00:00+00:00" units="km/h" type="maximum_gust_kmh" instance="running" time-utc="2026-10-30T02:56:00+00:00" time-local="2026-10-30T13:56:00+11:00">30</element>
+          <element start-time-local="2026-10-30T00:00:00+11:00" end-time-local="2026-10-31T00:00:00+11:00" start-time-utc="2026-10-29T13:00:00+00:00" end-time-utc="2026-10-30T13:00:00+00:00" type="maximum_gust_dir" instance="running" time-utc="2026-10-30T02:56:00+00:00" time-local="2026-10-30T13:56:00+11:00">E</element>
+        </level>
+      </period>
+    </station>
+  </observations>
+</product>

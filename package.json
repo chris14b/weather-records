@@ -13,6 +13,7 @@
     "format:check": "prettier --check .",
     "build:data": "node src/pipeline/build-data.ts",
     "smoke:daily-files": "node src/pipeline/smoke-daily-files.ts",
+    "smoke:live": "node src/pipeline/smoke-live.ts",
     "dev": "vite",
     "build:site": "vite build"
   },
@@ -28,6 +29,9 @@
   },
   "dependencies": {
     "basic-ftp": "^6.2.3",
-    "fflate": "^0.8.3"
+    "fast-xml-parser": "^5.11.2",
+    "fast-xml-validator": "^1.4.2",
+    "fflate": "^0.8.3",
+    "nanotar": "^0.3.0"
   }
 }

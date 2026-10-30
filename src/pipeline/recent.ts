@@ -1,4 +1,3 @@
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { Location } from "../shared/locations.ts";
 import {
@@ -6,12 +5,10 @@ import {
   parseDailyFile,
   type RecentDay,
 } from "./daily-files.ts";
-import { addDays, isValidDate, monthsBetween } from "./dates.ts";
+import { addDays, monthsBetween } from "./dates.ts";
 import type { Ftp } from "./ftp.ts";
+import { readSavedRows, writeSavedRows } from "./saved-table.ts";
 import { type FromStation, joinStations } from "./stations.ts";
-
-const header = "date,rain,maxTemp,minTemp";
-const valuePattern = /^-?\d+(\.\d+)?$/;
 
 export interface DailyUpdate {
   ftp: Ftp;
@@ -86,7 +83,6 @@ export async function updateDailyFiles({
     .filter(({ date }) => date > historyEnd)
     .sort((a, b) => a.date.localeCompare(b.date));
 
-  await mkdir(dir, { recursive: true });
   await Promise.all(
     location.stations.map(({ station }) =>
       writeSavedDays(
@@ -99,76 +95,28 @@ export async function updateDailyFiles({
   return days;
 }
 
+/** The columns of a saved CSV of daily values, after the date. */
+export const dailySchema = {
+  rain: "number",
+  maxTemp: "number",
+  minTemp: "number",
+} as const;
+
 /** Reads a station's saved days, or none if it has no file. */
-export async function readSavedDays(
+export function readSavedDays(
   dir: string,
   station: string,
 ): Promise<RecentDay[]> {
-  const path = savedPath(dir, station);
-  let text: string;
-  try {
-    text = await readFile(path, "utf8");
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
-    throw error;
-  }
-  return parseSavedDays(text, path);
+  return readSavedRows(savedPath(dir, station), dailySchema);
 }
 
-function parseSavedDays(text: string, path: string): RecentDay[] {
-  const [first, ...rows] = text.split("\n");
-  if (first !== header) {
-    throw new Error(
-      `${path} has unexpected column headers.\n  expected: ${header}\n  found:    ${first ?? ""}`,
-    );
-  }
-  const days: RecentDay[] = [];
-  let previousDate = "";
-  for (const [index, row] of rows.entries()) {
-    if (row === "") continue;
-    const rowError = (problem: string) =>
-      new Error(`${path} line ${String(index + 2)}: ${problem}`);
-    const cells = row.split(",");
-    if (cells.length !== 4) {
-      throw rowError(`expected 4 columns, found ${String(cells.length)}`);
-    }
-    const [date = "", rain = "", maxTemp = "", minTemp = ""] = cells;
-    if (!isValidDate(date)) throw rowError(`invalid date ${date}`);
-    if (date <= previousDate) {
-      throw rowError(`${date} is not after ${previousDate}`);
-    }
-    previousDate = date;
-    const value = (cell: string): number | null => {
-      if (cell === "") return null;
-      if (!valuePattern.test(cell)) throw rowError(`invalid value ${cell}`);
-      return Number(cell);
-    };
-    days.push({
-      date,
-      rain: value(rain),
-      maxTemp: value(maxTemp),
-      minTemp: value(minTemp),
-    });
-  }
-  return days;
-}
-
-async function writeSavedDays(
+/** Writes a station's saved days, deleting its file when there are none. */
+export function writeSavedDays(
   dir: string,
   station: string,
   days: readonly RecentDay[],
 ): Promise<void> {
-  const path = savedPath(dir, station);
-  if (days.length === 0) {
-    await rm(path, { force: true });
-    return;
-  }
-  const cell = (value: number | null) => (value === null ? "" : String(value));
-  const rows = days.map(
-    ({ date, rain, maxTemp, minTemp }) =>
-      `${date},${cell(rain)},${cell(maxTemp)},${cell(minTemp)}`,
-  );
-  await writeFile(path, [header, ...rows, ""].join("\n"));
+  return writeSavedRows(savedPath(dir, station), dailySchema, days);
 }
 
 function savedPath(dir: string, station: string): string {

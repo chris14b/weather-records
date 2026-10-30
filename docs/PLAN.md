@@ -133,7 +133,15 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 
 ## 6. Live observations and forecast
 
-**Status:** todo
+**Status:** done (reopened 2026-10-30 for the follow-up below, before the first pass was committed, and finished the same day)
+
+**Follow-up:** save **every useful field** from the 9am and 3pm readings, not just temperature and humidity.
+
+- The fields: `air_temp`, `rel_hum`, `dewpt`, `press_msl`, `cloud_oktas`, `wind_dir`, `wind_spd_kmh` and `gust_kmh`.
+- These readings' history only starts when saving starts, so saving them now keeps later facts (e.g. "the lowest 9am pressure since…") possible, even though no facts use them yet.
+- Some stations don't report some fields: Olympic Park has no pressure, and only Sydney Airport has cloud. A field that's null in the feed is saved as blank.
+- Keep the same rules: exact 09:00 and 15:00 only, and never pruned.
+- Widen the saved format to one column per field and time (e.g. `dewPoint9am`, `pressure3pm`). The first pass was never committed, so there's no saved data to migrate.
 
 **Goal:** Capture the live snapshots and the 7-day forecast for each location.
 
@@ -152,6 +160,47 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 
 **Notes:**
 
+- New modules in `src/pipeline/`: `observations.ts` (IDN60920), `readings.ts` (IDN60910), `forecast.ts` (IDN11060), `snapshots.ts` (`downloadLiveFeeds` and `updateSnapshot`), `xml.ts` (a thin typed layer over `fast-xml-parser`) and `errors.ts` (`inContext`, which prefixes errors with the file and element). New runtime dependencies: `fast-xml-parser`, `fast-xml-validator` (the parser's own validator is deprecated, and without it a truncated file could parse quietly) and `nanotar` (reads the tar in memory; `fflate` already gunzips).
+- The CSV reading and writing from task 5 moved into `saved-table.ts` (`readSavedRows`, `writeSavedRows`, `mergeRows`), which all three kinds of saved file share. Each file is described by a schema of its columns in order, each `number` or `text` (e.g. `dailySchema` in `recent.ts`). Text cells can't hold commas, quotes or line breaks; writing one fails. `mergeRows` merges cell by cell: a fresh value replaces a saved one, and a missing fresh value leaves it alone. Task 6b can reuse all of this for `data/ftp-history/`.
+- Each station has an optional `wmo`, set only for the three current stations; 066062's isn't needed or confirmed. `currentStation(location)` in `locations.ts` is a location's last station, the only one in the live feeds.
+- `downloadLiveFeeds(ftp)` downloads all three feeds once, since each covers all of NSW. Task 11 should then call `updateSnapshot` per location with `snapshotDir: "data/recent/snapshots"` and `readingsDir: "data/recent/readings"`, and pass `snapshot.observations` to `layerRecent` as the `snapshot` layer. The forecast isn't saved: task 10 calls `parseForecast(feeds.forecast, location.forecastArea)`.
+- Observations: the station is found by `bom-id`, and its `stn-name`, `description` and `wmo-id` are checked. `rainfall_24hr` must run 9am to 9am, `minimum_air_temperature` 6pm to 9am and `maximum_air_temperature` 6am to 9pm, or the build fails. A value is used only once its window's `end-time-utc` is at or before the observation's time; rain and min are credited to the day the window ends, max to the day it starts. This relies only on each element's own times, so it doesn't matter when BOM rolls the windows over (not observed). The snapshot min covers 6pm–9am, not the official 9am–9am, so like the max it is provisional.
+- Snapshot files use the same `date,rain,maxTemp,minTemp` format as the daily files, and are pruned up to `historyEnd` the same way. A morning run never touches the max, because its window is still open, so it can't overwrite the evening's.
+- Timing to watch in task 13: without daylight saving, the evening run is at 9:15pm, so it saves the max only if the 9pm observation is already published. If not, the 11:15pm backup saves it.
+- Readings: the JSON has no station number, only `wmo` and `name` (the location's name), and both are checked on the header and on every row. It holds 144 half-hourly rows (72 hours, oldest at 3pm three days back) plus special observations at odd minutes, which are ignored. Only rows at exactly `090000` or `150000` local are used. Two identical rows at the same time are fine; two different ones fail. Never pruned.
+- Readings fields (the follow-up): `air_temp`, `rel_hum`, `dewpt`, `press_msl`, `cloud_oktas`, `wind_dir`, `wind_spd_kmh` and `gust_kmh` are saved as `temp`, `relHum`, `dewPoint`, `pressure`, `cloud`, `windDir`, `windSpeed` and `gust`, each with a `9am` or `3pm` suffix: all eight 9am columns, then all eight 3pm ones (`readingSchema` in `readings.ts`). Every field must be present in every row, as a number or null; a missing key fails the build. `wind_dir` is the only text column: one of the 16 compass points or `CALM`, with BOM's `-` saved as blank and anything else failing. On 2026-10-30, Observatory Hill had no cloud or gust, Olympic Park no pressure or cloud, and Sydney Airport every field.
+- Forecast: each `forecast-period` is one local day, checked to be consecutive and to end at midnight. Temperatures must be whole numbers, the chance must look like `80%`, and the rain range like `0 to 8 mm`; any other format fails the build. Day 0 has no minimum. Days with a low chance often have no `precipitation_range` at all, so `rain50` and `rain25` are null; task 10 must decide whether that means 0 mm.
+- Fixtures are real feeds from 2:30pm on 2026-10-30: `IDN60920.xml` and `IDN11060.xml` trimmed to the Sydney stations and areas (plus Canberra), and the whole `IDN60910.94768.json`. Tests build the `.tgz` around them, and edit the text to cover other times and failures. `test/fixtures/` is now in `.prettierignore` so the real files stay byte for byte.
+- `npm run smoke:live` downloads the three feeds and prints what each location would save and its forecast, without saving anything.
+
+---
+
+## 6b. Humidity and solar radiation
+
+**Status:** todo
+
+**Goal:** Daily humidity and solar radiation for every location, with history back to 2009, so task 7 can make facts like "the most humid day since 2019" or "the gloomiest November day since 2015".
+
+- Background, checked on 2026-10-30:
+  - The FTP daily files that task 5 reads also have each day's highest and lowest relative humidity (%) and its solar radiation (MJ/m², the day's total sunshine energy; low means cloudy).
+  - The columns are filled every day for all three stations in January 2010 and October 2026 alike.
+  - The Observatory Hill and Sydney Airport folders start in 2009-01. The Olympic Park (Archery Centre) folder starts when that station opened in 2011.
+  - The ZIPs have none of these measures.
+- Scope: read the three columns in the daily file parser as `maxRelHum`, `minRelHum` and `solar`. Blank cells mean missing, as for the others.
+- Scope: a one-off backfill from every monthly file since each station's folder begins (about 600 small files in all). Assign rows to stations by the location's cutover dates, as `updateDailyFiles` does.
+  - Save to a committed file per station, e.g. `data/ftp-history/<station>.csv` with `date,maxRelHum,minRelHum,solar`.
+  - These files are never pruned, because no ZIP replaces them.
+  - The backfill must be resumable, and running it twice must give the same files.
+- Scope: keep these files up to date on every run, from the monthly files the pipeline already downloads. Fetch any month after the last saved day, so a long outage can't leave a gap.
+- Scope: check whether BOM's free daily solar exposure ZIP (product `IDCJAC0016` in Climate Data Online, back to about 1990) matches the FTP solar values on the dates they share.
+  - If it does, list the 3 download links in [refreshing-history.md](refreshing-history.md), ask the user to download them, and treat them like the other ZIPs (ZIP first, then FTP).
+  - If it doesn't, record why in the notes and use the FTP values only.
+- Scope: update the data sources section of CLAUDE.md.
+- Out of scope: wind (task 15, deferred), evapotranspiration and pan evaporation.
+- Done when: tests cover the parser columns, backfill and resuming, and the backfill has been run for real and committed.
+
+**Notes:**
+
 ---
 
 ## 7. Fact generator: daily facts
@@ -160,7 +209,10 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 
 **Goal:** Generate candidate facts for single days.
 
-- Scope: measures are daily max, daily min, rain, hottest night (highest min), coldest day (lowest max) and daily range. Also 9am and 3pm temperature and humidity, whose records only start when task 6's saving began. So for those, "all records" means "since saving began", and the wording must not claim "on record".
+- Scope: measures are daily max, daily min, rain, hottest night (highest min), coldest day (lowest max) and daily range. Also:
+  - Daily highest and lowest humidity and solar radiation from task 6b ("the most humid day", "the sunniest day", "the gloomiest day"). Their history starts in 2009 (2011 at Olympic Park), unless task 6b added the solar ZIPs, so "all records" means "since 2009".
+  - 9am and 3pm temperature and humidity, whose records only start when task 6's saving began. So for those, "all records" means "since saving began".
+  - For all of these, the wording must not claim "on record" unless the history really goes back to when records began.
 - Scope: comparisons against all records, this year, the same month in every year, and the same calendar date. Both highest and lowest.
 - Scope: a **rank** among the comparable days (1st, 2nd, 3rd…), with tied values sharing a rank, plus how many days were compared. This makes "the 2nd coldest" or "the 8th wettest" possible, not just "the coldest".
 - Scope: "since YYYY" logic: the most recent day that matched or beat the value.
