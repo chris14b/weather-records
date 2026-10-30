@@ -59,7 +59,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`. At the end of each session, 
 
 ## 3. History loader
 
-**Status:** todo
+**Status:** done
 
 **Goal:** Read the Climate Data Online ZIPs in `data/raw/` into typed daily records.
 
@@ -70,6 +70,14 @@ Statuses: `todo`, `in progress`, `done`, `blocked`. At the end of each session, 
 - Done when: tests pass against small fixture ZIPs that cover every validation error, and loading the real files returns the known records: 45.8°C at 066062 on 2013-01-18, and 327.6 mm at 066062 on 1986-08-06.
 
 **Notes:**
+
+- `loadHistory(rawDir, station, measure)` in `src/pipeline/history.ts` returns one station's records for `rain`, `maxTemp` or `minTemp`, in date order. ZIPs are found by the `<product>_<station>_` prefix, so the `_1800` suffix isn't assumed. Two matching ZIPs is an error too. The ZIPs are read in memory with `fflate`, the only runtime dependency.
+- Rows with a blank value are left out, so a missing day simply has no record. Some real rows have a blank value with period 1; these count as missing too.
+- `periodDays` is `null` where the file leaves it blank. That covers most Observatory Hill rain before about 1970 and a few hundred Airport rows. These are probably single days, but the loader doesn't guess, so task 7 must decide. Sydney Airport rain has one row with period `0` (1994-07-04, 0.0 mm), kept as 0. Together with its 16 multi-day totals, that makes the 17 that CLAUDE.md mentions. Observatory Hill also has one 2-day max and one 2-day min (1996-06-30).
+- `quality` is `null` where the file leaves it blank, which happens on a handful of rows.
+- Validation also rejects rows that aren't in strictly increasing date order, rows without 8 columns, and badly formed values, periods or quality flags. Every error names the ZIP and the line.
+- The fixture ZIPs are built in a temp directory by the tests from inline CSV text, rather than committed as binary files, so each case can be read in the test. The real-file tests read `data/raw/` directly. The placeholder test was removed.
+- The ZIPs end on 2026-10-30 (rain and min) and 2026-10-29 (max) for the open stations. Observatory Hill 066062 ends on 2020-08-31, except its max, which ends on 2020-08-30.
 
 ---
 
