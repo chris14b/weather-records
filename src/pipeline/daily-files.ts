@@ -1,5 +1,6 @@
-import type { Station } from "../shared/locations.ts";
-import { addDays } from "./dates.ts";
+import type { DailyFolder, Station } from "../shared/locations.ts";
+import { addDays, monthsBetween } from "./dates.ts";
+import type { Ftp } from "./ftp.ts";
 
 /** One day's values from a recent source. Null means missing. */
 export interface RecentDay {
@@ -7,6 +8,16 @@ export interface RecentDay {
   rain: number | null;
   maxTemp: number | null;
   minTemp: number | null;
+}
+
+/** One day's values from a daily file. Null means missing. */
+export interface DailyFileDay extends RecentDay {
+  /** The day's highest relative humidity, in %. */
+  maxRelHum: number | null;
+  /** The day's lowest relative humidity, in %. */
+  minRelHum: number | null;
+  /** The day's total solar exposure, in MJ/m². */
+  solar: number | null;
 }
 
 export interface DailyFile {
@@ -27,7 +38,37 @@ const columnCount = 11;
 const valuePattern = /^-?\d+(\.\d+)?$/;
 
 export function dailyFilePath(file: DailyFile): string {
-  return `/anon/gen/clim_data/IDCKWCDEA0/tables/nsw/${file.station.dailyFolder}/${fileName(file)}`;
+  return `/anon/gen/clim_data/IDCKWCDEA0/tables/nsw/${file.station.dailyFolder.name}/${fileName(file)}`;
+}
+
+/** The months from `first` to `last` (YYYY-MM) that the folder should have a file for. */
+export function folderMonths(
+  folder: DailyFolder,
+  first: string,
+  last: string,
+): string[] {
+  return monthsBetween(first > folder.from ? first : folder.from, last).filter(
+    (month) =>
+      !folder.missing?.some(({ from, to }) => month >= from && month <= to),
+  );
+}
+
+/**
+ * Downloads and parses a daily file. Returns undefined if it is the current month's and
+ * isn't published yet; any other missing file is an error.
+ */
+export async function downloadDailyFile(
+  ftp: Ftp,
+  file: DailyFile,
+  currentMonth: string,
+): Promise<DailyFileDay[] | undefined> {
+  const path = dailyFilePath(file);
+  const bytes = await ftp.download(path);
+  if (bytes === undefined) {
+    if (file.month === currentMonth) return undefined;
+    throw new Error(`ftp://ftp.bom.gov.au${path} does not exist`);
+  }
+  return parseDailyFile(bytes, file);
 }
 
 /**
@@ -37,7 +78,7 @@ export function dailyFilePath(file: DailyFile): string {
 export function parseDailyFile(
   bytes: Uint8Array,
   file: DailyFile,
-): RecentDay[] {
+): DailyFileDay[] {
   const name = fileName(file);
   const lines = new TextDecoder("latin1")
     .decode(bytes)
@@ -66,7 +107,7 @@ export function parseDailyFile(
     }
   }
 
-  const days: RecentDay[] = [];
+  const days: DailyFileDay[] = [];
   const firstRow = headerLine + columnHeaders.length;
   for (let index = firstRow; ; index++) {
     const line = lines[index];
@@ -86,8 +127,19 @@ export function parseDailyFile(
         `expected ${String(columnCount)} columns, found ${String(cells.length)}`,
       );
     }
-    const [station, date = "", , rain = "", , maxTemp = "", minTemp = ""] =
-      cells;
+    const [
+      station,
+      date = "",
+      ,
+      rain = "",
+      ,
+      maxTemp = "",
+      minTemp = "",
+      maxRelHum = "",
+      minRelHum = "",
+      ,
+      solar = "",
+    ] = cells;
     if (station !== stationName) {
       throw lineError(
         index,
@@ -112,12 +164,15 @@ export function parseDailyFile(
       rain: value(rain),
       maxTemp: value(maxTemp),
       minTemp: value(minTemp),
+      maxRelHum: value(maxRelHum),
+      minRelHum: value(minRelHum),
+      solar: value(solar),
     });
   }
 }
 
 function fileName({ station, month }: DailyFile): string {
-  return `${station.dailyFolder}-${month.replace("-", "")}.csv`;
+  return `${station.dailyFolder.name}-${month.replace("-", "")}.csv`;
 }
 
 function monthName(month: string): string {

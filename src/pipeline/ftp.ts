@@ -68,3 +68,21 @@ export function connectToBom({
     },
   };
 }
+
+/** Wraps a connection so that each file is downloaded at most once. */
+export function withDownloadCache(ftp: Ftp): Ftp {
+  const downloads = new Map<string, Promise<Uint8Array | undefined>>();
+  return {
+    download(path) {
+      let download = downloads.get(path);
+      if (download === undefined) {
+        download = ftp.download(path);
+        downloads.set(path, download);
+      }
+      return download;
+    },
+    close() {
+      ftp.close();
+    },
+  };
+}

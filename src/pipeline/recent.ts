@@ -1,11 +1,11 @@
 import { join } from "node:path";
 import type { Location } from "../shared/locations.ts";
 import {
-  dailyFilePath,
-  parseDailyFile,
+  downloadDailyFile,
+  folderMonths,
   type RecentDay,
 } from "./daily-files.ts";
-import { addDays, monthsBetween } from "./dates.ts";
+import { addDays } from "./dates.ts";
 import type { Ftp } from "./ftp.ts";
 import { readSavedRows, writeSavedRows } from "./saved-table.ts";
 import { type FromStation, joinStations } from "./stations.ts";
@@ -57,17 +57,24 @@ export async function updateDailyFiles({
       until === undefined ? today : earliest(today, addDays(until, -1));
     const days: RecentDay[] = [];
     const months =
-      first <= last ? monthsBetween(first.slice(0, 7), last.slice(0, 7)) : [];
+      first <= last
+        ? folderMonths(station.dailyFolder, first.slice(0, 7), last.slice(0, 7))
+        : [];
     for (const month of months) {
-      const file = { station, month };
-      const bytes = await ftp.download(dailyFilePath(file));
-      if (bytes === undefined) {
-        if (month === currentMonth) continue;
-        throw new Error(
-          `ftp://ftp.bom.gov.au${dailyFilePath(file)} does not exist`,
-        );
-      }
-      days.push(...parseDailyFile(bytes, file));
+      const fileDays = await downloadDailyFile(
+        ftp,
+        { station, month },
+        currentMonth,
+      );
+      if (fileDays === undefined) continue;
+      days.push(
+        ...fileDays.map(({ date, rain, maxTemp, minTemp }) => ({
+          date,
+          rain,
+          maxTemp,
+          minTemp,
+        })),
+      );
       fetchedMonths.add(`${station.station} ${month}`);
     }
     fetched.set(station.station, days);

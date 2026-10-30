@@ -177,7 +177,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 
 ## 6b. Humidity and solar radiation
 
-**Status:** todo
+**Status:** done
 
 **Goal:** Daily humidity and solar radiation for every location, with history back to 2009, so task 7 can make facts like "the most humid day since 2019" or "the gloomiest November day since 2015".
 
@@ -192,14 +192,22 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
   - These files are never pruned, because no ZIP replaces them.
   - The backfill must be resumable, and running it twice must give the same files.
 - Scope: keep these files up to date on every run, from the monthly files the pipeline already downloads. Fetch any month after the last saved day, so a long outage can't leave a gap.
-- Scope: check whether BOM's free daily solar exposure ZIP (product `IDCJAC0016` in Climate Data Online, back to about 1990) matches the FTP solar values on the dates they share.
-  - If it does, list the 3 download links in [refreshing-history.md](refreshing-history.md), ask the user to download them, and treat them like the other ZIPs (ZIP first, then FTP).
-  - If it doesn't, record why in the notes and use the FTP values only.
 - Scope: update the data sources section of CLAUDE.md.
 - Out of scope: wind (task 15, deferred), evapotranspiration and pan evaporation.
 - Done when: tests cover the parser columns, backfill and resuming, and the backfill has been run for real and committed.
 
 **Notes:**
+
+- The IDCJAC0016 solar ZIP check was split out into task 17 at the user's request on 2026-10-30, so solar comes from the FTP files only for now.
+- `parseDailyFile` now returns `DailyFileDay`: the task 5 fields plus `maxRelHum`, `minRelHum` (%) and `solar` (MJ/m²). `updateDailyFiles` still saves only rain, max and min. `downloadDailyFile` (a missing file is an error unless it's the current month's) and `folderMonths` in `daily-files.ts` are shared by both updaters.
+- `updateFtpHistory` in `src/pipeline/ftp-history.ts` does both the backfill and the update on each run. For each station, it fetches from the month of the day after its last saved day (or from its folder's first month) up to the current month, within the station's own period. It writes the file after every month, so an interrupted run resumes where it stopped. Fetched months replace their saved rows, as in task 5, and nothing is pruned. Every day a file covers gets a row, even an all-blank one.
+- Task 11 should call `updateFtpHistory({ dir: "data/ftp-history", … })` for each location on every run, and wrap the connection in `withDownloadCache` (in `ftp.ts`) so that it and `updateDailyFiles` download the current month only once.
+- `npm run backfill:ftp-history` runs the same function for every location. It was run on 2026-10-30: 586 monthly files, ending on 2026-10-28. A second run fetched only October for the three open stations and left the files byte for byte the same.
+- Each station's `dailyFolder` is now an object: its `name`, the month of its first file (`from`) and the months it has no file for (`missing`). The two Observatory Hill stations share one. The folders start in 2009-01 (Observatory Hill, Sydney Airport) and 2011-08 (Olympic Park, whose August 2011 rows are all blank; its first values are on 2011-09-01).
+- **Observatory Hill has a gap:** its folder has no files from 2018-04 to 2020-07, and none of the other Sydney folders cover it (`sydney_harbour_(wedding_cake_west)` stops at 2018-03 too). So Observatory Hill has no humidity or solar from 2018-04-01 to 2020-07-31: 066062's file covers 2009-01 to 2018-03 and 2020-08, and 066214's starts on 2020-09-01. Task 7 must not let a "since YYYY" or rank for these measures reach back across the gap without saying so, because the missing years might have held a higher value.
+- The format hasn't changed since 2009: the parser read all 586 files with no changes. Blank values are rare (at most 44 per station for solar). Every humidity value is 0–100 with the minimum never above the maximum, and solar is always below 40.
+- Saved numbers are written as JavaScript prints them, so BOM's `32.70` is saved as `32.7`.
+- `FakeFtp` in `test/daily-file.ts` is now shared by the FTP tests, and `dailyFile` takes any subset of the measures, leaving the rest blank.
 
 ---
 
@@ -210,7 +218,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 **Goal:** Generate candidate facts for single days.
 
 - Scope: measures are daily max, daily min, rain, hottest night (highest min), coldest day (lowest max) and daily range. Also:
-  - Daily highest and lowest humidity and solar radiation from task 6b ("the most humid day", "the sunniest day", "the gloomiest day"). Their history starts in 2009 (2011 at Olympic Park), unless task 6b added the solar ZIPs, so "all records" means "since 2009".
+  - Daily highest and lowest humidity and solar radiation from task 6b ("the most humid day", "the sunniest day", "the gloomiest day"). Their history starts in 2009 (2011 at Olympic Park), so "all records" means "since 2009". Observatory Hill has none from 2018-04 to 2020-07 (see task 6b's notes). Task 17 may later extend the solar history.
   - 9am and 3pm temperature and humidity, whose records only start when task 6's saving began. So for those, "all records" means "since saving began".
   - For all of these, the wording must not claim "on record" unless the history really goes back to when records began.
 - Scope: comparisons against all records, this year, the same month in every year, and the same calendar date. Both highest and lowest.
@@ -389,5 +397,23 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 - Scope: a parser for the DWO CSVs, which checks that the header names the expected station.
 - Scope: adding the backfilled readings to the saved readings from task 6, for dates before saving began. On overlapping dates the two must agree, or the build fails.
 - Done when: tests cover parsing, the station check and the overlap check, and the 9am and 3pm records start about a year earlier.
+
+**Notes:**
+
+---
+
+## 17. Longer solar history from the IDCJAC0016 ZIPs
+
+**Status:** todo
+
+**Goal:** Solar history back to about 1990 from BOM's free daily solar exposure ZIPs (product `IDCJAC0016` in Climate Data Online), instead of only from 2009 (2011 at Olympic Park). The user wants this done after the site is live.
+
+- Background: task 6b saves the FTP daily files' solar values in `data/ftp-history/`. Climate Data Online also has a daily solar exposure ZIP for each station, which may hold the same values over a much longer period. It is on BOM's website, so the user downloads it by hand. Code must never fetch it.
+- Scope: list the download links for 066062, 066214, 066037 and 066212 in [refreshing-history.md](refreshing-history.md), and wait for the user to download them. A station's page is `https://www.bom.gov.au/jsp/ncc/cdio/weatherData/av?p_nccObsCode=193&p_display_type=dailyDataFile&p_startYear=&p_c=&p_stn_num=<station>`, with **All years of data** at the top right (the `193` is unconfirmed).
+- Scope: check that the ZIPs match the FTP solar values on the dates they share.
+  - If they do, load them like the other ZIPs (the CSV columns probably differ, so the loader needs that product's headers), and layer them ZIP first, then the FTP history, like the temperature ZIPs.
+  - If they don't, record why in the notes and keep the FTP values only.
+- Scope: update the data sources section of CLAUDE.md, and the solar history's start date in task 7's wording.
+- Done when: the comparison is recorded in the notes, and either the solar series starts about 1990 with tests covering the loader and layering, or the reason it doesn't is recorded.
 
 **Notes:**

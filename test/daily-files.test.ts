@@ -2,8 +2,12 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 import { locations } from "../src/shared/locations.ts";
-import { dailyFilePath, parseDailyFile } from "../src/pipeline/daily-files.ts";
-import { dailyFile, daysFrom } from "./daily-file.ts";
+import {
+  dailyFilePath,
+  folderMonths,
+  parseDailyFile,
+} from "../src/pipeline/daily-files.ts";
+import { dailyFile, daysFrom, humidityAndSolarFrom } from "./daily-file.ts";
 
 function stationByNumber(number: string) {
   const station = locations
@@ -41,6 +45,23 @@ describe("dailyFilePath", () => {
   });
 });
 
+describe("folderMonths", () => {
+  test("leaves out months before the folder's first file and the months it has none for", () => {
+    const folder = {
+      name: "test",
+      from: "2018-02",
+      missing: [{ from: "2018-04", to: "2018-05" }],
+    };
+
+    expect(folderMonths(folder, "2017-11", "2018-07")).toEqual([
+      "2018-02",
+      "2018-03",
+      "2018-06",
+      "2018-07",
+    ]);
+  });
+});
+
 describe("parseDailyFile with a real file", () => {
   test("reads every day of the month so far", async () => {
     const days = parseText(await readFixture());
@@ -51,6 +72,9 @@ describe("parseDailyFile with a real file", () => {
       rain: 0,
       maxTemp: 30.1,
       minTemp: 14.6,
+      maxRelHum: 79,
+      minRelHum: 18,
+      solar: 21.89,
     });
     expect(days.at(-1)?.date).toBe("2026-10-28");
   });
@@ -61,8 +85,24 @@ describe("parseDailyFile with a real file", () => {
     expect(
       days.filter((d) => d.date >= "2026-10-14" && d.date <= "2026-10-15"),
     ).toEqual([
-      { date: "2026-10-14", rain: 83.4, maxTemp: null, minTemp: 13.2 },
-      { date: "2026-10-15", rain: null, maxTemp: 17.6, minTemp: null },
+      {
+        date: "2026-10-14",
+        rain: 83.4,
+        maxTemp: null,
+        minTemp: 13.2,
+        maxRelHum: 94,
+        minRelHum: 46,
+        solar: 17.17,
+      },
+      {
+        date: "2026-10-15",
+        rain: null,
+        maxTemp: 17.6,
+        minTemp: null,
+        maxRelHum: 95,
+        minRelHum: 59,
+        solar: 12.63,
+      },
     ]);
   });
 
@@ -158,9 +198,51 @@ describe("parseDailyFile with a made-up file", () => {
     expect(
       parseDailyFile(file, { station: airport, month: "2026-02" }),
     ).toEqual([
-      { date: "2026-02-01", rain: null, maxTemp: null, minTemp: null },
-      { date: "2026-02-02", rain: 0, maxTemp: 9.9, minTemp: -1.5 },
+      {
+        date: "2026-02-01",
+        rain: null,
+        maxTemp: null,
+        minTemp: null,
+        maxRelHum: null,
+        minRelHum: null,
+        solar: null,
+      },
+      {
+        date: "2026-02-02",
+        rain: 0,
+        maxTemp: 9.9,
+        minTemp: -1.5,
+        maxRelHum: null,
+        minRelHum: null,
+        solar: null,
+      },
     ]);
+  });
+
+  test("treats blank humidity and solar cells as missing", () => {
+    const file = dailyFile(
+      "SYDNEY AIRPORT AMO",
+      humidityAndSolarFrom("2026-02-01", [100, null, 8.5], [null, 41, null]),
+    );
+
+    expect(
+      parseDailyFile(file, { station: airport, month: "2026-02" }).map(
+        ({ date, maxRelHum, minRelHum, solar }) => ({
+          date,
+          maxRelHum,
+          minRelHum,
+          solar,
+        }),
+      ),
+    ).toEqual(
+      humidityAndSolarFrom("2026-02-01", [100, null, 8.5], [null, 41, null]),
+    );
+  });
+
+  test("fails on a solar value that isn't a number", async () => {
+    const text = (await readFixture()).replace("0.00,21.89", "0.00,n/a");
+
+    expect(() => parseText(text)).toThrow("line 14: invalid value n/a");
   });
 
   test("accepts a month with no days yet", () => {

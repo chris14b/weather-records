@@ -4,11 +4,26 @@ export interface StationPeriod {
   from?: string;
 }
 
+/** Months as YYYY-MM, inclusive. */
+export interface MonthRange {
+  from: string;
+  to: string;
+}
+
+export interface DailyFolder {
+  /** As in BOM's folder listing, under `IDCKWCDEA0/tables/nsw/`. */
+  name: string;
+  /** The month of its first file, as YYYY-MM. */
+  from: string;
+  /** Months it has no file for. */
+  missing?: readonly MonthRange[];
+}
+
 export interface Station extends StationPeriod {
   /** The station's official name, as in its ZIP notes and the observations feed's `stn-name`. */
   name: string;
   /** The station's folder of monthly daily files (IDCKWCDEA0) on the BOM FTP server. */
-  dailyFolder: string;
+  dailyFolder: DailyFolder;
   /** The WMO number that names the station's file of recent readings (IDN60910). Only stations still open have one. */
   wmo?: string;
 }
@@ -30,6 +45,13 @@ export interface Location {
   stations: readonly Station[];
 }
 
+// Both Observatory Hill stations' values are in one folder.
+const observatoryHillFolder: DailyFolder = {
+  name: "sydney_(observatory_hill)",
+  from: "2009-01",
+  missing: [{ from: "2018-04", to: "2020-07" }],
+};
+
 // Coordinates are the current station's, from the BOM observations feed (IDN60920).
 export const locations: readonly Location[] = [
   {
@@ -42,12 +64,12 @@ export const locations: readonly Location[] = [
       {
         station: "066062",
         name: "SYDNEY (OBSERVATORY HILL)",
-        dailyFolder: "sydney_(observatory_hill)",
+        dailyFolder: observatoryHillFolder,
       },
       {
         station: "066214",
         name: "SYDNEY (OBSERVATORY HILL)",
-        dailyFolder: "sydney_(observatory_hill)",
+        dailyFolder: observatoryHillFolder,
         from: "2020-09-01",
         wmo: "94768",
       },
@@ -63,7 +85,7 @@ export const locations: readonly Location[] = [
       {
         station: "066037",
         name: "SYDNEY AIRPORT AMO",
-        dailyFolder: "sydney_airport_amo",
+        dailyFolder: { name: "sydney_airport_amo", from: "2009-01" },
         wmo: "94767",
       },
     ],
@@ -78,7 +100,10 @@ export const locations: readonly Location[] = [
       {
         station: "066212",
         name: "SYDNEY OLYMPIC PARK AWS (ARCHERY CENTRE)",
-        dailyFolder: "sydney_olympic_park_(archery_centre)",
+        dailyFolder: {
+          name: "sydney_olympic_park_(archery_centre)",
+          from: "2011-08",
+        },
         wmo: "95765",
       },
     ],

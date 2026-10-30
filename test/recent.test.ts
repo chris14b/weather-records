@@ -3,20 +3,19 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import type { Location, Station } from "../src/shared/locations.ts";
-import { dailyFilePath, type RecentDay } from "../src/pipeline/daily-files.ts";
-import type { Ftp } from "../src/pipeline/ftp.ts";
+import type { RecentDay } from "../src/pipeline/daily-files.ts";
 import { readSavedDays, updateDailyFiles } from "../src/pipeline/recent.ts";
-import { dailyFile, daysFrom, repeatedDays } from "./daily-file.ts";
+import { daysFrom, FakeFtp, repeatedDays } from "./daily-file.ts";
 
 const oldStation: Station = {
   station: "OLD",
   name: "OLD STATION",
-  dailyFolder: "old_station",
+  dailyFolder: { name: "old_station", from: "2009-01" },
 };
 const newStation: Station = {
   station: "NEW",
   name: "NEW STATION AWS (TEST)",
-  dailyFolder: "new_station_(test)",
+  dailyFolder: { name: "new_station_(test)", from: "2009-01" },
   from: "2026-09-15",
 };
 const namesInFiles = new Map([
@@ -33,32 +32,23 @@ const location: Location = {
   stations: [oldStation, newStation],
 };
 
-class FakeFtp implements Ftp {
-  readonly requested: string[] = [];
-  private readonly files = new Map<string, Uint8Array>();
-
-  serve(station: Station, month: string, days: readonly RecentDay[]): void {
-    this.files.set(
-      dailyFilePath({ station, month }),
-      dailyFile(namesInFiles.get(station) ?? "", days),
-    );
+class DailyFtp extends FakeFtp {
+  override serve(
+    station: Station,
+    month: string,
+    days: readonly RecentDay[],
+  ): void {
+    super.serve(station, month, days, namesInFiles.get(station));
   }
-
-  download(path: string): Promise<Uint8Array | undefined> {
-    this.requested.push(path.split("/").at(-1) ?? "");
-    return Promise.resolve(this.files.get(path));
-  }
-
-  readonly close = (): void => undefined;
 }
 
 describe("updateDailyFiles", () => {
   let dir: string;
-  let ftp: FakeFtp;
+  let ftp: DailyFtp;
 
   beforeEach(async () => {
     dir = await mkdtemp(join(tmpdir(), "recent-"));
-    ftp = new FakeFtp();
+    ftp = new DailyFtp();
   });
 
   afterEach(async () => {

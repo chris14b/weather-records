@@ -14,6 +14,7 @@
     "build:data": "node src/pipeline/build-data.ts",
     "smoke:daily-files": "node src/pipeline/smoke-daily-files.ts",
     "smoke:live": "node src/pipeline/smoke-live.ts",
+    "backfill:ftp-history": "node src/pipeline/backfill-ftp-history.ts",
     "dev": "vite",
     "build:site": "vite build"
   },
