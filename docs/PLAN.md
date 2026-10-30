@@ -226,7 +226,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`. At the end of each session, 
 
 **Goal:** Tidy up the rough edges.
 
-- Scope: a README covering what the site is, how to refresh the ZIPs once a year (the 12 download links), how to run the site locally, and the attribution.
+- Scope: a README covering what the site is, how to refresh the ZIPs once a year (link to [refreshing-history.md](refreshing-history.md)), how to run the site locally, and the attribution.
 - Scope: empty and error states on the site.
 - Scope: a last pass over wording and scoring, based on a couple of weeks of real output.
 
