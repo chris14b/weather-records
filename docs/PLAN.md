@@ -104,7 +104,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`. At the end of each session, 
 
 ## 5. FTP daily files and layering
 
-**Status:** todo
+**Status:** done
 
 **Goal:** Keep `data/recent/` up to date from the FTP daily files, and layer that data over the history.
 
@@ -117,6 +117,16 @@ Statuses: `todo`, `in progress`, `done`, `blocked`. At the end of each session, 
 - Done when: tests with fixture files cover parsing, priority, pruning and the gap error, and a manual smoke script fetches the real current month for one station.
 
 **Notes:**
+
+- Modules in `src/pipeline/`: `ftp.ts` (`connectToBom()`, anonymous `basic-ftp` with a 30 s timeout and 3 attempts, reconnecting between them; a 550 reply returns `undefined` rather than retrying), `daily-files.ts` (path and parser), `recent.ts` (saved copies and `updateDailyFiles`) and `layering.ts` (`layerRecent`). Each location's FTP folder is `dailyFolder` in `src/shared/locations.ts`. `basic-ftp` is the second runtime dependency.
+- The real files differ from what the plan assumed. They are Latin-1, not UTF-8 (the `°C` header). The first line says `'IDCKWCDE51`, and the third says "South Australia" even for NSW. Blank cells hold a single space. Each row names the station in capitals (`SYDNEY (OBSERVATORY HILL)`), which is the folder name with spaces, upper-cased. There is no station number, so the parser checks the title line and each row's name against the folder, plus the four column header lines exactly. Rows must run day by day from the 1st, and the file must end with its `Totals:` line, so a truncated or gappy file fails loudly. The current month's file holds the days published so far; a future month's file doesn't exist (550).
+- The dates follow the ZIP conventions exactly: for October 2026 at 066214, every value present in both agrees on the same date. The FTP files have gaps that the ZIPs later fill (066214 rain on 2026-10-15).
+- FTP rain is always a single day, so `layerRecent` gives FTP values `periodDays: 1` and `quality: null`. Where Sydney Airport's ZIP has a multi-day total (3 days to 2026-03-20, 22.2 mm), the FTP file has three separate daily values that sum to 21.4 mm. They seem to come from the automatic gauge, not the manual one behind the official figures. So they can differ a little from the ZIP, which wins once it covers the date.
+- Saved copies are `<dir>/<station>.csv` with columns `date,rain,maxTemp,minTemp`, one row per day the FTP file covers (blank cells for missing values, so an all-blank row still records that the day was covered). Task 11 should pass `dir` as `data/recent/daily`; task 6 can put snapshots beside it (for example `data/recent/snapshots/`). Rows go to stations by the location's cutover dates through `joinStations`.
+- `updateDailyFiles` takes `historyEnd`: the earliest of the location's three last ZIP dates (from `loadLocationHistory`). It fetches every month from the one holding the first day after the later of `historyEnd` and the last saved day, up to the current Sydney month (`sydneyDate` in `dates.ts`). The fetched months replace their saved rows, and rows up to `historyEnd` are pruned, deleting a file when it empties. A missing current-month file is skipped; any earlier missing month is an error. Running it twice gives the same files.
+- Layering, per measure: the ZIP history alone covers every date up to its own last record, so a day missing from it stays missing even if the FTP file has a value. After that, each day takes the first layer (in the order given, so FTP then snapshot) that has a value, so a snapshot can fill a day the FTP file leaves blank. Each record carries `source` (`zip`, `ftp` or `snapshot`) and `station`. The gap check fails when the first recent date after the history's end isn't the next day. Recent days with all-blank values still count as coverage.
+- The ZIPs were downloaded today, so they currently run a day or two ahead of the FTP files and `data/recent/daily/` will stay empty until they age. An end-to-end run against the real data, with the histories cut at 2026-07-20, layered about 98 FTP days onto each series with no gap errors.
+- `npm run smoke:daily-files [location-id]` fetches and prints the current month for one location (Observatory Hill by default). The real October file for Observatory Hill is committed in `test/fixtures/` for the parser tests; `test/daily-file.ts` builds made-up files in the same format.
 
 ---
 
