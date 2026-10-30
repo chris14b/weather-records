@@ -1,6 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { unzipSync } from "fflate";
+import { isValidDate } from "./dates.ts";
 
 export type Measure = "rain" | "maxTemp" | "minTemp";
 
@@ -156,10 +157,4 @@ function parseCsv(csv: string, source: CsvSource): DailyRecord[] {
     });
   }
   return records;
-}
-
-function isValidDate(date: string): boolean {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
-  const time = Date.parse(`${date}T00:00:00Z`);
-  return !Number.isNaN(time) && new Date(time).toISOString().startsWith(date);
 }

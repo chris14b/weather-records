@@ -26,12 +26,13 @@ A static website that shows obscure weather records for the current and recent w
 
 ## Locations
 
-| Location     | Stations (joined by date)                            | Forecast location   |
-| ------------ | ---------------------------------------------------- | ------------------- |
-| Sydney       | 066062 until 2020-08-31, then 066214 from 2020-09-01 | Sydney              |
-| Erskineville | 066037 (Sydney Airport)                              | Mascot              |
-| Epping       | 066212 (Sydney Olympic Park, Archery Centre)         | Sydney Olympic Park |
+| Location                  | Stations (joined by date)                            | Forecast area                     |
+| ------------------------- | ---------------------------------------------------- | --------------------------------- |
+| Sydney - Observatory Hill | 066062 until 2020-08-31, then 066214 from 2020-09-01 | Sydney (`NSW_PT131`)              |
+| Sydney Airport            | 066037 (Sydney Airport AMO)                          | Mascot (`NSW_PT272`)              |
+| Sydney Olympic Park       | 066212 (Sydney Olympic Park AWS, Archery Centre)     | Sydney Olympic Park (`NSW_PT132`) |
 
+- Use BOM's own names and identifiers. A location is named by its current station's `description` in the observations feed, and its forecast area is matched by AAC code. Never name a location after a nearby suburb, in code, docs or on the site.
 - The joins are defined in config, not by merging files. Joining is by fixed cutover date. Never fill one station's gaps with another station's values.
 - The Observatory Hill stations differ: the new one reads about 0.3°C warmer for maximums and cooler for minimums. The site carries a note about the 2020 station change.
 - The Olympic Park record starts in 2011. Facts from such a short record are worth less, and scoring must reflect that.

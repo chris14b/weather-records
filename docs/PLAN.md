@@ -83,16 +83,22 @@ Statuses: `todo`, `in progress`, `done`, `blocked`. At the end of each session, 
 
 ## 4. Locations config and station joining
 
-**Status:** todo
+**Status:** done
 
 **Goal:** Turn the station histories into one daily series per location.
 
-- Scope: a config listing each location, its stations with their cutover dates, its forecast location name, and its latitude and longitude. The values are in CLAUDE.md.
+- Scope: a config listing each location, its stations with their cutover dates, its forecast area, and its latitude and longitude. The values are in CLAUDE.md.
 - Scope: join by cutover date only. Each value records which station it came from.
 - Out of scope: FTP data and layering by source.
 - Done when: tests cover the Observatory Hill cutover (2020-08-31 comes from 066062, 2020-09-01 from 066214) and confirm that gaps are not filled across stations.
 
 **Notes:**
+
+- The config is `locations` in `src/shared/locations.ts`, in `src/shared/` because the site will need the names and coordinates too. Each location's `stations` lists its stations in order; every station after the first has a `from` date, and supplies values from then until the next station's `from`. Location ids are `sydney-observatory-hill`, `sydney-airport` and `sydney-olympic-park`. Names are the current station's `description` in the observations feed (IDN60920), and each `forecastArea` holds the AAC code and description from the forecast feed (IDN11060), so everything matches what BOM itself calls them.
+- The coordinates are the current station's, to four decimal places, from the observations feed. The station notes in the ZIPs give only two.
+- `loadLocationHistory(rawDir, location, measure)` in `src/pipeline/stations.ts` loads and joins a location's history. The join itself, `joinStations`, is generic over any record with a `date`, so task 5 can reuse it for FTP data if the folders need splitting by station. Each joined record gains a `station` field. It throws on a bad config: a first station with a `from`, a later one without, a malformed date, or dates out of order.
+- The real data has a gap-filling trap at the cutover: 066062 has no max for 2020-08-31, but 066214 does (22.6). The joined Sydney max series therefore has no 2020-08-31, and a test checks this. 066214's records from before 2020-09-01 (it opened in 2017) are dropped.
+- `isValidDate` moved from `history.ts` into `src/pipeline/dates.ts` so both modules can use it.
 
 ---
 
@@ -121,7 +127,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`. At the end of each session, 
 **Goal:** Capture the evening snapshot and the 7-day forecast for each location.
 
 - Scope: a parser for `IDN60920.xml`. Save today's provisional max, last night's min and rain to 9am for each station into `data/recent/`.
-- Scope: a parser for `IDN11060.xml`, giving the forecast for each location by its forecast-location name: daily max and min, chance of rain, and the rain amounts with 50% and 25% chances.
+- Scope: a parser for `IDN11060.xml`, giving the forecast for each location by its forecast area's AAC code (`forecastArea.aac`), checking that the description still matches: daily max and min, chance of rain, and the rain amounts with 50% and 25% chances.
 - Out of scope: turning any of this into facts.
 - Done when: tests against saved fixture XML pass, and running a snapshot twice produces the same result.
 
