@@ -2,7 +2,7 @@
 
 One task per session, in order. Background and settled decisions are in [CLAUDE.md](../CLAUDE.md).
 
-Statuses: `todo`, `in progress`, `done`, `blocked`. At the end of each session, update the task's status and add notes for later sessions under **Notes**.
+Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the user says otherwise). At the end of each session, update the task's status and add notes for later sessions under **Notes**.
 
 ---
 
@@ -135,9 +135,17 @@ Statuses: `todo`, `in progress`, `done`, `blocked`. At the end of each session, 
 
 **Status:** todo
 
-**Goal:** Capture the evening snapshot and the 7-day forecast for each location.
+**Goal:** Capture the live snapshots and the 7-day forecast for each location.
 
 - Scope: a parser for `IDN60920.xml`. Save today's provisional max, last night's min and rain to 9am for each station into `data/recent/`.
+  - The pipeline runs in the morning as well as the evening (see CLAUDE.md).
+  - Save the min and the rain only once their windows have closed at 9am.
+  - Save the max only once its 6am–9pm window has closed, so a morning run never saves a partial maximum or overwrites a complete one.
+- Scope: the **9am and 3pm readings** from `IDN60910.tgz`.
+  - Extract each station's `IDN60910.<wmo>.json` in memory, and add each station's WMO number to the config.
+  - Save the temperature and relative humidity from the exact 09:00 and 15:00 readings into a file per station in `data/recent/` (e.g. `data/recent/readings/`). A missing reading stays missing; never use a nearby time instead.
+  - The file covers 72 hours, so each run saves every 9am and 3pm reading in it. Two missed nights lose nothing.
+  - These files are never pruned, because no ZIP has these readings.
 - Scope: a parser for `IDN11060.xml`, giving the forecast for each location by its forecast area's AAC code (`forecastArea.aac`), checking that the description still matches: daily max and min, chance of rain, and the rain amounts with 50% and 25% chances.
 - Out of scope: turning any of this into facts.
 - Done when: tests against saved fixture XML pass, and running a snapshot twice produces the same result.
@@ -152,13 +160,17 @@ Statuses: `todo`, `in progress`, `done`, `blocked`. At the end of each session, 
 
 **Goal:** Generate candidate facts for single days.
 
-- Scope: measures are daily max, daily min, rain, hottest night (highest min), coldest day (lowest max) and daily range.
+- Scope: measures are daily max, daily min, rain, hottest night (highest min), coldest day (lowest max) and daily range. Also 9am and 3pm temperature and humidity, whose records only start when task 6's saving began. So for those, "all records" means "since saving began", and the wording must not claim "on record".
 - Scope: comparisons against all records, this year, the same month in every year, and the same calendar date. Both highest and lowest.
+- Scope: a **rank** among the comparable days (1st, 2nd, 3rd…), with tied values sharing a rank, plus how many days were compared. This makes "the 2nd coldest" or "the 8th wettest" possible, not just "the coldest".
 - Scope: "since YYYY" logic: the most recent day that matched or beat the value.
+- Scope: facts for **every day in the last 31 days**, not just the latest, so the home page can show the past week and month. Each day is compared only with data up to and including that day, as things stood then. If a later day in the window has since beaten it, record which day.
 - Scope: rules for missing data and multi-day totals, and a confirmed or provisional status on each fact.
 - Scope: the types for `facts.json` in `src/shared/`.
 - Out of scope: scoring, wording, periods longer than a day.
-- Done when: tests on small made-up series pass, and the real data produces "hottest day on record" for Sydney on 2013-01-18.
+- Done when:
+  - tests on small made-up series pass, including ties, and a day whose rank ignores later days
+  - the real data produces "hottest day on record" for Sydney on 2013-01-18
 
 **Notes:**
 
@@ -170,10 +182,19 @@ Statuses: `todo`, `in progress`, `done`, `blocked`. At the end of each session, 
 
 **Goal:** Choose the few facts worth showing, and word them well.
 
-- Scope: an unusualness score based on how many comparable days were beaten, how many years back the "since" goes, how narrow the comparison is, and how long the record is.
+- Scope: an unusualness score based on the rank compared with how many days were compared, how many years back the "since" goes, how narrow the comparison is, and how long the record is.
+  - "The 2nd hottest day on record" must outscore "the 8th hottest day this month".
+  - Ranks below about 10th aren't worth showing.
 - Scope: removing near-duplicates, for example keeping only the strongest of "hottest this month" and "hottest this year" for the same day.
-- Scope: picking the top N for each location.
-- Scope: English wording templates with dates, plus a "why" payload (the value, the previous record holder, the values to compare against).
+- Scope: choosing facts for each section of the home page, for each location:
+  - **Today:** the latest day.
+  - **This week:** the best one or two facts for each of the previous 6 days.
+  - **This month:** only strong facts from 7–31 days ago.
+- Scope: `facts.json` grouped by those sections.
+- Scope: English wording templates with dates and ordinals.
+  - Rank 1 is "the hottest", then "the 2nd hottest", and tied values give "the equal 3rd hottest".
+  - A fact that a later day beat says so, e.g. "the hottest day of the year so far, until Friday".
+- Scope: a "why" payload for each fact: the value, the previous record holder, and the values it was compared against.
 - Done when: snapshot tests pass for the selected facts on a few chosen real dates, and a short written review of their output is added to the notes.
 
 **Notes:**
@@ -187,6 +208,8 @@ Statuses: `todo`, `in progress`, `done`, `blocked`. At the end of each session, 
 **Goal:** Facts for weeks, months, seasons and years, plus streaks.
 
 - Scope: rolling 7-day rain, months (full and to date), seasons, year to date, and calendar years.
+- Scope: ranks for periods as well as days, e.g. "the 3rd wettest October on record".
+- Scope: facts about the last full week and the last full month for the home page's week and month sections, using the same scoring and selection as task 8.
 - Scope: phrasing for periods still in progress, such as "hottest start to October on record".
 - Scope: streaks, such as consecutive hot days or dry spells, which must not run through gaps.
 - Done when: tests pass for each period type and for streaks that meet a gap.
@@ -195,13 +218,18 @@ Statuses: `todo`, `in progress`, `done`, `blocked`. At the end of each session, 
 
 ---
 
-## 10. Forecast and sunrise/sunset facts
+## 10. Forecast, near-miss and sunrise/sunset facts
 
 **Status:** todo
 
 **Goal:** Facts about the coming week and about daylight.
 
 - Scope: forecast highs and lows compared with the records ("tomorrow is forecast to be the hottest November day since…"), and the wettest-7-days forecast using the 50% rain amounts.
+- Scope: **what it would take** for a forecast day, e.g. "if tomorrow reaches 47°C, it will be the hottest day since 2013". The morning run includes today as one of these days ("if today reaches…"); the evening run starts from tomorrow.
+  - For each comparison, find the value needed to reach the next notable rank or "since" year above the forecast.
+  - Only offer values within reach: up to about 2°C beyond the forecast temperature, and for rain up to the forecast's 25%-chance amount.
+- Scope: **near misses** for observed days, e.g. "yesterday came within 0.2°C of the hottest October day on record".
+- Scope: scoring and wording for both kinds, within task 8's selection.
 - Scope: sunrise and sunset calculations, giving latest sunset, earliest sunrise, longest and shortest day, and the point where days start getting longer or shorter.
 - Done when: tests pass, including a check of the sunrise and sunset calculation against published times for a few dates.
 
@@ -231,7 +259,12 @@ Statuses: `todo`, `in progress`, `done`, `blocked`. At the end of each session, 
 
 - Scope: a Vite site that reads `facts.json`.
 - Scope: a location picker that defaults to the nearest location using browser geolocation, with a manual toggle. The choice is remembered on the device, and coordinates are never sent anywhere.
-- Scope: fact cards with "today" or "yesterday" wording based on when the page is viewed, plus an expandable "why" with a small chart.
+- Scope: a home page with three sections for the chosen location:
+  - **Today:** the latest day's facts and the forecast facts.
+  - **This week:** a timeline of the past 6 days, e.g. "Last Tuesday: the hottest day since July".
+  - **This month:** the standout facts from earlier in the month.
+- Scope: day names ("today", "yesterday", "last Tuesday") worked out in the browser from each fact's date and the time of viewing.
+- Scope: fact cards with an expandable "why" and a small chart.
 - Scope: a banner when the data is stale, the note about the Observatory Hill station change, and the BOM credit.
 - Scope: mobile first, with dark mode and accessibility.
 - Done when: it runs locally against a real `facts.json`, and has been checked in the browser at phone and desktop widths.
@@ -244,9 +277,9 @@ Statuses: `todo`, `in progress`, `done`, `blocked`. At the end of each session, 
 
 **Status:** todo
 
-**Goal:** The site updates itself every evening.
+**Goal:** The site updates itself every morning and evening.
 
-- Scope: a workflow on the two schedules plus a manual trigger. It runs the tests and `build:data`, commits `data/recent/` and `facts.json` when they change, and builds and deploys to Pages.
+- Scope: a workflow on the four schedules in CLAUDE.md (morning, evening and a backup for each) plus a manual trigger. It runs the tests and `build:data`, commits `data/recent/` and `facts.json` when they change, and builds and deploys to Pages.
 - Scope: check that FTP works from GitHub's servers.
 - Manual step for the user: enable Pages for the repository, with GitHub Actions as the source. List this in the notes.
 - Done when: a manual run deploys successfully and the live site shows the current facts.
@@ -264,5 +297,45 @@ Statuses: `todo`, `in progress`, `done`, `blocked`. At the end of each session, 
 - Scope: a README covering what the site is, how to refresh the ZIPs once a year (link to [refreshing-history.md](refreshing-history.md)), how to run the site locally, and the attribution.
 - Scope: empty and error states on the site.
 - Scope: a last pass over wording and scoring, based on a couple of weeks of real output.
+
+**Notes:**
+
+---
+
+## 15. Wind
+
+**Status:** deferred (the user shelved wind on 2026-10-30)
+
+**Goal:** Wind facts such as "the 8th windiest day this year", for the locations where BOM's feeds allow them.
+
+- Background, checked on 2026-10-30:
+  - The FTP daily files have a column for the day's average 10 m wind speed (m/s). It holds real values for Sydney Airport (files from 2009) and Sydney Olympic Park (from 2011).
+  - Observatory Hill reports `0.00` every day because it has no wind instrument: BOM measures Sydney's harbour wind at Fort Denison instead. Treat those zeros as missing, never as calm, so there are no wind facts for Observatory Hill.
+  - The ZIPs don't include wind, and no allowed source has a history of gusts.
+- Scope: a one-off backfill of the wind column from every FTP daily file since each station's first file, saved in a committed file per station (e.g. `data/wind/<station>.csv`). Keep it up to date from the files the daily run already downloads. It is never pruned, because no ZIP replaces it.
+- Scope: wind measures for the fact generator, with every comparison that has enough history. Rankings and wording ("windiest", "calmest") come from tasks 7–9.
+- Scope: update the data sources section of CLAUDE.md.
+- Out of scope, so ask the user first: saving each day's maximum gust from the live feed. Its records would only begin on the day saving starts.
+- Done when: tests cover the parsing, the backfill, and the rule that Observatory Hill's zeros count as missing.
+
+**Notes:**
+
+---
+
+## 16. Backfill the 9am and 3pm readings
+
+**Status:** todo
+
+**Goal:** Give the 9am and 3pm facts about a year of history, from BOM's Daily Weather Observations (DWO). The user wants this done after the site is live.
+
+- Background:
+  - DWO keeps the current month and the 12 before it, one CSV per station per month, at `https://www.bom.gov.au/climate/dwo/YYYYMM/text/<product>.YYYYMM.csv`. The CSV columns include 9am and 3pm temperature and relative humidity.
+  - These are on BOM's website, so the user downloads them by hand in a browser. Code must never fetch them.
+  - `IDCJDW2124` is Sydney, and its temperature and humidity come from Observatory Hill (066214). The user also found `IDCJDW2125`. Find the products for Sydney Airport and Sydney Olympic Park, and check which station each file's header names.
+  - Use only the temperature and humidity columns. The Sydney file takes its cloud and pressure from Sydney Airport and its wind from Fort Denison.
+- Scope: give the user the list of files to download, and add it to [refreshing-history.md](refreshing-history.md).
+- Scope: a parser for the DWO CSVs, which checks that the header names the expected station.
+- Scope: adding the backfilled readings to the saved readings from task 6, for dates before saving began. On overlapping dates the two must agree, or the build fails.
+- Done when: tests cover parsing, the station check and the overlap check, and the 9am and 3pm records start about a year earlier.
 
 **Notes:**

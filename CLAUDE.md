@@ -4,7 +4,7 @@ A static website that shows obscure weather records for the current and recent w
 
 ## How to work in this repo
 
-- Each session does **one** task from `docs/PLAN.md`: the first one not marked done, unless told otherwise. Don't start the next task.
+- Each session does **one** task from `docs/PLAN.md`: the first one not marked done or deferred, unless told otherwise. Don't start the next task.
 - Before finishing, update the task in `docs/PLAN.md`: set its status, and add notes the next session needs (anything surprising, deferred, or changed). If a decision below changes, update this file in the same session.
 - Decisions recorded here are settled. Don't reopen them without asking.
 - Run `nvm use` before any npm command. Before finishing, `npm test`, `npm run typecheck`, `npm run lint` and `npm run format:check` must all pass.
@@ -20,7 +20,10 @@ A static website that shows obscure weather records for the current and recent w
 ## Hosting and updates
 
 - The website is hosted on GitHub Pages and contains only static files.
-- A GitHub Actions workflow runs at `15 11 * * *` and `15 13 * * *` UTC: 10:15pm or 9:15pm Sydney time, depending on daylight saving, plus a backup run two hours later. Running it twice must be harmless.
+- A GitHub Actions workflow runs twice a day, each time with a backup run two hours later in case GitHub skips one. Times are in UTC, so Sydney time shifts by an hour with daylight saving.
+  - **Morning:** `45 23 * * *`, backup `45 1 * * *` (10:45am with daylight saving, 9:45am without). By then last night's minimum, the rain to 9am and the 9am reading are final, and BOM has issued today's forecast. This run gives "if today reaches…" facts.
+  - **Evening:** `15 11 * * *`, backup `15 13 * * *` (10:15pm or 9:15pm). By then today's maximum and the 3pm reading are in.
+- Every run does the same work, and its facts reflect the time it ran. Running twice in a row must be harmless.
 - Each run downloads the BOM FTP feeds, updates `data/recent/`, regenerates `facts.json`, commits the data and deploys the site.
 - There is no server, and nothing updates on demand.
 
@@ -44,8 +47,9 @@ Use only these. **Never fetch from `www.bom.gov.au` or `api.weather.bom.gov.au` 
 1. **History:** the Climate Data Online ZIPs in `data/raw/`, downloaded by hand and replaced when refreshed. The download links and steps are in [docs/refreshing-history.md](docs/refreshing-history.md). Filenames are `IDCJAC0009_<station>_1800.zip` (rainfall), `IDCJAC0010_…` (max temperature) and `IDCJAC0011_…` (min temperature). Read them directly as ZIPs, and find them by product code and station number. The CSV columns are product, station, year, month, day, value, period in days, and quality (`Y` = checked, `N` = not yet checked).
 2. **Recent daily values:** monthly CSVs at `ftp://ftp.bom.gov.au/anon/gen/clim_data/IDCKWCDEA0/tables/nsw/<folder>/<folder>-YYYYMM.csv`. The folders are `sydney_(observatory_hill)`, `sydney_airport_amo` and `sydney_olympic_park_(archery_centre)`. These files run one to two days behind and cover 2009 onwards. Blank cells mean missing.
 3. **Live observations:** `ftp://ftp.bom.gov.au/anon/gen/fwo/IDN60920.xml` (latest observations for every NSW station). It includes the running max for 6am–9pm, the overnight min for 6pm–9am, and rain to 9am.
-4. **Forecast:** `ftp://ftp.bom.gov.au/anon/gen/fwo/IDN11060.xml` (the 7-day forecast for NSW towns). Rain comes as a range; the lower bound is the amount with a 50% chance, and the upper bound the amount with a 25% chance.
-5. **Sunrise and sunset:** calculated from each station's latitude and longitude. No API is used.
+4. **9am and 3pm readings:** `ftp://ftp.bom.gov.au/anon/gen/fwo/IDN60910.tgz`. It holds one JSON file per NSW station, named by WMO number (`IDN60910.<wmo>.json`), with the last 72 hours of half-hourly observations. The WMO numbers are 94768 (Observatory Hill), 94767 (Sydney Airport) and 95765 (Sydney Olympic Park). The useful fields are `aifstime_local`, `air_temp` and `rel_hum`. This is the only allowed source of these readings, so their records start when saving began, and the saved copies are never pruned.
+5. **Forecast:** `ftp://ftp.bom.gov.au/anon/gen/fwo/IDN11060.xml` (the 7-day forecast for NSW towns). Rain comes as a range; the lower bound is the amount with a 50% chance, and the upper bound the amount with a 25% chance.
+6. **Sunrise and sunset:** calculated from each station's latitude and longitude. No API is used.
 
 When sources disagree, the ZIPs win, then the FTP daily files, then the job's own live snapshots. The saved copies in `data/recent/` for dates the ZIPs now cover can be deleted.
 
@@ -67,7 +71,9 @@ The build must **fail loudly** in any of these cases rather than publish wrong f
 ## Facts
 
 - **Comparisons:** against all records, this year, the same month in every year, the same calendar date, and the same season. Don't compare against the same weekday.
+- **Ranks:** a fact can give a rank, such as "the 2nd coldest" or "the equal 3rd wettest", not only "the coldest". Tied values share a rank.
 - **Scoring:** narrow comparisons and short records score lower, because they make records easy to set. Show a small number of the best facts, without near-duplicates.
+- **Recent days:** facts cover the last 31 days, not just the latest, for the home page's Today, This week and This month sections. Each day is judged against the data as it stood on that day, and a fact a later day has beaten says so.
 - **Dates:** every fact carries the date it refers to. The page decides whether to say "today" or "yesterday", based on when it is viewed.
 - **Wording:** distinguish confirmed, provisional and forecast facts.
 - **Attribution:** the data is © Bureau of Meteorology, licensed under CC BY 4.0. The site must credit it.
