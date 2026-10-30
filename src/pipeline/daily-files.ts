@@ -1,3 +1,4 @@
+import type { Station } from "../shared/locations.ts";
 import { addDays } from "./dates.ts";
 
 /** One day's values from a recent source. Null means missing. */
@@ -9,8 +10,7 @@ export interface RecentDay {
 }
 
 export interface DailyFile {
-  /** The location's folder on the FTP server, such as `sydney_airport_amo`. */
-  folder: string;
+  station: Pick<Station, "name" | "dailyFolder">;
   /** YYYY-MM */
   month: string;
 }
@@ -26,8 +26,8 @@ const headerLine = 9;
 const columnCount = 11;
 const valuePattern = /^-?\d+(\.\d+)?$/;
 
-export function dailyFilePath({ folder, month }: DailyFile): string {
-  return `/anon/gen/clim_data/IDCKWCDEA0/tables/nsw/${folder}/${fileName({ folder, month })}`;
+export function dailyFilePath(file: DailyFile): string {
+  return `/anon/gen/clim_data/IDCKWCDEA0/tables/nsw/${file.station.dailyFolder}/${fileName(file)}`;
 }
 
 /**
@@ -46,7 +46,8 @@ export function parseDailyFile(
   const lineError = (index: number, problem: string) =>
     new Error(`${name} line ${String(index + 1)}: ${problem}`);
 
-  const stationName = file.folder.replaceAll("_", " ").toUpperCase();
+  // The daily files leave "AWS" out of the official station name.
+  const stationName = file.station.name.replace(/ AWS\b/, "");
   const expectedTitle = `Daily Evapotranspiration for ${stationName} New South Wales for ${monthName(file.month)}`;
   const title = lines[titleLine]?.split(",")[0];
   if (title !== expectedTitle) {
@@ -115,8 +116,8 @@ export function parseDailyFile(
   }
 }
 
-function fileName({ folder, month }: DailyFile): string {
-  return `${folder}-${month.replace("-", "")}.csv`;
+function fileName({ station, month }: DailyFile): string {
+  return `${station.dailyFolder}-${month.replace("-", "")}.csv`;
 }
 
 function monthName(month: string): string {

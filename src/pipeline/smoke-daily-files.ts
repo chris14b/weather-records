@@ -11,17 +11,16 @@ if (location === undefined) {
   );
 }
 
-const file = {
-  folder: location.dailyFolder,
-  month: sydneyDate(new Date()).slice(0, 7),
-};
+const station = location.stations.at(-1);
+if (station === undefined) throw new Error(`${location.id} has no stations`);
+const file = { station, month: sydneyDate(new Date()).slice(0, 7) };
 const ftp = connectToBom();
 try {
   const bytes = await ftp.download(dailyFilePath(file));
   if (bytes === undefined) {
     console.log(`${dailyFilePath(file)} isn't published yet`);
   } else {
-    console.log(`${location.name}, ${file.month}`);
+    console.log(`${station.name} (${station.station}), ${file.month}`);
     console.table(parseDailyFile(bytes, file));
   }
 } finally {

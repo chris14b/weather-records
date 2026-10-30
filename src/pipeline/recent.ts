@@ -25,9 +25,9 @@ export interface DailyUpdate {
 }
 
 /**
- * Fetches the location's daily files from the month of the first day it doesn't have yet
- * up to the current month, saves them over the old copies, and prunes the days the
- * history covers. Returns the saved days.
+ * Fetches each station's daily files, for its own period, from the month of the first day
+ * not saved yet up to the current month. Saves them over the old copies, prunes the days
+ * the history covers, and returns the saved days.
  */
 export async function updateDailyFiles({
   ftp,
@@ -48,31 +48,40 @@ export async function updateDailyFiles({
     (latest, { date }) => (date > latest ? date : latest),
     historyEnd,
   );
+  const firstMissing = addDays(lastSaved, 1);
   const currentMonth = today.slice(0, 7);
-  const months = monthsBetween(addDays(lastSaved, 1).slice(0, 7), currentMonth);
 
   const fetchedMonths = new Set<string>();
-  const fetched: RecentDay[] = [];
-  for (const month of months) {
-    const file = { folder: location.dailyFolder, month };
-    const bytes = await ftp.download(dailyFilePath(file));
-    if (bytes === undefined) {
-      if (month === currentMonth) continue;
-      throw new Error(
-        `ftp://ftp.bom.gov.au${dailyFilePath(file)} does not exist`,
-      );
+  const fetched = new Map<string, RecentDay[]>();
+  for (const [index, station] of location.stations.entries()) {
+    const until = location.stations[index + 1]?.from;
+    const first = latest(firstMissing, station.from ?? firstMissing);
+    const last =
+      until === undefined ? today : earliest(today, addDays(until, -1));
+    const days: RecentDay[] = [];
+    const months =
+      first <= last ? monthsBetween(first.slice(0, 7), last.slice(0, 7)) : [];
+    for (const month of months) {
+      const file = { station, month };
+      const bytes = await ftp.download(dailyFilePath(file));
+      if (bytes === undefined) {
+        if (month === currentMonth) continue;
+        throw new Error(
+          `ftp://ftp.bom.gov.au${dailyFilePath(file)} does not exist`,
+        );
+      }
+      days.push(...parseDailyFile(bytes, file));
+      fetchedMonths.add(`${station.station} ${month}`);
     }
-    fetched.push(...parseDailyFile(bytes, file));
-    fetchedMonths.add(month);
+    fetched.set(station.station, days);
   }
 
-  const fetchedByStation = joinStations(
-    location.stations,
-    new Map(location.stations.map(({ station }) => [station, fetched])),
-  );
   const days = [
-    ...saved.filter(({ date }) => !fetchedMonths.has(date.slice(0, 7))),
-    ...fetchedByStation,
+    ...saved.filter(
+      ({ station, date }) =>
+        !fetchedMonths.has(`${station} ${date.slice(0, 7)}`),
+    ),
+    ...joinStations(location.stations, fetched),
   ]
     .filter(({ date }) => date > historyEnd)
     .sort((a, b) => a.date.localeCompare(b.date));
@@ -164,4 +173,12 @@ async function writeSavedDays(
 
 function savedPath(dir: string, station: string): string {
   return join(dir, `${station}.csv`);
+}
+
+function latest(a: string, b: string): string {
+  return a > b ? a : b;
+}
+
+function earliest(a: string, b: string): string {
+  return a < b ? a : b;
 }

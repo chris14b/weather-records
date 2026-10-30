@@ -17,9 +17,11 @@ const preamble = (stationName: string, monthTitle: string) => [
   ",,(mm),(mm),(mm),(°C),(°C),(%),(%),(m/sec),(MJ/sq m)",
 ];
 
-/** A monthly daily file in BOM's format and Latin-1 encoding, for the days given. */
-export function dailyFile(folder: string, days: readonly RecentDay[]): Buffer {
-  const stationName = folder.replaceAll("_", " ").toUpperCase();
+/** A monthly daily file in BOM's format and Latin-1 encoding, naming the station as given. */
+export function dailyFile(
+  stationName: string,
+  days: readonly RecentDay[],
+): Buffer {
   const month = days[0]?.date.slice(0, 7) ?? "2026-10";
   const monthTitle = new Date(`${month}-01T00:00:00Z`).toLocaleString("en-AU", {
     month: "long",

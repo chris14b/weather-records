@@ -4,6 +4,13 @@ export interface StationPeriod {
   from?: string;
 }
 
+export interface Station extends StationPeriod {
+  /** The station's official name, as in its ZIP notes and the observations feed's `stn-name`. */
+  name: string;
+  /** The station's folder of monthly daily files (IDCKWCDEA0) on the BOM FTP server. */
+  dailyFolder: string;
+}
+
 /** An `<area>` of type `location` in the BOM 7-day town forecast. */
 export interface ForecastArea {
   aac: string;
@@ -15,12 +22,10 @@ export interface Location {
   /** The current station's `description` in the BOM observations feed. */
   name: string;
   forecastArea: ForecastArea;
-  /** The location's folder of monthly daily files (IDCKWCDEA0) on the BOM FTP server. */
-  dailyFolder: string;
   latitude: number;
   longitude: number;
   /** In date order. Each station supplies values until the next one's `from` date. */
-  stations: readonly StationPeriod[];
+  stations: readonly Station[];
 }
 
 // Coordinates are the current station's, from the BOM observations feed (IDN60920).
@@ -29,30 +34,48 @@ export const locations: readonly Location[] = [
     id: "sydney-observatory-hill",
     name: "Sydney - Observatory Hill",
     forecastArea: { aac: "NSW_PT131", description: "Sydney" },
-    dailyFolder: "sydney_(observatory_hill)",
     latitude: -33.8593,
     longitude: 151.2048,
     stations: [
-      { station: "066062" },
-      { station: "066214", from: "2020-09-01" },
+      {
+        station: "066062",
+        name: "SYDNEY (OBSERVATORY HILL)",
+        dailyFolder: "sydney_(observatory_hill)",
+      },
+      {
+        station: "066214",
+        name: "SYDNEY (OBSERVATORY HILL)",
+        dailyFolder: "sydney_(observatory_hill)",
+        from: "2020-09-01",
+      },
     ],
   },
   {
     id: "sydney-airport",
     name: "Sydney Airport",
     forecastArea: { aac: "NSW_PT272", description: "Mascot" },
-    dailyFolder: "sydney_airport_amo",
     latitude: -33.9465,
     longitude: 151.1731,
-    stations: [{ station: "066037" }],
+    stations: [
+      {
+        station: "066037",
+        name: "SYDNEY AIRPORT AMO",
+        dailyFolder: "sydney_airport_amo",
+      },
+    ],
   },
   {
     id: "sydney-olympic-park",
     name: "Sydney Olympic Park",
     forecastArea: { aac: "NSW_PT132", description: "Sydney Olympic Park" },
-    dailyFolder: "sydney_olympic_park_(archery_centre)",
     latitude: -33.8338,
     longitude: 151.0718,
-    stations: [{ station: "066212" }],
+    stations: [
+      {
+        station: "066212",
+        name: "SYDNEY OLYMPIC PARK AWS (ARCHERY CENTRE)",
+        dailyFolder: "sydney_olympic_park_(archery_centre)",
+      },
+    ],
   },
 ];

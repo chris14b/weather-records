@@ -1,11 +1,20 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
+import { locations } from "../src/shared/locations.ts";
 import { dailyFilePath, parseDailyFile } from "../src/pipeline/daily-files.ts";
 import { dailyFile, daysFrom } from "./daily-file.ts";
 
+function stationByNumber(number: string) {
+  const station = locations
+    .flatMap((l) => l.stations)
+    .find((s) => s.station === number);
+  if (station === undefined) throw new Error(`No station ${number}`);
+  return station;
+}
+
 const observatoryHill = {
-  folder: "sydney_(observatory_hill)",
+  station: stationByNumber("066214"),
   month: "2026-10",
 };
 
@@ -25,7 +34,7 @@ function parseText(text: string) {
 }
 
 describe("dailyFilePath", () => {
-  test("points at the location's monthly file", () => {
+  test("points at the station's monthly file", () => {
     expect(dailyFilePath(observatoryHill)).toBe(
       "/anon/gen/clim_data/IDCKWCDEA0/tables/nsw/sydney_(observatory_hill)/sydney_(observatory_hill)-202610.csv",
     );
@@ -79,7 +88,7 @@ describe("parseDailyFile with a real file", () => {
 
   test("fails when the file is for another month", () => {
     const file = dailyFile(
-      "sydney_(observatory_hill)",
+      "SYDNEY (OBSERVATORY HILL)",
       daysFrom("2026-09-01", [0, 20, 10]),
     );
 
@@ -138,14 +147,16 @@ describe("parseDailyFile with a real file", () => {
 });
 
 describe("parseDailyFile with a made-up file", () => {
+  const airport = stationByNumber("066037");
+
   test("keeps a day with no values as a day of missing values", () => {
     const file = dailyFile(
-      "sydney_airport_amo",
+      "SYDNEY AIRPORT AMO",
       daysFrom("2026-02-01", [null, null, null], [0, 9.9, -1.5]),
     );
 
     expect(
-      parseDailyFile(file, { folder: "sydney_airport_amo", month: "2026-02" }),
+      parseDailyFile(file, { station: airport, month: "2026-02" }),
     ).toEqual([
       { date: "2026-02-01", rain: null, maxTemp: null, minTemp: null },
       { date: "2026-02-02", rain: 0, maxTemp: 9.9, minTemp: -1.5 },
@@ -153,10 +164,34 @@ describe("parseDailyFile with a made-up file", () => {
   });
 
   test("accepts a month with no days yet", () => {
-    const file = dailyFile("sydney_airport_amo", []);
+    const file = dailyFile("SYDNEY AIRPORT AMO", []);
 
     expect(
-      parseDailyFile(file, { folder: "sydney_airport_amo", month: "2026-10" }),
+      parseDailyFile(file, { station: airport, month: "2026-10" }),
     ).toEqual([]);
+  });
+
+  test("expects an AWS station's official name without AWS", () => {
+    const olympicPark = stationByNumber("066212");
+    const file = dailyFile(
+      "SYDNEY OLYMPIC PARK (ARCHERY CENTRE)",
+      daysFrom("2026-10-01", [0, 22, 12]),
+    );
+
+    expect(
+      parseDailyFile(file, { station: olympicPark, month: "2026-10" }),
+    ).toHaveLength(1);
+  });
+
+  test("fails when an AWS station's file keeps AWS in the name", () => {
+    const olympicPark = stationByNumber("066212");
+    const file = dailyFile(
+      "SYDNEY OLYMPIC PARK AWS (ARCHERY CENTRE)",
+      daysFrom("2026-10-01", [0, 22, 12]),
+    );
+
+    expect(() =>
+      parseDailyFile(file, { station: olympicPark, month: "2026-10" }),
+    ).toThrow("expected the title");
   });
 });

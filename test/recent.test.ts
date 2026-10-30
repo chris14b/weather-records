@@ -2,30 +2,46 @@ import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import type { Location } from "../src/shared/locations.ts";
+import type { Location, Station } from "../src/shared/locations.ts";
 import { dailyFilePath, type RecentDay } from "../src/pipeline/daily-files.ts";
 import type { Ftp } from "../src/pipeline/ftp.ts";
 import { readSavedDays, updateDailyFiles } from "../src/pipeline/recent.ts";
 import { dailyFile, daysFrom, repeatedDays } from "./daily-file.ts";
 
-const folder = "sydney_(observatory_hill)";
+const oldStation: Station = {
+  station: "OLD",
+  name: "OLD STATION",
+  dailyFolder: "old_station",
+};
+const newStation: Station = {
+  station: "NEW",
+  name: "NEW STATION AWS (TEST)",
+  dailyFolder: "new_station_(test)",
+  from: "2026-09-15",
+};
+const namesInFiles = new Map([
+  [oldStation, "OLD STATION"],
+  [newStation, "NEW STATION (TEST)"],
+]);
 
 const location: Location = {
   id: "test",
   name: "Test",
   forecastArea: { aac: "NSW_PT000", description: "Test" },
-  dailyFolder: folder,
   latitude: 0,
   longitude: 0,
-  stations: [{ station: "OLD" }, { station: "NEW", from: "2026-09-15" }],
+  stations: [oldStation, newStation],
 };
 
 class FakeFtp implements Ftp {
   readonly requested: string[] = [];
   private readonly files = new Map<string, Uint8Array>();
 
-  serve(month: string, days: readonly RecentDay[]): void {
-    this.files.set(dailyFilePath({ folder, month }), dailyFile(folder, days));
+  serve(station: Station, month: string, days: readonly RecentDay[]): void {
+    this.files.set(
+      dailyFilePath({ station, month }),
+      dailyFile(namesInFiles.get(station) ?? "", days),
+    );
   }
 
   download(path: string): Promise<Uint8Array | undefined> {
@@ -56,8 +72,18 @@ describe("updateDailyFiles", () => {
     readFile(join(dir, `${station}.csv`), "utf8");
 
   test("saves each station's days after the history ends, in a readable CSV", async () => {
-    ftp.serve("2026-09", repeatedDays("2026-09-01", 30, [0.2, 20, 10]));
     ftp.serve(
+      oldStation,
+      "2026-09",
+      repeatedDays("2026-09-01", 30, [0.2, 20, 10]),
+    );
+    ftp.serve(
+      newStation,
+      "2026-09",
+      repeatedDays("2026-09-01", 30, [0.4, 21, 11]),
+    );
+    ftp.serve(
+      newStation,
       "2026-10",
       daysFrom("2026-10-01", [83.4, null, 13.2], [null, 17.6, null]),
     );
@@ -65,8 +91,9 @@ describe("updateDailyFiles", () => {
     const days = await update("2026-09-12", "2026-10-03");
 
     expect(ftp.requested).toEqual([
-      "sydney_(observatory_hill)-202609.csv",
-      "sydney_(observatory_hill)-202610.csv",
+      "old_station-202609.csv",
+      "new_station_(test)-202609.csv",
+      "new_station_(test)-202610.csv",
     ]);
     expect(await savedFile("OLD")).toBe(
       "date,rain,maxTemp,minTemp\n" +
@@ -74,7 +101,7 @@ describe("updateDailyFiles", () => {
         "2026-09-14,0.2,20,10\n",
     );
     expect((await savedFile("NEW")).split("\n").slice(-4)).toEqual([
-      "2026-09-30,0.2,20,10",
+      "2026-09-30,0.4,21,11",
       "2026-10-01,83.4,,13.2",
       "2026-10-02,,17.6,",
       "",
@@ -86,21 +113,25 @@ describe("updateDailyFiles", () => {
     expect(days).toHaveLength(20);
   });
 
-  test("fetches from the month of the first day it doesn't have", async () => {
+  test("fetches from the month of the first day it doesn't have, from stations still in use", async () => {
     await writeFile(
       join(dir, "NEW.csv"),
       "date,rain,maxTemp,minTemp\n2026-09-29,1,20,10\n",
     );
-    ftp.serve("2026-09", repeatedDays("2026-09-01", 30, [5, 25, 15]));
-    ftp.serve("2026-11", daysFrom("2026-11-01", [0, 30, 20]));
-    ftp.serve("2026-10", daysFrom("2026-10-01", [0, 22, 12]));
+    ftp.serve(
+      newStation,
+      "2026-09",
+      repeatedDays("2026-09-01", 30, [5, 25, 15]),
+    );
+    ftp.serve(newStation, "2026-11", daysFrom("2026-11-01", [0, 30, 20]));
+    ftp.serve(newStation, "2026-10", daysFrom("2026-10-01", [0, 22, 12]));
 
     await update("2026-09-20", "2026-11-02");
 
     expect(ftp.requested).toEqual([
-      "sydney_(observatory_hill)-202609.csv",
-      "sydney_(observatory_hill)-202610.csv",
-      "sydney_(observatory_hill)-202611.csv",
+      "new_station_(test)-202609.csv",
+      "new_station_(test)-202610.csv",
+      "new_station_(test)-202611.csv",
     ]);
   });
 
@@ -109,7 +140,11 @@ describe("updateDailyFiles", () => {
       join(dir, "NEW.csv"),
       "date,rain,maxTemp,minTemp\n2026-09-29,1,20,10\n2026-10-01,9,9,9\n",
     );
-    ftp.serve("2026-10", daysFrom("2026-10-01", [0, 22, 12], [0, 23, 13]));
+    ftp.serve(
+      newStation,
+      "2026-10",
+      daysFrom("2026-10-01", [0, 22, 12], [0, 23, 13]),
+    );
 
     await update("2026-09-20", "2026-10-03");
 
@@ -138,7 +173,11 @@ describe("updateDailyFiles", () => {
   });
 
   test("gives the same result when run twice", async () => {
-    ftp.serve("2026-10", daysFrom("2026-10-01", [0, 22, 12], [1, 23, 13]));
+    ftp.serve(
+      newStation,
+      "2026-10",
+      daysFrom("2026-10-01", [0, 22, 12], [1, 23, 13]),
+    );
 
     const first = await update("2026-09-30", "2026-10-03");
     const firstFile = await savedFile("NEW");
@@ -149,7 +188,11 @@ describe("updateDailyFiles", () => {
   });
 
   test("accepts a current month that isn't published yet", async () => {
-    ftp.serve("2026-10", repeatedDays("2026-10-01", 31, [0, 22, 12]));
+    ftp.serve(
+      newStation,
+      "2026-10",
+      repeatedDays("2026-10-01", 31, [0, 22, 12]),
+    );
 
     const days = await update("2026-10-30", "2026-11-01");
 
@@ -157,10 +200,10 @@ describe("updateDailyFiles", () => {
   });
 
   test("fails when an earlier month is missing", async () => {
-    ftp.serve("2026-11", daysFrom("2026-11-01", [0, 22, 12]));
+    ftp.serve(newStation, "2026-11", daysFrom("2026-11-01", [0, 22, 12]));
 
     await expect(update("2026-10-30", "2026-11-02")).rejects.toThrow(
-      "sydney_(observatory_hill)-202610.csv does not exist",
+      "new_station_(test)-202610.csv does not exist",
     );
   });
 
