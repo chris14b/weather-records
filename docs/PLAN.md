@@ -20,6 +20,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`. At the end of each session, 
   - `origin` = `https://github.com/chris14b/weather-records.git` (the global git config already rewrites this to SSH)
 
   This machine's global git identity and the GitHub CLI belong to the work account (`chrisjohnstonsc`), so don't use `gh` here, and don't change any global config.
+
 - Scope: a minimal `.gitignore` (`.DS_Store`, `node_modules/`, `dist/`, `.idea/`, `.env*`). Task 2 adds to it.
 - Scope: commit what exists (`CLAUDE.md`, `docs/`, and the ZIPs in `data/raw/`, which the build on GitHub needs), then push and set the upstream. Ask the user before committing and pushing.
 - Done when: `git log` shows the commit with `chris14b` as the author, and the repository on GitHub has the files.
@@ -34,7 +35,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`. At the end of each session, 
 
 ## 2. Project setup
 
-**Status:** todo
+**Status:** done
 
 **Goal:** An empty TypeScript project that installs, type-checks, lints and runs tests.
 
@@ -44,6 +45,15 @@ Statuses: `todo`, `in progress`, `done`, `blocked`. At the end of each session, 
 - Done when: `npm test`, `npm run typecheck` and `npm run lint` all pass, with one placeholder test.
 
 **Notes:**
+
+- Node 26 became the LTS on 2026-10-28, so `.nvmrc` says `26`. It is installed with nvm, but this machine's nvm default is still 22, so run `nvm use` in each shell first.
+- TypeScript is pinned to `~6.0` because `typescript-eslint` 8.72 supports only `<6.1`. Move to TypeScript 7 once it does.
+- Node runs the pipeline's `.ts` files directly through type stripping, with no build step. So `erasableSyntaxOnly` is on (no enums, namespaces or parameter properties), and relative imports use the `.ts` extension.
+- Type-checking uses two projects under `tsconfig.json`: `tsconfig.node.json` (pipeline, shared, tests and config files, Node types, no DOM) and `tsconfig.site.json` (site and shared, DOM, no Node types). Shared code must therefore stay free of both Node and DOM APIs.
+- ESLint uses `typescript-eslint`'s `strictTypeChecked` and `stylisticTypeChecked`. Its config is `eslint.config.js`, not `.ts`, because a TypeScript config needs `jiti` or an unstable flag.
+- Vite's root is `src/site`, and it builds to `dist/`. Vitest has its own `vitest.config.ts` so that it doesn't inherit that root. Tests can live in `test/` or next to the code as `*.test.ts`.
+- `build:data` runs `src/pipeline/build-data.ts`, which only throws "not implemented" until task 11. `src/site/main.ts` is a placeholder.
+- `npm run format:check` checks formatting without writing. Running Prettier reformatted the Locations table in CLAUDE.md, with no change to its content.
 
 ---
 

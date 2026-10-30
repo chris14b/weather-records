@@ -7,6 +7,7 @@ A static website that shows obscure weather records for the current and recent w
 - Each session does **one** task from `docs/PLAN.md`: the first one not marked done, unless told otherwise. Don't start the next task.
 - Before finishing, update the task in `docs/PLAN.md`: set its status, and add notes the next session needs (anything surprising, deferred, or changed). If a decision below changes, update this file in the same session.
 - Decisions recorded here are settled. Don't reopen them without asking.
+- Run `nvm use` before any npm command. Before finishing, `npm test`, `npm run typecheck`, `npm run lint` and `npm run format:check` must all pass.
 - When a task is finished, ask the user whether to commit it. One commit per task keeps the history readable.
 - Git uses the personal account `chris14b` (GitHub: `chris14b/weather-records`), set in this repository's own git config. Never use `gh` here or change any global git config: both belong to the work account.
 
@@ -25,11 +26,11 @@ A static website that shows obscure weather records for the current and recent w
 
 ## Locations
 
-| Location | Stations (joined by date) | Forecast location |
-|---|---|---|
-| Sydney | 066062 until 2020-08-31, then 066214 from 2020-09-01 | Sydney |
-| Erskineville | 066037 (Sydney Airport) | Mascot |
-| Epping | 066212 (Sydney Olympic Park, Archery Centre) | Sydney Olympic Park |
+| Location     | Stations (joined by date)                            | Forecast location   |
+| ------------ | ---------------------------------------------------- | ------------------- |
+| Sydney       | 066062 until 2020-08-31, then 066214 from 2020-09-01 | Sydney              |
+| Erskineville | 066037 (Sydney Airport)                              | Mascot              |
+| Epping       | 066212 (Sydney Olympic Park, Archery Centre)         | Sydney Olympic Park |
 
 - The joins are defined in config, not by merging files. Joining is by fixed cutover date. Never fill one station's gaps with another station's values.
 - The Observatory Hill stations differ: the new one reads about 0.3°C warmer for maximums and cooler for minimums. The site carries a note about the 2020 station change.
