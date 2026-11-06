@@ -392,7 +392,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 - Scope: rolling 7-day rain, months (full and to date), seasons, year to date, and calendar years.
   - Consider shorter rolling rain totals too. Task 8's review found that the Olympic Park rain of February 2020 might read better as "the wettest 3 days on record".
   - Decide each period's measures: at least total rain and the mean maximum and minimum.
-- Scope: a fact type for a range of dates in `src/shared/facts.ts`, since today's facts have only one date. Task 11's streaks will reuse it.
+- Scope: a fact type for a range of dates in `src/shared/facts.ts`, since today's facts have only one date. Task 22's streaks may reuse it.
 - Scope: ranks and "since" for periods, with the same comparisons as days where they make sense (all records, the same month, the same season).
 - Scope: missing data, written up in [facts.md](facts.md).
   - Decide how many missing days a period may have before it can't be compared. Never fill them.
@@ -409,7 +409,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 - New and changed modules:
   - `src/pipeline/candidates.ts` has `CandidateFact`, which replaces task 7's `DailyFact` for day and period facts alike, and `generateCandidates`, which runs both generators. Every candidate now has a `from` and a `period`. Task 13 should call `generateCandidates({ locationId, series, windowEnd, offsets: stationOffsets(location) })` and pass the result to `selectFacts`.
   - `src/pipeline/period-facts.ts` has `generatePeriodFacts`, and `comparablePeriods`, which the why's leaders use.
-  - `src/shared/facts.ts` has `Period` (`day`, `rolling` with its `days`, or `month`, `season` or `year` with `toDate`) and `CalendarPeriod`. `Fact` gained `from` and `period`. The dates in a period fact's why are each period's last day, since all of them have the fact's kind. Task 11 can add a streak kind to `Period`; a streak's length gives its first day.
+  - `src/shared/facts.ts` has `Period` (`day`, `rolling` with its `days`, or `month`, `season` or `year` with `toDate`) and `CalendarPeriod`. `Fact` gained `from` and `period`. The dates in a period fact's why are each period's last day, since all of them have the fact's kind. Task 22 can add a streak kind to `Period`; a streak's length gives its first day.
   - `Series` gained `multiDay`: the multi-day values that `layeredSeries` leaves out of `days`, with their `from`. Only rain totals use them.
   - Each station can have `reads`, how much higher it reads than the one before it. Only 066214 has one (+0.3°C maximum, −0.3°C minimum). `stationOffsets(location)` turns these into offsets from the first station by date.
 - Decisions:
@@ -427,26 +427,8 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
   - Observatory Hill to 8 August 1986 gains "the wettest start to August on record" (3.89) and "the month with the coldest nights since July 1984". The flood itself stays a day fact: 327.6 mm is more than two thirds of any run holding it.
   - Recent windows gain "the start to the year with the warmest nights on record" at both Observatory Hill and Sydney Airport, and "the September with the 2nd warmest nights on record". The ZIPs end on 30 October, so October isn't complete in the data yet.
   - Weak spots: Observatory Hill's year so far has 10 incomplete years in the 1800s, so its record carries the "(with 10 years too incomplete to compare)" caveat, which is long for a headline. A period so far shows every day until the period ends, so it can sit in This month for months. Task 16 should look at both.
-- Not handled: humidity, solar and the readings over periods; hot or cold runs of days (task 11's streaks may cover these); period facts in `smoke:facts`, which still prints one day's day facts. `smoke:sections` shows both, with each period's dates.
+- Not handled: humidity, solar and the readings over periods; hot or cold runs of days (task 22's streaks may cover these); period facts in `smoke:facts`, which still prints one day's day facts. `smoke:sections` shows both, with each period's dates.
 - Speed: periods take about 0.7 s for Observatory Hill's window, mostly the 3- and 7-day runs over 160 years.
-
----
-
-## 11. Streaks
-
-**Status:** todo
-
-**Goal:** Facts about runs of days, such as "the 12th dry day in a row, the longest dry spell since 2019" or "the 5th day in a row above 30°C".
-
-- Scope: decide what counts as a dry day, a hot day and a warm night: fixed thresholds, or relative to the time of year. Record the choice in [facts.md](facts.md).
-- Scope: streaks must not run through gaps. A missing day ends a streak.
-  - A multi-day rain total is never a single day's value. Decide whether a 0 mm total, which shows that every day it covers was dry, may count towards a dry spell.
-- Scope: ranks and "since" for streak lengths, using task 10's fact type for a range of dates. Equal lengths share a rank.
-- Scope: wording for a streak still running, which may grow on later days, and for one that has ended.
-- Scope: scoring and selection within task 8's, so a long streak doesn't appear afresh on every day it runs.
-- Done when: tests pass for streaks that meet a gap, a streak still running, and streaks of equal length.
-
-**Notes:**
 
 ---
 
@@ -651,3 +633,33 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 - Done when: the research is recorded in the notes, the user has chosen, and tests cover the chosen handling.
 
 **Notes:**
+
+---
+
+## 22. Streaks
+
+**Status:** deferred
+
+**Goal:** Facts about runs of days, such as "the 12th dry day in a row, the longest dry spell since 2019" or "the 5th day in a row above 30°C".
+
+- Scope: decide what counts as a dry day, a hot day and a warm night, without hand-set temperature thresholds, so that it would work anywhere in Australia (see the notes). Record the choice in [facts.md](facts.md).
+- Scope: streaks must not run through gaps. A missing day ends a streak.
+  - A multi-day rain total is never a single day's value. Decide whether a 0 mm total, which shows that every day it covers was dry, may count towards a dry spell.
+- Scope: ranks and "since" for streak lengths, using task 10's fact type for a range of dates. Equal lengths share a rank.
+- Scope: wording for a streak still running, which may grow on later days, and for one that has ended.
+- Scope: scoring and selection within task 8's, so a long streak doesn't appear afresh on every day it runs.
+- Scope: streaks of cold days and cold nights too.
+- Done when: tests pass for streaks that meet a gap, a streak still running, and streaks of equal length.
+- Moved here from task 11 on 2026-11-06, when the user decided not to do streaks for now.
+
+**Notes:**
+
+- A working version is on the branch `streak-facts` (pushed to `origin`), built on task 10. It adds `src/pipeline/streak-facts.ts` with tests, the streak wording and selection, and a section 2c in [facts.md](facts.md); its copy of this plan has the full notes under task 11. Rebase it onto `main` before reusing it, and expect the selection snapshots to need a fresh review.
+- The branch handles dry days (0 mm, at least 5 in a row), maximums of 30°C or more (3) and 35°C or more (2), and minimums of 20°C or more (3). A missing day ends a streak, a streak that starts after one gets no facts, and a 0 mm multi-day total counts as dry days. It scores on the days' scale with no extra weight, and selection shows only each streak's latest day. It found real records: Observatory Hill's 7 days of 30°C or more from 18 to 24 December 2025 equal its longest run (2011). It takes about 0.25 s per location.
+- Problems to solve before picking it up again:
+  - **Fixed temperature thresholds.** The user doesn't want hand-set degrees, because the site may one day cover all of Australia. Two alternatives were put to the user, and neither was chosen:
+    1. Each location's own percentiles over 1991–2020, rounded to whole degrees. The wording stays concrete, but neighbouring locations get different numbers, and hot streaks only happen in summer. The branch's numbers are close to Observatory Hill's: maximum 95th percentile 30.2°C, 99th 35.3°C, 10th 17.3°C; minimum 90th 20.6°C, 10th 8.6°C. Olympic Park's are 33.6, 38.9, 17.8, 19.9 and 5.7°C.
+    2. Claude's suggestion: percentiles for the time of year, like the climate indices TX90p and TN10p (the 90th percentile of the days within about a week of each date, 1991–2020). This gives warm days, cool days, warm nights and cold nights in any season and anywhere, worded as "the 5th unusually warm day in a row", with the day's threshold in the why. Olympic Park has only about 9 years in that base period.
+  - **Short dry spells.** Observatory Hill has about 29 runs of 3 or more dry days a year and 18 of 5 or more. A 2-day minimum put "the 2nd dry day in a row" in Today. Even at 5 days, about 16 dry spells a year score above 1.75, so This week fills with ones like "the last of 5 dry days in a row, the longest dry spell since 24 June". A 7-day minimum or a weight might fix it. 0 mm needs no threshold, so dry spells work anywhere.
+  - **Wet-day streaks** were tried and dropped. They mostly repeated task 10's 3- and 7-day rain totals. At Olympic Park in February 2020, "the last of 5 days in a row with rain" took This week's second slot for 10 February from "the wettest 3 days on record", because facts per day are counted by their last day.
+  - **The station change.** 066214's minimums read about 0.3°C lower, which shortens runs of warm nights but would lengthen runs of cold nights since 2020. Settle task 20 first.
