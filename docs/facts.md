@@ -23,11 +23,13 @@ A series is one measure's single-day values for a location, in date order (`seri
 
 - A series whose history goes back to when records began has `fullRecord` set. Only those may say "on record"; the others say "since 2009" and so on.
 - Missing days are simply absent. Nothing is filled in, and nothing is counted through a gap.
-- A multi-day rain or temperature total is left out of the days, so the days it covers count as missing. It is kept apart, as the series' `multiDay`, for rain totals over periods (see 2b). A ZIP value with a blank period counts as a single day only on a series' first day or after a day with a value. Otherwise it probably is an accumulation, and is left out too.
+- A multi-day rain or temperature total is left out of the days, so the days it covers count as missing. It is kept apart, as the series' `multiDay`, for rain totals over periods (see Periods). A ZIP value with a blank period counts as a single day only on a series' first day or after a day with a value. Otherwise it probably is an accumulation, and is left out too.
 - A **change** is left out when either its day or the day before has no value, so a change is never taken across a gap. Only the maximum and minimum have changes. Changes in rain, range and humidity were judged not worth showing.
 - A value from a live snapshot is `provisional`. Everything else is `confirmed`. A range is provisional if either its max or its min is, and a change if either day's value is.
 
 ## 2. Ranking
+
+### Days
 
 `generateDailyFacts` looks at every day in the window: the 31 days to today, by default. For each day that has a value, it makes a candidate fact for every combination of:
 
@@ -52,7 +54,7 @@ That's a few thousand candidates per location. Each is judged only against the c
 
 For example, if the maximums so far are 30, 35, 28, 33, then the 33 is the 2nd highest of 4. Its since is the 35, and its `comparedSince` is 2.
 
-## 2b. Periods
+### Periods
 
 `generatePeriodFacts` ranks periods longer than a day the same way, with the same fields. A period is named by its last day, its `date`, and also has a `from`. Every period compared with it has the same kind, so the dates in its why are last days too.
 
@@ -68,7 +70,7 @@ For example, if the maximums so far are 30, 35, 28, 33, then the 33 is the 2nd h
 - **So far** compares, for example, 1–10 November with 1–10 November of every earlier year. 29 February is compared with the 28th in other years.
 - **Directions:** both for calendar periods ("the wettest October", "the driest October"). Runs of days have only `highest`, since a dry week is not news.
 
-### Missing days
+#### Missing days
 
 A period with too many missing days has no value. It isn't compared, and counts towards the fact's `missingDays` and `gaps`, as a missing day does. Nothing is filled in.
 
@@ -76,7 +78,7 @@ A period with too many missing days has no value. It isn't compared, and counts 
 - **Temperatures** are averaged over the days that have values. In each calendar month the period covers, at most a sixth of the days may be missing (5 of 30 or 31, 4 of 28), and no more than 3 in a row. This follows the WMO's rule for monthly means. The multi-day temperature values are left out, as for days.
 - Means are rounded to 0.1°C, as BOM does, and totals to 0.1 mm.
 
-### Runs of days
+#### Runs of days
 
 Runs of days overlap, so they need three rules of their own:
 
@@ -84,30 +86,30 @@ Runs of days overlap, so they need three rules of their own:
 - **Overlaps:** a run that an overlapping earlier run matched or beat gets no facts. During a long wet spell, only the runs that set a new peak count.
 - **Rank:** earlier runs that beat it are counted once per spell, that is, once per stretch of consecutive end days. A week of heavy rain counts once, not once for each run that holds it. `compared` and `comparedSince` count runs, one per day, so a run scores on the same scale as a day.
 
-### The 2020 Observatory Hill station change
+#### The 2020 Observatory Hill station change
 
 066214 reads about 0.3°C warmer than 066062 for maximums and 0.3°C cooler for minimums (`reads` in `locations.ts`). A mean over a month is much more sensitive to that than a day's extreme. So a mean temperature is compared twice: as measured, and with each period's average station offset taken out. A period beats another only if it does so both ways, and it is matched if either way matches it. This only ever makes a fact weaker: to 29 October 2026, Observatory Hill's start to the year is the 3rd hottest rather than the hottest, because 2013's and 2019's were within the offset. Pass `offsets: stationOffsets(location)`.
 
-## 2c. Forecasts
+### Forecasts
 
 `generateForecastFacts` ranks the 7-day forecast as if it comes true, and works out what it would take to do better. Pass the forecast to `generateCandidates` as `forecast: { days, from: forecastStart(now) }`.
 
-### Maximums and minimums
+#### Maximums and minimums
 
 Each forecast maximum and minimum is ranked like an observed day, with the same comparisons and fields, and the status `forecast`.
 
 - **Which days:** from `forecastStart`: today until 9pm Sydney time, when the live maximum's window closes, and tomorrow after that. So the morning run says "if today reaches…" and the evening run starts from tomorrow. A day the series already has a value for is left out, and so are the forecast's blanks: today's minimum, and in the afternoon issue today's maximum.
 - **Comparable days:** the observed ones, and the forecast's earlier days as if they come true. So if Wednesday is forecast 38°C and Thursday 37°C, Thursday is only "the hottest since Wednesday", and Wednesday's fact ends ", until Thursday" if Thursday is forecast hotter.
 
-### Rain over the next 7 days
+#### Rain over the next 7 days
 
 The rain amounts with a 50% chance are totalled over the forecast's first 7 days, and ranked as a run of 7 days, against all runs, the same season and the same month.
 
 - **Crediting:** observed rain is the 24 hours to 9am, but a forecast day is midnight to midnight. Most of a forecast day's rain falls before 9am the next day, so each day's amount counts towards the next day. The run then starts the day after the last observed rain, with no overlap.
 - **No range:** BOM gives no rain range on days with a low chance of rain. Below a 25% chance, the amount with a 25% chance must be 0 mm, so both amounts count as 0 mm. A day with no range and a higher chance, or no chance either, leaves the total unknown, and there is no fact.
-- **No spell rules:** the forecast's run has no spell rules (see 2b), since which of its days are wet is too uncertain. A dry forecast gets no fact.
+- **No spell rules:** the forecast's run has no spell rules (see Runs of days), since which of its days are wet is too uncertain. A dry forecast gets no fact.
 
-### What it would take
+#### What it would take
 
 For every forecast fact, a **conditional** fact gives the most notable rank and since within reach, at the least value that gets them: "would be the hottest November day on record if it reaches 36.6°C".
 
@@ -128,7 +130,7 @@ The two are on the same scale. A fact takes the larger, and its wording **leads*
 
 ### Adjustments
 
-Periods score the same way, counting comparable periods instead of days. A run of days ends on every day, so it is already on the days' scale. Calendar periods aren't: a record October scores log(160), not log(160 × 31). They are shown apart from the days (see 4), so they only compete with each other.
+Periods score the same way, counting comparable periods instead of days. A run of days ends on every day, so it is already on the days' scale. Calendar periods aren't: a record October scores log(160), not log(160 × 31). They are shown apart from the days (see Selection), so they only compete with each other.
 
 These keep ranks easy to set from scoring too high:
 

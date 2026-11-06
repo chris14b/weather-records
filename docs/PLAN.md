@@ -422,7 +422,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 
 **Notes:**
 
-- [facts.md](facts.md) section 2b explains the method. Both complete periods and periods so far were done.
+- The Periods section of [facts.md](facts.md) explains the method. Both complete periods and periods so far were done.
 - New and changed modules:
   - `src/pipeline/candidates.ts` has `CandidateFact`, which replaces task 7's `DailyFact` for day and period facts alike, and `generateCandidates`, which runs both generators. Every candidate now has a `from` and a `period`. Task 13 should call `generateCandidates({ locationId, series, windowEnd, offsets: stationOffsets(location) })` and pass the result to `selectFacts`.
   - `src/pipeline/period-facts.ts` has `generatePeriodFacts`, and `comparablePeriods`, which the why's leaders use.
@@ -482,7 +482,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 
 **Notes:**
 
-- [facts.md](facts.md) section 2c covers the method. The details:
+- The Forecasts section of [facts.md](facts.md) covers the method. The details:
 - Order: task 12 hadn't been done, so this task wrote the "next boundary" function itself (`thresholds.ts`), and task 12 now reuses it.
 - New modules: `forecast-facts.ts` (`generateForecastFacts`, `forecastStart`, `forecastSeries`) and `thresholds.ts`. `daily-facts.ts` now exports `rank`, and `period-facts.ts` exports `runRanker` (ranks a run of days that starts after the series ends), `Ranking` and `rollingComparisons`.
 - Types: `ValueStatus` gained `forecast` and `conditional`, with `isForecastStatus`. A conditional fact's `value` is what the day would need, and `forecast` (on `CandidateFact` and `FactWhy`) is the forecast value. `LocationFacts` gained `comingWeek`.
@@ -656,7 +656,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
   - Maximum: 066214 reads +0.34°C higher on average, but the gap is seasonal: about +0.5 to +0.8°C in summer (December +0.77) and about +0.1°C in winter. On days above 30°C the two agree (−0.03°C on average), so daily heat records aren't inflated. Daily differences vary widely: 5% to 95% of days fall between −0.6 and +1.9°C.
   - Minimum: 066214 reads −0.27°C lower, steadily all year (−0.14 to −0.35°C by month).
   - Rain: 066214's gauge caught about 6% more (3,228 mm against 3,050 mm). Most days are identical.
-  - What task 10 does now: mean temperatures over periods are compared both as measured and with a flat offset taken out (`reads` on 066214 in `locations.ts`: +0.3°C maximum, −0.3°C minimum), and a fact must hold both ways. Daily facts and rain compare the stations as one series. See [facts.md](facts.md) section 2b.
+  - What task 10 does now: mean temperatures over periods are compared both as measured and with a flat offset taken out (`reads` on 066214 in `locations.ts`: +0.3°C maximum, −0.3°C minimum), and a fact must hold both ways. Daily facts and rain compare the stations as one series. See the Periods section of [facts.md](facts.md).
   - A forum post quoting the station history says 066214 became the main site in October 2017. BOM's own pages found so far say only that 066062 closed on 2020-08-31 and 066214 opened in 2017. No BOM write-up of the changeover was found.
 - Research first, and report to the user before any code:
   - Find BOM's own account of the change, especially the ACORN-SAT station catalogue's entry for Sydney: when 066214 became the primary site, and what difference BOM measured.
@@ -694,7 +694,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 
 **Notes:**
 
-- A working version is on the branch `streak-facts` (pushed to `origin`), built on task 10. It adds `src/pipeline/streak-facts.ts` with tests, the streak wording and selection, and a section 2c in [facts.md](facts.md); its copy of this plan has the full notes under task 11. Rebase it onto `main` before reusing it, and expect the selection snapshots to need a fresh review.
+- A working version is on the branch `streak-facts` (pushed to `origin`), built on task 10. It adds `src/pipeline/streak-facts.ts` with tests, the streak wording and selection, and a section on streaks in [facts.md](facts.md), which on `main` belongs under Ranking beside Periods; its copy of this plan has the full notes under task 11. Rebase it onto `main` before reusing it, and expect the selection snapshots to need a fresh review.
 - The branch handles dry days (0 mm, at least 5 in a row), maximums of 30°C or more (3) and 35°C or more (2), and minimums of 20°C or more (3). A missing day ends a streak, a streak that starts after one gets no facts, and a 0 mm multi-day total counts as dry days. It scores on the days' scale with no extra weight, and selection shows only each streak's latest day. It found real records: Observatory Hill's 7 days of 30°C or more from 18 to 24 December 2025 equal its longest run (2011). It takes about 0.25 s per location.
 - Problems to solve before picking it up again:
   - **Fixed temperature thresholds.** The user doesn't want hand-set degrees, because the site may one day cover all of Australia. Two alternatives were put to the user, and neither was chosen:
