@@ -45,8 +45,17 @@ export type Period =
   | { kind: "rolling"; days: number }
   | { kind: CalendarPeriod; toDate: boolean };
 
-/** Provisional values come from the live feed and may change when the daily files confirm them. */
-export type ValueStatus = "confirmed" | "provisional";
+/**
+ * Provisional values come from the live feed and may change when the daily files confirm
+ * them. Forecast values come from BOM's forecast. A conditional fact holds only if the day
+ * reaches its value, which is beyond the forecast.
+ */
+export type ValueStatus =
+  "confirmed" | "provisional" | "forecast" | "conditional";
+
+export function isForecastStatus(status: ValueStatus): boolean {
+  return status === "forecast" || status === "conditional";
+}
 
 export interface DateRange {
   from: string;
@@ -70,7 +79,10 @@ export type Lead = "rank" | "since";
  * fact's, so each is named by its last day.
  */
 export interface FactWhy {
+  /** For a conditional fact, the value the day would need to reach. */
   value: number;
+  /** For a conditional fact, the forecast value. */
+  forecast?: number;
   rank: number;
   /** Earlier comparable days with exactly the same value. */
   ties: number;
@@ -124,6 +136,8 @@ export interface LocationFacts {
   thisWeek: Fact[];
   /** 7 to 30 days before it, and the latest calendar periods. */
   thisMonth: Fact[];
+  /** Forecast and conditional facts about the coming days, soonest first. */
+  comingWeek: Fact[];
 }
 
 export interface FactsFile {

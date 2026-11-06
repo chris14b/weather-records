@@ -35,7 +35,11 @@ const toDateComparison: Record<CalendarPeriod, Comparison> = {
   year: "all",
 };
 
-const rollingComparisons: readonly Comparison[] = ["all", "season", "month"];
+export const rollingComparisons: readonly Comparison[] = [
+  "all",
+  "season",
+  "month",
+];
 
 /** A run of days is a spell only if no one day holds this share of its rain. */
 const largestDayShare = 2 / 3;
@@ -175,6 +179,60 @@ export function comparablePeriods(
     .map(({ from, to, value }) => ({ from, date: to, value }));
 }
 
+/** A run of days whose total isn't in the series, such as a forecast's. */
+export interface Run {
+  from: string;
+  date: string;
+  value: number;
+}
+
+export interface RunRanker {
+  /** The totals of the earlier runs comparable with one ending on `date`. */
+  earlierValues: (date: string, comparison: Comparison) => number[];
+  rank: (
+    run: Run,
+    comparison: Comparison,
+    direction: Direction,
+  ) => Ranking | undefined;
+}
+
+/**
+ * Ranks runs of `days` days that start after the series ends, such as a forecast's,
+ * against every run of that length in the series.
+ */
+export function runRanker(series: Series, days: number): RunRanker {
+  const daily = dailyValues(series, []);
+  const lastDay = dayNumber(series.days.at(-1)?.date ?? "1970-01-01");
+  const periods = allPeriods(daily, { kind: "rolling", days }, lastDay);
+  const comparable = (date: string, comparison: Comparison) =>
+    periods.filter(
+      (period) => key(period, comparison) === comparisonKey(date, comparison),
+    );
+  return {
+    earlierValues: (date, comparison) =>
+      comparable(date, comparison)
+        .filter(isValued)
+        .map(({ value }) => value),
+    rank: (run, comparison, direction) => {
+      const fromDay = dayNumber(run.from);
+      if (fromDay <= lastDay) {
+        throw new Error(`A run from ${run.from} overlaps the series`);
+      }
+      const candidate: PeriodValue = {
+        from: run.from,
+        to: run.date,
+        fromDay,
+        toDay: dayNumber(run.date),
+        value: run.value,
+        status: "forecast",
+        offset: 0,
+      };
+      const runs = [...comparable(run.date, comparison), candidate];
+      return rankPeriod(runs, runs.length - 1, direction);
+    },
+  };
+}
+
 /**
  * Whether a run of days says something its days don't: it starts and ends wet, so it
  * isn't a shorter run padded with dry days, and its rain didn't mostly fall on one day.
@@ -195,7 +253,7 @@ function isValued(period: PeriodValue): period is ValuedPeriod {
   return period.value !== null;
 }
 
-type Ranking = Pick<
+export type Ranking = Pick<
   CandidateFact,
   | "rank"
   | "ties"

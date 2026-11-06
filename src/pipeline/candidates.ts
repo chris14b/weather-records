@@ -9,6 +9,7 @@ import type {
 } from "../shared/facts.ts";
 import type { StationOffset } from "../shared/locations.ts";
 import { generateDailyFacts } from "./daily-facts.ts";
+import { generateForecastFacts, type ForecastInput } from "./forecast-facts.ts";
 import { generatePeriodFacts } from "./period-facts.ts";
 import type { Series } from "./series.ts";
 
@@ -51,6 +52,8 @@ export interface CandidateFact {
   comparedSince: number;
   /** The first later comparable day or period, up to the end of the window, that beat it. */
   beatenBy: DayValue | null;
+  /** For a conditional fact, the forecast value; `value` is what the day would need to reach. */
+  forecast?: number;
 }
 
 export interface CandidatesRequest {
@@ -61,11 +64,19 @@ export interface CandidatesRequest {
   windowDays?: number;
   /** How much higher than the first station each later one reads, from `stationOffsets`. */
   offsets?: readonly StationOffset[];
+  forecast?: ForecastInput;
 }
 
-/** Every candidate fact about the days and periods in the window. */
+/** Every candidate fact about the days and periods in the window, and the forecast's. */
 export function generateCandidates(
   request: CandidatesRequest,
 ): CandidateFact[] {
-  return [...generateDailyFacts(request), ...generatePeriodFacts(request)];
+  const { forecast } = request;
+  return [
+    ...generateDailyFacts(request),
+    ...generatePeriodFacts(request),
+    ...(forecast === undefined
+      ? []
+      : generateForecastFacts({ ...request, forecast })),
+  ];
 }

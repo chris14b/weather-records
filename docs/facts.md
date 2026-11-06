@@ -5,7 +5,7 @@ This explains how the pipeline turns a location's daily data into the few facts 
 There are four steps:
 
 1. Build one **series** per measure.
-2. **Rank** every recent day against the comparable days before it (`daily-facts.ts`), and every recent period against the comparable periods before it (`period-facts.ts`). `generateCandidates` in `candidates.ts` does both.
+2. **Rank** every recent day against the comparable days before it (`daily-facts.ts`), every recent period against the comparable periods before it (`period-facts.ts`), and the forecast's days against both (`forecast-facts.ts`). `generateCandidates` in `candidates.ts` does all three.
 3. **Score** each ranking by how unusual it is (`scoring.ts`).
 4. **Select** the best for each section, and **word** them (`selection.ts`, `wording.ts`).
 
@@ -88,6 +88,33 @@ Runs of days overlap, so they need three rules of their own:
 
 066214 reads about 0.3°C warmer than 066062 for maximums and 0.3°C cooler for minimums (`reads` in `locations.ts`). A mean over a month is much more sensitive to that than a day's extreme. So a mean temperature is compared twice: as measured, and with each period's average station offset taken out. A period beats another only if it does so both ways, and it is matched if either way matches it. This only ever makes a fact weaker: to 29 October 2026, Observatory Hill's start to the year is the 3rd hottest rather than the hottest, because 2013's and 2019's were within the offset. Pass `offsets: stationOffsets(location)`.
 
+## 2c. Forecasts
+
+`generateForecastFacts` ranks the 7-day forecast as if it comes true, and works out what it would take to do better. Pass the forecast to `generateCandidates` as `forecast: { days, from: forecastStart(now) }`.
+
+### Maximums and minimums
+
+Each forecast maximum and minimum is ranked like an observed day, with the same comparisons and fields, and the status `forecast`.
+
+- **Which days:** from `forecastStart`: today until 9pm Sydney time, when the live maximum's window closes, and tomorrow after that. So the morning run says "if today reaches…" and the evening run starts from tomorrow. A day the series already has a value for is left out, and so are the forecast's blanks: today's minimum, and in the afternoon issue today's maximum.
+- **Comparable days:** the observed ones, and the forecast's earlier days as if they come true. So if Wednesday is forecast 38°C and Thursday 37°C, Thursday is only "the hottest since Wednesday", and Wednesday's fact ends ", until Thursday" if Thursday is forecast hotter.
+
+### Rain over the next 7 days
+
+The rain amounts with a 50% chance are totalled over the forecast's first 7 days, and ranked as a run of 7 days, against all runs, the same season and the same month.
+
+- **Crediting:** observed rain is the 24 hours to 9am, but a forecast day is midnight to midnight. Most of a forecast day's rain falls before 9am the next day, so each day's amount counts towards the next day. The run then starts the day after the last observed rain, with no overlap.
+- **No range:** BOM gives no rain range on days with a low chance of rain. Below a 25% chance, the amount with a 25% chance must be 0 mm, so both amounts count as 0 mm. A day with no range and a higher chance, or no chance either, leaves the total unknown, and there is no fact.
+- **No spell rules:** the forecast's run has no spell rules (see 2b), since which of its days are wet is too uncertain. A dry forecast gets no fact.
+
+### What it would take
+
+For every forecast fact, a **conditional** fact gives the most notable rank and since within reach, at the least value that gets them: "would be the hottest November day on record if it reaches 36.6°C".
+
+- **Within reach:** 2°C beyond the forecast temperature, either way, and for rain up to the total of the amounts with a 25% chance.
+- **Least value:** `boundariesBetween` in `thresholds.ts` gives the earlier values that the forecast doesn't beat but the limit does. A value 0.1 beyond the furthest of them gets the same rank and since as the limit itself. Task 12's near misses can use the same function to find the nearest one.
+- If nothing within reach beats what the forecast already gets, there is no conditional fact.
+
 ## 3. Scoring
 
 ### The idea
@@ -146,7 +173,12 @@ A score of 1.75 is a since of about 6 days, so "the warmest day since last Tuesd
 
 The latest complete month, season and year, and the current ones so far, go in This month as well, with an allowance of their own so they never crowd out its days (`calendarRule`): up to 3, each scoring at least 3, about a once-in-20-years period.
 
-Each list runs latest first, then by score.
+Forecast and conditional facts go in a fourth section, the **coming week**. Neither is used to find the latest day, so they never move Today. Forecast, conditional and observed facts are kept apart when choosing the strongest per family, and a spell only stands for facts of its own kind.
+
+- **Forecast facts:** up to 2 a day and 7 in all, the first scoring at least 3.5 (a since of about a month) and the second at least 4.5.
+- **Conditional facts** have an allowance of their own (`conditionalRule`), since nearly every forecast has a notable value within reach, and nearby days have much the same one: up to 2, each scoring at least 4, and only the strongest per family and direction across the week. Each must also score at least log(2) more than the forecast fact for its day, family and direction (`conditionalGain`), so it is at least twice as rare as what the forecast already gets.
+
+Each list runs latest first, then by score. The coming week runs soonest first, with a day's forecast facts before its conditional ones.
 
 ## 5. Wording
 
@@ -164,6 +196,8 @@ Each list runs latest first, then by score.
 - **Gaps:** a rank-led fact with under 95% coverage names its longest gap, e.g. "(no records from March 2018 to July 2020)".
 - **Beaten:** ", until Friday" within 6 days, otherwise ", until 3 November".
 - **Provisional:** these facts start with "provisionally".
+- **Forecast:** these start with "forecast to be": "forecast to be the hottest November day since 2019". The site adds "Tomorrow is".
+- **Conditional:** "would be", then the fact, then what it needs and the forecast, with their unit: "would be the coldest November night since 2006 if it drops to 9°C (forecast 11°C)". The other needs are "if it reaches 36.6°C", "if it gets no warmer than 17°C", "if it gets no colder than 24°C", and for the next 7 days "if they get 90.1 mm".
 - **Periods:**
   - Rain and maximums: "the wettest October", "the 3rd hottest month", "the driest spring", "the hottest year", "the hottest start to October", "the wettest start to the year".
   - A period's minimum needs saying: "the October with the warmest nights", "the start to spring with the 2nd coldest nights".
@@ -174,7 +208,7 @@ Each list runs latest first, then by score.
 
 Each fact also has a `why` for the site:
 
-- the value, rank, ties and days compared
+- the value, rank, ties and days compared, and for a conditional fact the forecast value as `forecast` (its `value` is what the day would need)
 - the record start, missing days and gaps
 - the previous record holder (the best earlier comparable day)
 - the since and `beatenBy` days
@@ -184,4 +218,5 @@ Each fact also has a `why` for the site:
 
 - `npm run smoke:facts [location-id] [date] [max-rank]` prints one day's candidate facts.
 - `npm run smoke:sections [location-id] [date]` prints the three sections for the 31 days to a date, with day and period facts.
+- `npm run smoke:forecast [location-id]` downloads the live forecast and prints the coming week. With a date as well, it prints the coming week that a morning run that day would have seen, if the forecast had matched what was observed: the data stops the day before, and the rain amounts with a 25% chance are 1.5 times the observed rain.
 - The snapshot tests in `test/selection.test.ts` record the sections for five real windows, so any change to the scoring shows up as a diff to review.

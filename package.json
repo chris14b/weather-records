@@ -18,7 +18,8 @@
     "dev": "vite",
     "build:site": "vite build",
     "smoke:facts": "node src/pipeline/smoke-facts.ts",
-    "smoke:sections": "node src/pipeline/smoke-sections.ts"
+    "smoke:sections": "node src/pipeline/smoke-sections.ts",
+    "smoke:forecast": "node src/pipeline/smoke-forecast.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

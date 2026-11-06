@@ -39,3 +39,14 @@ export function sydneyDate(instant: Date): string {
     timeZone: "Australia/Sydney",
   }).format(instant);
 }
+
+/** The hour in Sydney at `instant`, from 0 to 23. */
+export function sydneyHour(instant: Date): number {
+  return Number(
+    new Intl.DateTimeFormat("en-AU", {
+      timeZone: "Australia/Sydney",
+      hour: "numeric",
+      hourCycle: "h23",
+    }).format(instant),
+  );
+}

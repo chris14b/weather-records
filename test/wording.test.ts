@@ -169,6 +169,75 @@ describe("describeFact", () => {
     ).toBe("provisionally the hottest day of the year so far, until Sunday");
   });
 
+  test("says a fact is forecast", () => {
+    expect(
+      words(
+        {
+          status: "forecast",
+          comparison: "month",
+          since: { date: "2019-11-21", value: 41 },
+          comparedSince: 200,
+        },
+        "since",
+      ),
+    ).toBe("forecast to be the hottest November day since 2019");
+  });
+
+  test.each([
+    [
+      "maxTemp",
+      "highest",
+      36.6,
+      35,
+      "the hottest day on record if it reaches 36.6°C (forecast 35°C)",
+    ],
+    [
+      "maxTemp",
+      "lowest",
+      15,
+      17,
+      "the coldest day on record if it gets no warmer than 15°C (forecast 17°C)",
+    ],
+    [
+      "minTemp",
+      "highest",
+      24.1,
+      23,
+      "the warmest night on record if it gets no colder than 24.1°C (forecast 23°C)",
+    ],
+    [
+      "minTemp",
+      "lowest",
+      5.2,
+      7,
+      "the coldest night on record if it drops to 5.2°C (forecast 7°C)",
+    ],
+  ] as const)(
+    "says what a conditional %s %s fact needs, and the forecast",
+    (measure, direction, value, forecast, expected) => {
+      expect(
+        words({ status: "conditional", measure, direction, value, forecast }),
+      ).toBe(`would be ${expected}`);
+    },
+  );
+
+  test("says what a conditional run of days needs", () => {
+    expect(
+      describeFact(
+        periodFact({
+          status: "conditional",
+          period: { kind: "rolling", days: 7 },
+          comparison: "all",
+          value: 90.1,
+          forecast: 70,
+        }),
+        "rank",
+      ),
+    ).toBe(
+      "would be the wettest 7 days on record if they get 90.1 mm (forecast 70 mm)",
+    );
+  });
+
   test("names the longest gap when too many comparable days are missing", () => {
     expect(
       words({

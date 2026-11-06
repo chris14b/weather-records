@@ -90,6 +90,19 @@ const periodSuperlatives: Partial<
   minTemp: { highest: "warmest", lowest: "coldest" },
 };
 
+// What a day or the days ahead would need for a conditional fact.
+const conditions: Partial<Record<FactMeasure, Record<Direction, string>>> = {
+  maxTemp: { highest: "if it reaches", lowest: "if it gets no warmer than" },
+  minTemp: { highest: "if it gets no colder than", lowest: "if it drops to" },
+  rain: { highest: "if they get", lowest: "if they get no more than" },
+};
+
+const units: Partial<Record<FactMeasure, string>> = {
+  maxTemp: "°C",
+  minTemp: "°C",
+  rain: " mm",
+};
+
 /**
  * What a fact's day or period was, without naming it: e.g. "the 2nd hottest October day on
  * record" or "the wettest 7 days since 2022".
@@ -105,7 +118,30 @@ export function describeFact(fact: CandidateFact, lead: Lead): string {
     lead === "rank" ? caveat(fact) : "",
     beatenBy === null ? "" : `, until ${laterDay(beatenBy.date, date)}`,
   ].join("");
-  return status === "provisional" ? `provisionally ${text}` : text;
+  switch (status) {
+    case "confirmed":
+      return text;
+    case "provisional":
+      return `provisionally ${text}`;
+    case "forecast":
+      return `forecast to be ${text}`;
+    case "conditional":
+      return `would be ${text} ${condition(fact)}`;
+  }
+}
+
+function condition({
+  measure,
+  direction,
+  value,
+  forecast,
+}: CandidateFact): string {
+  const words = conditions[measure]?.[direction];
+  if (words === undefined || forecast === undefined) {
+    throw new Error(`A conditional fact about ${measure} needs its forecast`);
+  }
+  const unit = units[measure] ?? "";
+  return `${words} ${String(value)}${unit} (forecast ${String(forecast)}${unit})`;
 }
 
 /** 1st, 2nd, 3rd, 4th… */

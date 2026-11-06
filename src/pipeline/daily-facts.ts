@@ -106,9 +106,10 @@ function directionsFor(measure: FactMeasure, value: number): Direction[] {
   return ["highest", "lowest"];
 }
 
-function rank(
-  day: SeriesDay,
-  earlier: readonly SeriesDay[],
+/** How a value on a day ranks against the comparable days before it, in date order. */
+export function rank(
+  day: DayValue,
+  earlier: readonly DayValue[],
   direction: Direction,
 ): Pick<
   CandidateFact,
@@ -138,7 +139,7 @@ export function beats(
   return direction === "highest" ? value > other : value < other;
 }
 
-function dayValue(day: SeriesDay | undefined): DayValue | null {
+function dayValue(day: DayValue | undefined): DayValue | null {
   return day === undefined ? null : { date: day.date, value: day.value };
 }
 

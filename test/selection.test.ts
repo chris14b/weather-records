@@ -4,22 +4,24 @@ import { generateDailyFacts } from "../src/pipeline/daily-facts.ts";
 import { addDays, daysBetween } from "../src/pipeline/dates.ts";
 import { readSavedSeries } from "../src/pipeline/saved-series.ts";
 import { selectFacts } from "../src/pipeline/selection.ts";
+import type { ForecastDay } from "../src/pipeline/forecast.ts";
 import { changeSeries, type Series } from "../src/pipeline/series.ts";
 import type { Fact, FactMeasure, LocationFacts } from "../src/shared/facts.ts";
 import { locations, stationOffsets } from "../src/shared/locations.ts";
 
 const latest = "2026-11-06";
 
-/** Every day from 2016 to `latest` at `baseline`, except the days given. */
+/** Every day from `from` to `latest` at `baseline`, except the days given. */
 function series<Measure extends FactMeasure>(
   measure: Measure,
   baseline: (date: string) => number,
   values: Readonly<Record<string, number>>,
+  from = "2016-01-01",
 ): Series<Measure> {
   const days = Array.from(
-    { length: daysBetween("2016-01-01", latest) + 1 },
+    { length: daysBetween(from, latest) + 1 },
     (_, index) => {
-      const date = addDays("2016-01-01", index);
+      const date = addDays(from, index);
       return {
         date,
         value: values[date] ?? baseline(date),
@@ -260,7 +262,101 @@ describe("selectFacts", () => {
       today: [],
       thisWeek: [],
       thisMonth: [],
+      comingWeek: [],
     });
+  });
+});
+
+describe("selectFacts with a forecast", () => {
+  const forecastDays = (maxTemp: number): ForecastDay[] =>
+    Array.from({ length: 7 }, (_, index) => ({
+      date: addDays(latest, index + 1),
+      minTemp: 15,
+      maxTemp: index === 1 ? maxTemp : 20,
+      rainChance: 0,
+      rain50: null,
+      rain25: null,
+    }));
+
+  function selectWithForecast(
+    values: Readonly<Record<string, number>>,
+    maxTemp: number,
+  ): LocationFacts {
+    const allSeries = [
+      series(
+        "maxTemp",
+        (date) => 15 + (Number(date.slice(8)) % 10),
+        { ...values, [latest]: 30 },
+        "1990-01-01",
+      ),
+    ];
+    const forecast = { days: forecastDays(maxTemp), from: addDays(latest, 1) };
+    return selectFacts({
+      locationId: "test",
+      facts: generateCandidates({
+        locationId: "test",
+        series: allSeries,
+        windowEnd: latest,
+        forecast,
+      }),
+      series: allSeries,
+      forecast,
+    });
+  }
+
+  const nearRecord = selectWithForecast(
+    { "2019-01-10": 36.5, "2021-01-10": 35.5 },
+    35,
+  );
+
+  test("puts the forecast's facts in the coming week, soonest first, and what it would take after them", () => {
+    expect(summary(nearRecord.comingWeek)).toEqual([
+      {
+        date: "2026-11-08",
+        measure: "maxTemp",
+        text: "forecast to be the 3rd hottest day on record",
+      },
+      {
+        date: "2026-11-08",
+        measure: "maxTemp",
+        text: "would be the hottest day on record if it reaches 36.6°C (forecast 35°C)",
+      },
+    ]);
+  });
+
+  test("keeps today as the latest observed day", () => {
+    expect(summary(nearRecord.today)).toEqual([
+      {
+        date: latest,
+        measure: "maxTemp",
+        text: "the 3rd hottest day on record",
+      },
+    ]);
+  });
+
+  test("explains a conditional fact with the forecast and the value it needs", () => {
+    const why = nearRecord.comingWeek[1]?.why;
+
+    expect(why).toMatchObject({ value: 36.6, forecast: 35, rank: 1 });
+    expect(why?.leaders.slice(0, 3)).toEqual([
+      { date: "2026-11-08", value: 36.6, rank: 1 },
+      { date: "2019-01-10", value: 36.5, rank: 2 },
+      { date: "2021-01-10", value: 35.5, rank: 3 },
+    ]);
+    expect(nearRecord.comingWeek[0]?.why.leaders[2]).toEqual({
+      date: "2026-11-08",
+      value: 35,
+      rank: 3,
+    });
+  });
+
+  test("leaves out what it would take when that is not much rarer than the forecast", () => {
+    const { comingWeek } = selectWithForecast(
+      { "2000-01-10": 35.5, "2022-01-10": 37.5 },
+      35,
+    );
+
+    expect(comingWeek.map(({ status }) => status)).toEqual(["forecast"]);
   });
 });
 

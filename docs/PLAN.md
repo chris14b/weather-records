@@ -439,7 +439,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 **Goal:** Facts about observed days that fell just short of a notable rank, such as "yesterday came within 0.2°C of the hottest October day on record".
 
 - Scope: for each observed day and comparison, find the nearest rank or "since" boundary above its value, and how far away it is, within task 7's ranking.
-  - Write this as a function that task 13 reuses to find the value a forecast day would need to reach the next boundary.
+  - Task 13 was done first and wrote the function: `boundariesBetween` in `thresholds.ts` gives the earlier values between two values, nearest first, and `justBeyond` the value 0.1 past one. The nearest boundary above a day's value is `boundariesBetween(values, value, Infinity, direction)[0]`.
   - Decide what counts as near: a gap in the measure's own units, or a share of the spread of the comparison's values.
 - Scope: scoring and wording within task 8's, so a near miss never outscores a real fact for the same day, and isn't shown beside it for the same measure.
 - Done when: tests pass for a near miss against a record, against a "since" year, and against a gap in the data, and the real data gives a near miss on a chosen day.
@@ -450,7 +450,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 
 ## 13. Forecast facts
 
-**Status:** todo
+**Status:** done (before task 12, at the user's request on 2026-11-06)
 
 **Goal:** Facts about the coming week, from the forecast.
 
@@ -464,6 +464,29 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 - Done when: tests pass for a forecast fact, a wettest-7-days fact, a what-it-would-take fact and its limit, and a forecast with no rain range, and the facts differ correctly between a morning and an evening run.
 
 **Notes:**
+
+- [facts.md](facts.md) section 2c covers the method. The details:
+- Order: task 12 hadn't been done, so this task wrote the "next boundary" function itself (`thresholds.ts`), and task 12 now reuses it.
+- New modules: `forecast-facts.ts` (`generateForecastFacts`, `forecastStart`, `forecastSeries`) and `thresholds.ts`. `daily-facts.ts` now exports `rank`, and `period-facts.ts` exports `runRanker` (ranks a run of days that starts after the series ends), `Ranking` and `rollingComparisons`.
+- Types: `ValueStatus` gained `forecast` and `conditional`, with `isForecastStatus`. A conditional fact's `value` is what the day would need, and `forecast` (on `CandidateFact` and `FactWhy`) is the forecast value. `LocationFacts` gained `comingWeek`.
+- Task 15 should call `generateCandidates({ ..., forecast })` and `selectFacts({ ..., forecast })` with `forecast = { days: parseForecast(feeds.forecast, location.forecastArea).days, from: forecastStart(now) }`. `selectFacts` uses the forecast only for the why's leaders.
+- Decisions:
+  - Morning or evening: the temperatures start today until 9pm Sydney time, then tomorrow. A day the series already has is skipped too. The rain run doesn't depend on the run time (see crediting below).
+  - A forecast day is compared with the forecast's earlier days as if they come true, so two hot days in a row don't both claim "the hottest since 2019". It can be beaten by a later forecast day (", until Thursday").
+  - A missing `precipitation_range` means 0 mm only when the chance is below 25%. In the 2026-10-30 fixture, every day from a 30% chance up has a range and the 0% day has none.
+  - Rain crediting: a forecast day's rain counts towards the next day, since observed rain is the 24 hours to 9am. The 7 days are the forecast's first 7, so from tomorrow to a week from tomorrow, in both runs.
+  - What it would take: the most notable rank and since within reach, at the least value that gets them, rather than the nearest boundary. The nearest is usually a since only days further back.
+  - Units appear in the text of conditional facts only, since that's the only place a value is in the text. A conditional fact also gives the forecast, so readers can judge how likely it is: "would be the coldest November night since 2006 if it drops to 9°C (forecast 11°C)".
+  - The conditional bar started at 5.5. On the user's review of the 2026-11-06 forecast it came down to 4, to let in "the coldest November night since 2006 if it drops to 9°C" (5.10) and "the coldest November day since 2020 if it gets no warmer than 18°C" (4.16).
+- Selection: a fourth section, `comingWeek`, soonest first. Forecast facts need 3.5 for a day's first and 4.5 for its second (2 a day, 7 in all). Conditional facts have their own allowance: up to 2, at least 4, one per family and direction across the week, and at least log(2) above the day's forecast fact.
+- The live feed at 4:40pm on 2026-11-06 had 8 periods: today, with a 0% chance and no maximum or minimum, then 7 more days. So an afternoon feed has no maximum for today, and the rain run uses today's 0 mm as its first day.
+- `npm run smoke:forecast [location-id] [date]` prints the coming week from the live forecast, or with a date, a hindcast using the observed week as the forecast. Review of hindcasts, scores in brackets:
+  - Observatory Hill from 2013-01-14: "forecast to be the hottest day on record" for 18 January (10.86), and "would be the warmest night since 31 January 2012 if it gets no colder than 24°C" for the 19th (5.87).
+  - Sydney Airport from 2019-12-14: "forecast to be the hottest day since January 2018" and "would be the 3rd hottest day on record if it reaches 43.8°C" for 19 December (9.18).
+  - Observatory Hill from 2020-02-06: "forecast to be the 10th wettest 7 days on record" (8.67) for the February 2020 rain.
+  - Ordinary weeks, such as Observatory Hill from 2026-10-24, give nothing or one conditional fact, which seems right.
+  - Before conditional facts had their own allowance, they filled the week: "would be the warmest night since November 2020 if it gets no colder than 23°C" on three days running.
+- Not handled: the hindcast's rain amounts with a 25% chance are made up (1.5 times the observed rain), so the conditional rain facts in hindcasts reach further than a real forecast would. Single-day forecast rain, forecast ranges and changes, and forecast periods so far ("the wettest November so far") are left out. Task 16 should decide where `comingWeek` goes on the page, and may want "if today reaches…" in Today in the morning. The snapshot tests have no forecast, so they didn't change.
 
 ---
 
