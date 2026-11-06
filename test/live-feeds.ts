@@ -26,18 +26,12 @@ export function readingsArchive(
 }
 
 /** A half-hourly observation, with fields named as in the feed. Any left out are missing. */
-export type Row = { local: string } & Partial<
-  Record<
-    | "air_temp"
-    | "rel_hum"
-    | "dewpt"
-    | "press_msl"
-    | "cloud_oktas"
-    | "wind_spd_kmh"
-    | "gust_kmh",
-    number | null
-  > & { wind_dir: string }
->;
+export interface Row {
+  local: string;
+  air_temp?: number | null;
+  rel_hum?: number | null;
+  [field: string]: unknown;
+}
 
 /** A station's file of recent observations in BOM's JSON format, with only the fields used. */
 export function readingsJson(
@@ -54,12 +48,6 @@ export function readingsJson(
         aifstime_local: local,
         air_temp: null,
         rel_hum: null,
-        dewpt: null,
-        press_msl: null,
-        cloud_oktas: null,
-        wind_dir: "-",
-        wind_spd_kmh: null,
-        gust_kmh: null,
         ...fields,
       })),
     },

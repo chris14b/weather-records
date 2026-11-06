@@ -9,6 +9,7 @@ import {
   parseReadings,
   readingSchema,
   readingsArchivePath,
+  readingsKeptFrom,
 } from "./readings.ts";
 import { dailySchema, readSavedDays, writeSavedDays } from "./recent.ts";
 import { mergeRows, readSavedRows, writeSavedRows } from "./saved-table.ts";
@@ -45,6 +46,8 @@ export interface SnapshotUpdate {
   location: Location;
   /** The last date that every measure's ZIP history covers. Saved observations up to here are pruned. */
   historyEnd: string;
+  /** Today in Sydney, as YYYY-MM-DD. Saved readings more than about 13 months older are pruned. */
+  today: string;
 }
 
 export interface Snapshot {
@@ -54,8 +57,8 @@ export interface Snapshot {
 
 /**
  * Saves the location's closed live observations and its 9am and 3pm readings over the
- * saved ones, and returns everything saved. Readings are never pruned, because no ZIP
- * has them.
+ * saved ones, and returns everything saved. Readings are kept only as long as the Daily
+ * Weather Observations, which can fill their gaps, keep them.
  */
 export async function updateSnapshot({
   feeds,
@@ -63,6 +66,7 @@ export async function updateSnapshot({
   readingsDir,
   location,
   historyEnd,
+  today,
 }: SnapshotUpdate): Promise<Snapshot> {
   const { station } = currentStation(location);
 
@@ -78,7 +82,7 @@ export async function updateSnapshot({
     readingSchema,
     await readSavedRows(readingsPath, readingSchema),
     parseReadings(feeds.readings, location),
-  );
+  ).filter(({ date }) => date >= readingsKeptFrom(today));
   await writeSavedRows(readingsPath, readingSchema, readings);
 
   return {

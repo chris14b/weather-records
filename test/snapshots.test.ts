@@ -30,14 +30,8 @@ const feedsAt = (observationsUtc: string): LiveFeeds => ({
   observations: Buffer.from(observationsAt(observationsUtc)),
   readings: readingsArchive({
     "IDN60910.94768.json": readingsJson("94768", "Sydney - Observatory Hill", [
-      {
-        local: "20261029150000",
-        air_temp: 22.2,
-        rel_hum: 54,
-        press_msl: 1022.4,
-        wind_dir: "ESE",
-      },
-      { local: "20261030090000", air_temp: 20.1, rel_hum: 62, wind_dir: "NNE" },
+      { local: "20261029150000", air_temp: 22.2, rel_hum: 54 },
+      { local: "20261030090000", air_temp: 20.1, rel_hum: 62 },
     ]),
   }),
   forecast: Buffer.from(fixture("IDN11060.xml")),
@@ -48,7 +42,7 @@ const readingsHeader = ["date", ...Object.keys(readingSchema)].join(",");
 /** A line of a saved readings file, with blanks for the columns not given. */
 function readingsLine(
   date: string,
-  values: Partial<Record<keyof typeof readingSchema, number | string>>,
+  values: Partial<Record<keyof typeof readingSchema, number>>,
 ): string {
   const cells = Object.keys(readingSchema).map((column) =>
     String(values[column as keyof typeof readingSchema] ?? ""),
@@ -77,13 +71,18 @@ describe("updateSnapshot", () => {
     await rm(dir, { recursive: true });
   });
 
-  const update = (feeds: LiveFeeds, historyEnd = "2026-10-20") =>
+  const update = (
+    feeds: LiveFeeds,
+    historyEnd = "2026-10-20",
+    today = "2026-10-30",
+  ) =>
     updateSnapshot({
       feeds,
       snapshotDir,
       readingsDir,
       location: observatoryHill,
       historyEnd,
+      today,
     });
 
   const saved = (folder: string) =>
@@ -96,10 +95,7 @@ describe("updateSnapshot", () => {
       "date,rain,maxTemp,minTemp\n2026-10-30,0,23.9,16.8\n",
     );
     expect(await saved(readingsDir)).toBe(
-      readingsFile(
-        "2026-10-29,,,,,,,,,22.2,54,,1022.4,,ESE,,",
-        "2026-10-30,20.1,62,,,,NNE,,,,,,,,,,",
-      ),
+      readingsFile("2026-10-29,,,22.2,54", "2026-10-30,20.1,62,,"),
     );
     expect(snapshot.observations).toEqual([
       {
@@ -135,8 +131,8 @@ describe("updateSnapshot", () => {
     await writeFile(
       join(readingsDir, "066214.csv"),
       readingsFile(
-        readingsLine("2026-10-01", { temp9am: 15.2, windDir3pm: "CALM" }),
-        readingsLine("2026-10-29", { temp9am: 17.9, windDir9am: "W" }),
+        readingsLine("2026-10-01", { temp9am: 15.2, relHum3pm: 48 }),
+        readingsLine("2026-10-29", { temp9am: 17.9, relHum9am: 70 }),
       ),
     );
 
@@ -144,31 +140,45 @@ describe("updateSnapshot", () => {
 
     expect(await saved(readingsDir)).toBe(
       readingsFile(
-        readingsLine("2026-10-01", { temp9am: 15.2, windDir3pm: "CALM" }),
+        readingsLine("2026-10-01", { temp9am: 15.2, relHum3pm: 48 }),
         readingsLine("2026-10-29", {
           temp9am: 17.9,
-          windDir9am: "W",
+          relHum9am: 70,
           temp3pm: 22.2,
           relHum3pm: 54,
-          pressure3pm: 1022.4,
-          windDir3pm: "ESE",
         }),
-        readingsLine("2026-10-30", {
-          temp9am: 20.1,
-          relHum9am: 62,
-          windDir9am: "NNE",
-        }),
+        readingsLine("2026-10-30", { temp9am: 20.1, relHum9am: 62 }),
       ),
     );
   });
 
-  test("prunes the observations the history covers, but never the readings", async () => {
+  test("prunes the observations the history covers, but not the readings", async () => {
     await update(evening);
 
     await update(afternoon, "2026-10-30");
 
     expect(await readdir(snapshotDir)).toEqual([]);
     expect(await saved(readingsDir)).toContain("2026-10-29,");
+  });
+
+  test("prunes readings from before the same month a year ago", async () => {
+    await mkdir(readingsDir);
+    await writeFile(
+      join(readingsDir, "066214.csv"),
+      readingsFile(
+        readingsLine("2025-09-30", { temp9am: 14.8 }),
+        readingsLine("2025-10-01", { temp9am: 15.6 }),
+      ),
+    );
+
+    const snapshot = await update(evening);
+
+    expect(snapshot.readings.map(({ date }) => date)).toEqual([
+      "2025-10-01",
+      "2026-10-29",
+      "2026-10-30",
+    ]);
+    expect(await saved(readingsDir)).not.toContain("2025-09-30");
   });
 });
 

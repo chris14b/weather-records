@@ -8,16 +8,7 @@ import type { FromStation } from "./stations.ts";
 export const readingsArchivePath = "/anon/gen/fwo/IDN60910.tgz";
 
 /** Each field saved from a reading, by its name in the feed. */
-const readingFields = {
-  temp: { json: "air_temp", type: "number" },
-  relHum: { json: "rel_hum", type: "number" },
-  dewPoint: { json: "dewpt", type: "number" },
-  pressure: { json: "press_msl", type: "number" },
-  cloud: { json: "cloud_oktas", type: "number" },
-  windDir: { json: "wind_dir", type: "text" },
-  windSpeed: { json: "wind_spd_kmh", type: "number" },
-  gust: { json: "gust_kmh", type: "number" },
-} as const;
+const readingFields = { temp: "air_temp", relHum: "rel_hum" } as const;
 
 type Field = keyof typeof readingFields;
 
@@ -27,40 +18,28 @@ const readingTimes = { "9am": "090000", "3pm": "150000" } as const;
 
 type Time = keyof typeof readingTimes;
 
-type ReadingSchema = {
-  readonly [
-    Column in `${Field}${Time}`
-  ]: Column extends `${infer F extends Field}${Time}`
-    ? (typeof readingFields)[F]["type"]
-    : never;
-};
-
 /** One column per field and time: all the 9am fields, then all the 3pm ones. */
 export const readingSchema = Object.fromEntries(
   Object.keys(readingTimes).flatMap((time) =>
-    Object.entries(readingFields).map(([field, { type }]) => [
-      `${field}${time}`,
-      type,
-    ]),
+    fieldNames.map((field) => [`${field}${time}`, "number"]),
   ),
-) as ReadingSchema;
+) as Readonly<Record<`${Field}${Time}`, "number">>;
 
-/**
- * A day's readings at exactly 9am and 3pm local time: temperature and dew point (°C),
- * relative humidity (%), mean sea level pressure (hPa), cloud (oktas), wind direction
- * (a compass point or CALM), and wind speed and gust (km/h).
- */
-export type DailyReadings = SavedRow<ReadingSchema>;
+/** A day's temperature (°C) and relative humidity (%) at exactly 9am and 3pm local time. */
+export type DailyReadings = SavedRow<typeof readingSchema>;
 
 type Reading = {
   date: string;
   time: string;
-} & { [F in Field]: DailyReadings[`${F}9am`] };
+} & Record<Field, number | null>;
 
-const windDirections = new Set([
-  ..."N NNE NE ENE E ESE SE SSE S SSW SW WSW W WNW NW NNW".split(" "),
-  "CALM",
-]);
+/**
+ * The first date saved readings are kept from: the start of the same month a year ago, as
+ * the Daily Weather Observations keep the current month and the 12 before it.
+ */
+export function readingsKeptFrom(today: string): string {
+  return `${String(Number(today.slice(0, 4)) - 1)}-${today.slice(5, 7)}-01`;
+}
 
 /**
  * Reads the 9am and 3pm readings of a location's current station from the archive of
@@ -164,9 +143,9 @@ function parseRows(
         throw new Error(`invalid aifstime_local ${JSON.stringify(local)}`);
       }
       const values = Object.fromEntries(
-        Object.entries(readingFields).map(([name, { json, type }]) => [
+        Object.entries(readingFields).map(([name, json]) => [
           name,
-          type === "text" ? windDirection(row, json) : numberField(row, json),
+          numberField(row, json),
         ]),
       );
       return {
@@ -197,16 +176,6 @@ function numberField(value: unknown, key: string): number | null {
     throw new Error(
       `expected ${key} to be a number, found ${JSON.stringify(found)}`,
     );
-  }
-  return found;
-}
-
-/** A wind direction, or null for BOM's "-", which means none was reported. */
-function windDirection(value: unknown, key: string): string | null {
-  const found = field(value, key);
-  if (found === "-") return null;
-  if (typeof found !== "string" || !windDirections.has(found)) {
-    throw new Error(`invalid ${key} ${JSON.stringify(found)}`);
   }
   return found;
 }

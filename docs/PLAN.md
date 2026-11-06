@@ -167,8 +167,8 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 - Observations: the station is found by `bom-id`, and its `stn-name`, `description` and `wmo-id` are checked. `rainfall_24hr` must run 9am to 9am, `minimum_air_temperature` 6pm to 9am and `maximum_air_temperature` 6am to 9pm, or the build fails. A value is used only once its window's `end-time-utc` is at or before the observation's time; rain and min are credited to the day the window ends, max to the day it starts. This relies only on each element's own times, so it doesn't matter when BOM rolls the windows over (not observed). The snapshot min covers 6pm–9am, not the official 9am–9am, so like the max it is provisional.
 - Snapshot files use the same `date,rain,maxTemp,minTemp` format as the daily files, and are pruned up to `historyEnd` the same way. A morning run never touches the max, because its window is still open, so it can't overwrite the evening's.
 - Timing to watch in task 13: without daylight saving, the evening run is at 9:15pm, so it saves the max only if the 9pm observation is already published. If not, the 11:15pm backup saves it.
-- Readings: the JSON has no station number, only `wmo` and `name` (the location's name), and both are checked on the header and on every row. It holds 144 half-hourly rows (72 hours, oldest at 3pm three days back) plus special observations at odd minutes, which are ignored. Only rows at exactly `090000` or `150000` local are used. Two identical rows at the same time are fine; two different ones fail. Never pruned.
-- Readings fields (the follow-up): `air_temp`, `rel_hum`, `dewpt`, `press_msl`, `cloud_oktas`, `wind_dir`, `wind_spd_kmh` and `gust_kmh` are saved as `temp`, `relHum`, `dewPoint`, `pressure`, `cloud`, `windDir`, `windSpeed` and `gust`, each with a `9am` or `3pm` suffix: all eight 9am columns, then all eight 3pm ones (`readingSchema` in `readings.ts`). Every field must be present in every row, as a number or null; a missing key fails the build. `wind_dir` is the only text column: one of the 16 compass points or `CALM`, with BOM's `-` saved as blank and anything else failing. On 2026-10-30, Observatory Hill had no cloud or gust, Olympic Park no pressure or cloud, and Sydney Airport every field.
+- Readings: the JSON has no station number, only `wmo` and `name` (the location's name), and both are checked on the header and on every row. It holds 144 half-hourly rows (72 hours, oldest at 3pm three days back) plus special observations at odd minutes, which are ignored. Only rows at exactly `090000` or `150000` local are used. Two identical rows at the same time are fine; two different ones fail. Never pruned (until task 7b).
+- Readings fields (the follow-up, cut back to temperature and humidity by task 7b): `air_temp`, `rel_hum`, `dewpt`, `press_msl`, `cloud_oktas`, `wind_dir`, `wind_spd_kmh` and `gust_kmh` are saved as `temp`, `relHum`, `dewPoint`, `pressure`, `cloud`, `windDir`, `windSpeed` and `gust`, each with a `9am` or `3pm` suffix: all eight 9am columns, then all eight 3pm ones (`readingSchema` in `readings.ts`). Every field must be present in every row, as a number or null; a missing key fails the build. `wind_dir` is the only text column: one of the 16 compass points or `CALM`, with BOM's `-` saved as blank and anything else failing. On 2026-10-30, Observatory Hill had no cloud or gust, Olympic Park no pressure or cloud, and Sydney Airport every field.
 - Forecast: each `forecast-period` is one local day, checked to be consecutive and to end at midnight. Temperatures must be whole numbers, the chance must look like `80%`, and the rain range like `0 to 8 mm`; any other format fails the build. Day 0 has no minimum. Days with a low chance often have no `precipitation_range` at all, so `rain50` and `rain25` are null; task 10 must decide whether that means 0 mm.
 - Fixtures are real feeds from 2:30pm on 2026-10-30: `IDN60920.xml` and `IDN11060.xml` trimmed to the Sydney stations and areas (plus Canberra), and the whole `IDN60910.94768.json`. Tests build the `.tgz` around them, and edit the text to cover other times and failures. `test/fixtures/` is now in `.prettierignore` so the real files stay byte for byte.
 - `npm run smoke:live` downloads the three feeds and prints what each location would save and its forecast, without saving anything.
@@ -267,7 +267,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 
 ## 7b. Readings: temperature and humidity for 13 months
 
-**Status:** todo
+**Status:** done
 
 **Goal:** Save only the 9am and 3pm readings that BOM can give back later, and only for as long as it keeps them. This follows the no-gap rule in CLAUDE.md, decided on 2026-11-06.
 
@@ -281,6 +281,12 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 - Done when: tests cover the narrower schema and the pruning, including running it twice.
 
 **Notes:**
+
+- `readingSchema` is now `temp9am`, `relHum9am`, `temp3pm` and `relHum3pm`, all numbers. The parser reads only `air_temp` and `rel_hum`, which must still be present in every row, as a number or null. It ignores every other field, so the wind direction check and the text column type for readings are gone. Two rows at the same time now only need to agree on those two fields.
+- `updateSnapshot` takes `today` (today in Sydney), and drops saved readings before `readingsKeptFrom(today)`: the 1st of the same month a year earlier, e.g. 2025-11-01 on 2026-11-06. Task 11 must pass `today`.
+- `data/recent/readings/` was still empty, so there was nothing to migrate.
+- `test/live-feeds.ts`'s `readingsJson` now fills in only `air_temp` and `rel_hum`, and a row can add any other field.
+- `npm run smoke:live` was run against the real feed on 2026-11-06 and shows the four columns for every location.
 
 ---
 

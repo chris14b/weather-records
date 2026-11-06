@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { locations, type Location } from "../src/shared/locations.ts";
-import { parseReadings } from "../src/pipeline/readings.ts";
+import { parseReadings, readingsKeptFrom } from "../src/pipeline/readings.ts";
 import {
   fixture,
   readingsArchive,
@@ -19,7 +19,7 @@ const parseRows = (rows: readonly Row[]) =>
   );
 
 describe("parseReadings", () => {
-  test("gives every field of every 9am and 3pm reading in the real file", () => {
+  test("gives the temperature and humidity of every 9am and 3pm reading in the real file", () => {
     const archive = readingsArchive({
       "IDN60910.94767.json": "{}",
       [fileName]: fixture(fileName),
@@ -37,46 +37,26 @@ describe("parseReadings", () => {
       date: "2026-10-28",
       temp9am: 18.1,
       relHum9am: 42,
-      dewPoint9am: 5,
-      pressure9am: 1018.3,
-      cloud9am: null,
-      windDir9am: "W",
-      windSpeed9am: 22,
-      gust9am: null,
       temp3pm: 23.9,
       relHum3pm: 22,
-      dewPoint3pm: 0.9,
-      pressure3pm: 1015.3,
-      cloud3pm: null,
-      windDir3pm: "SW",
-      windSpeed3pm: 24,
-      gust3pm: null,
       station: "066214",
     });
     expect(days[0]).toMatchObject({ temp9am: null, temp3pm: 22.5 });
     expect(days[3]).toMatchObject({ temp9am: 20.1, temp3pm: null });
   });
 
-  test("gives cloud, gust and calm where the station reports them", () => {
+  test("ignores the feed's other fields, whatever they hold", () => {
     const [day] = parseRows([
-      {
-        local: "20261030090000",
-        air_temp: 21.9,
-        rel_hum: 53,
-        dewpt: 11.9,
-        press_msl: 1025.2,
-        cloud_oktas: 4,
-        wind_dir: "CALM",
-        wind_spd_kmh: 0,
-        gust_kmh: 20,
-      },
+      { local: "20261030090000", air_temp: 21.9, rel_hum: 53, wind_dir: "VRB" },
     ]);
 
-    expect(day).toMatchObject({
-      cloud9am: 4,
-      windDir9am: "CALM",
-      windSpeed9am: 0,
-      gust9am: 20,
+    expect(day).toEqual({
+      date: "2026-10-30",
+      temp9am: 21.9,
+      relHum9am: 53,
+      temp3pm: null,
+      relHum3pm: null,
+      station: "066214",
     });
   });
 
@@ -96,21 +76,14 @@ describe("parseReadings", () => {
     ]);
   });
 
-  test("keeps a reading's missing values missing, including a wind direction of -", () => {
-    const [day] = parseRows([
-      { local: "20261030090000", air_temp: 20.1, wind_dir: "-" },
-    ]);
+  test("keeps a reading's missing values missing", () => {
+    const [day] = parseRows([{ local: "20261030090000", air_temp: 20.1 }]);
 
-    expect(day).toMatchObject({
-      temp9am: 20.1,
-      relHum9am: null,
-      pressure9am: null,
-      windDir9am: null,
-    });
+    expect(day).toMatchObject({ temp9am: 20.1, relHum9am: null });
   });
 
   test("accepts the same reading twice", () => {
-    const reading = { local: "20261030090000", air_temp: 20.1, wind_dir: "N" };
+    const reading = { local: "20261030090000", air_temp: 20.1, rel_hum: 62 };
 
     expect(parseRows([reading, reading])).toHaveLength(1);
   });
@@ -118,8 +91,8 @@ describe("parseReadings", () => {
   test("fails on two different readings at the same time", () => {
     expect(() =>
       parseRows([
-        { local: "20261030090000", air_temp: 20.1, wind_dir: "N" },
-        { local: "20261030090000", air_temp: 20.1, wind_dir: "NNE" },
+        { local: "20261030090000", air_temp: 20.1, rel_hum: 62 },
+        { local: "20261030090000", air_temp: 20.1, rel_hum: 63 },
       ]),
     ).toThrow("two different readings at 2026-10-30 090000");
   });
@@ -158,22 +131,24 @@ describe("parseReadings", () => {
       error: 'expected air_temp to be a number, found "20"',
     },
     {
-      problem: "a wind direction isn't a compass point",
-      json: readingsJson("94768", stationName, [
-        { local: "20261030090000", wind_dir: "VRB" },
-      ]),
-      error: 'invalid wind_dir "VRB"',
-    },
-    {
       problem: "a field is missing",
       json: readingsJson("94768", stationName, [
         { local: "20261030090000" },
-      ]).replace(',"gust_kmh":null', ""),
-      error: "expected a gust_kmh field",
+      ]).replace(',"rel_hum":null', ""),
+      error: "expected a rel_hum field",
     },
   ])("fails when $problem", ({ json, error }) => {
     expect(() =>
       parseReadings(readingsArchive({ [fileName]: json }), observatoryHill),
     ).toThrow(error);
+  });
+});
+
+describe("readingsKeptFrom", () => {
+  test.each([
+    ["2026-11-06", "2025-11-01"],
+    ["2027-01-31", "2026-01-01"],
+  ])("keeps the readings saved on %s from %s", (today, from) => {
+    expect(readingsKeptFrom(today)).toBe(from);
   });
 });
