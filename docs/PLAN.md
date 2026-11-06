@@ -213,7 +213,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 
 ## 7. Fact generator: daily facts
 
-**Status:** todo
+**Status:** done
 
 **Goal:** Generate candidate facts for single days.
 
@@ -233,6 +233,35 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
   - the real data produces "hottest day on record" for Sydney on 2013-01-18
 
 **Notes:**
+
+- New modules:
+  - `src/shared/facts.ts` has the types: `DailyFact`, and a placeholder `FactsFile` (`generatedAt` and a flat `facts` list) that task 8 should regroup by section.
+  - `src/pipeline/series.ts` turns the sources into a `Series` per measure: `layeredSeries` for the ZIP measures, `rangeSeries`, and `columnSeries` for the FTP history and the readings. `locationSeries` builds all 11 at once. Task 11 should pass it the layered rain, max and min, `updateFtpHistory`'s result and `updateSnapshot`'s readings.
+  - `src/pipeline/daily-facts.ts` has `generateDailyFacts({ locationId, series, windowEnd })`. Pass today in Sydney as `windowEnd`; the window defaults to 31 days.
+- Comparisons: also `season`, because CLAUDE.md lists it, although this task's scope didn't. Seasons are meteorological, so December counts in the same summer as the January and February that follow it.
+- Measures: every measure has a highest and a lowest fact except rain, which has only highest. A dry day gets no facts at all, because otherwise every dry day would be "the equal wettest" of something.
+- How a fact is counted:
+  - `rank` is 1 plus the number of earlier comparable days that beat the value. `ties` is the number of earlier days with exactly the same value, so a non-zero `ties` means "equal".
+  - `compared` includes the day itself.
+  - `since` is the most recent earlier comparable day that matched or beat the value, and `null` for a record.
+  - `beatenBy` is the first later comparable day, up to `windowEnd`, that strictly beat the value. A later day that only equals it doesn't count.
+  - Days after the fact's date never affect `rank` or `since`.
+- Missing data:
+  - Multi-day values and the one zero-day period (Sydney Airport, 1994-07-04) are left out, so the days they cover count as missing.
+  - A blank period counts as a single day on a series' first day, or when the day before has a record. Every blank-period temperature in the ZIPs after the first day follows a missing day, so those are probably accumulations and are left out. That's 109 maximums and 115 minimums at Observatory Hill, and 22 and 32 at Sydney Airport. Apart from a few 0 mm days at Sydney Airport, no blank-period rain value follows a missing day, so the old Observatory Hill rain counts in full.
+  - Each fact has `missingDays`: the comparable days between the record start and its date that have no value. It also has `gaps`: runs of at least 7 missing days that include a comparable day.
+  - Observatory Hill's humidity and solar gap shows up as `2018-03-25..2020-07-31`; the last week of March 2018 is blank in 066062's file. Task 8 must penalise or word a `since` that a gap falls after, and a rank that a gap falls within.
+- `fullRecord` is true for the ZIP measures and the range, and false for humidity, solar and the readings, even at Olympic Park. `recordStart` is the series' first date. Task 8's wording should say "since 2009" rather than "on record" when `fullRecord` is false.
+- Status: snapshot values are `provisional`. ZIP, FTP daily, FTP history and readings values are `confirmed`. A range is provisional if either its max or its min is.
+- Not handled:
+  - The 2020 Observatory Hill station change. Its values are compared as one series.
+  - The readings: `data/recent/readings/` is still empty in the repository, so the four reading series have no days until task 11's runs save some.
+- Size and speed: every fact is a candidate, with no cut-off by rank, so a location's 31-day window gives a few thousand facts. Task 8 should drop the weak ones. Daily highest humidity often ties at 100%, so scoring should penalise large `ties`. Observatory Hill's window takes under a second.
+- Checked against the real data:
+  - Observatory Hill on 2013-01-18 is the hottest of 55,916 days (45.8°C), with 349 missing days and 4 month-long gaps in the 1860s and 1900s.
+  - Sydney Airport on the same day is its hottest (46.4°C).
+  - Observatory Hill on 1986-08-06 is the wettest day in every comparison (327.6 mm).
+- `npm run smoke:facts [location-id] [date] [max-rank]` prints one day's facts from the files on disk, without downloading anything.
 
 ---
 

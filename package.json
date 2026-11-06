@@ -16,7 +16,8 @@
     "smoke:live": "node src/pipeline/smoke-live.ts",
     "backfill:ftp-history": "node src/pipeline/backfill-ftp-history.ts",
     "dev": "vite",
-    "build:site": "vite build"
+    "build:site": "vite build",
+    "smoke:facts": "node src/pipeline/smoke-facts.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
