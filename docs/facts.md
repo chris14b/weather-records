@@ -114,7 +114,7 @@ The rain amounts with a 50% chance are totalled over the forecast's first 7 days
 For every forecast fact, a **conditional** fact gives the most notable rank and since within reach, at the least value that gets them: "would be the hottest November day on record if it reaches 36.6°C".
 
 - **Within reach:** 2°C beyond the forecast temperature, either way, and for rain up to the total of the amounts with a 25% chance.
-- **Least value:** `boundariesBetween` in `thresholds.ts` gives the earlier values that the forecast doesn't beat but the limit does. A value 0.1 beyond the furthest of them gets the same rank and since as the limit itself. Task 12's near misses can use the same function to find the nearest one.
+- **Least value:** `boundariesBetween` in `thresholds.ts` gives the earlier values that the forecast doesn't beat but the limit does. A value 0.1 beyond the furthest of them gets the same rank and since as the limit itself. T12's near misses can use the same function to find the nearest one.
 - If nothing within reach beats what the forecast already gets, there is no conditional fact.
 
 ## 3. Scoring

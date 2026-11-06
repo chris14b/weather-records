@@ -1,1 +1,1 @@
-throw new Error("build:data is not implemented yet (task 15 in docs/PLAN.md)");
+throw new Error("build:data is not implemented yet (T15 in docs/plan.md)");

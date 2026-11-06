@@ -1,21 +1,32 @@
 # Sydney weather records
 
-A static website that shows obscure weather records for the current and recent weather in Sydney, for example "the warmest night of the year so far" or "forecast to be the wettest 7 days since 2022". It is built entirely by AI sessions, one task from [docs/PLAN.md](docs/PLAN.md) per session.
+A static website that shows obscure weather records for the current and recent weather in Sydney, for example "the warmest night of the year so far" or "forecast to be the wettest 7 days since 2022". It is built entirely by AI sessions, one task from [docs/plan.md](docs/plan.md) per session.
 
 ## How to work in this repo
 
-- Each session does **one** task from `docs/PLAN.md`: the first one not marked done or deferred, unless told otherwise. Don't start the next task.
-- Before finishing, update the task in `docs/PLAN.md`: set its status, and add notes the next session needs (anything surprising, deferred, or changed). If a decision below changes, update this file in the same session.
+- Each session does **one** task from `docs/plan.md`: the first one that isn't deferred or blocked and whose dependencies are all finished, unless told otherwise. Don't start the next task.
+- Tasks have permanent IDs such as `T15`, never reused and never with a letter after them. Their order in the plan is their priority. The plan's own introduction has the rules.
+- When a task is finished, delete it from the plan. First move what later sessions need into the open tasks, [docs/pipeline.md](docs/pipeline.md), [docs/facts.md](docs/facts.md) or this file. If a task is left unfinished, update its status and notes instead. If a decision below changes, update this file in the same session.
 - Decisions recorded here are settled. Don't reopen them without asking.
-- Run `nvm use` before any npm command. Before finishing, `npm test`, `npm run typecheck`, `npm run lint` and `npm run format:check` must all pass.
+- Before finishing, `npm test`, `npm run typecheck`, `npm run lint` and `npm run format:check` must all pass.
+- File names in `docs/` are lowercase. Only `CLAUDE.md` and `README.md` are capitalised, because tools look for those names.
 - When a task is finished, ask the user whether to commit it. One commit per task keeps the history readable.
 - Git uses the personal account `chris14b` (GitHub: `chris14b/weather-records`), set in this repository's own git config. Never use `gh` here or change any global git config: both belong to the work account.
 
 ## Stack
 
-- TypeScript throughout, on the current Node LTS, with npm.
+- TypeScript throughout, on the current Node LTS (26, in `.nvmrc`), with npm.
 - Vitest for tests, Vite for the website.
 - The data pipeline and the website share the type definitions for `facts.json`.
+- Node runs the pipeline's `.ts` files directly through type stripping, with no build step. So `erasableSyntaxOnly` is on (no enums, namespaces or parameter properties), and relative imports use the `.ts` extension.
+- Type-checking uses two projects under `tsconfig.json`: `tsconfig.node.json` (pipeline, shared code, tests and config files; Node types, no DOM) and `tsconfig.site.json` (site and shared code; DOM, no Node types). So `src/shared/` must use neither Node nor DOM APIs.
+- TypeScript is pinned to `~6.0`, because `typescript-eslint` supports only `<6.1`. Move to TypeScript 7 once it does.
+- ESLint uses `typescript-eslint`'s `strictTypeChecked` and `stylisticTypeChecked`, configured in `eslint.config.js` (a `.ts` config would need `jiti`).
+- Vite's root is `src/site`, and it builds to `dist/`. Vitest has its own `vitest.config.ts` so it doesn't inherit that root. Tests live in `test/` or next to the code as `*.test.ts`.
+
+## Website
+
+- Designed for desktop first. It must still be easy to read and use on a phone.
 
 ## Hosting and updates
 
@@ -43,12 +54,12 @@ A static website that shows obscure weather records for the current and recent w
 
 ## Data sources
 
-Use only these. **Never fetch from `www.bom.gov.au` or `api.weather.bom.gov.au` in code.** BOM blocks automated access to its website, and its app API forbids reuse.
+Use only these. **Never fetch from `www.bom.gov.au` or `api.weather.bom.gov.au` in code.** BOM blocks automated access to its website, and its app API forbids reuse. How the pipeline reads and saves each source, and the quirks of BOM's files, are in [docs/pipeline.md](docs/pipeline.md).
 
 1. **History:** the Climate Data Online ZIPs in `data/raw/`, downloaded by hand and replaced when refreshed. The download links and steps are in [docs/refreshing-history.md](docs/refreshing-history.md). Filenames are `IDCJAC0009_<station>_1800.zip` (rainfall), `IDCJAC0010_…` (max temperature) and `IDCJAC0011_…` (min temperature). Read them directly as ZIPs, and find them by product code and station number. The CSV columns are product, station, year, month, day, value, period in days, and quality (`Y` = checked, `N` = not yet checked).
-2. **Recent daily values:** monthly CSVs at `ftp://ftp.bom.gov.au/anon/gen/clim_data/IDCKWCDEA0/tables/nsw/<folder>/<folder>-YYYYMM.csv`. The folders are `sydney_(observatory_hill)`, `sydney_airport_amo` and `sydney_olympic_park_(archery_centre)`. These files run one to two days behind and cover 2009 onwards (August 2011 onwards at Olympic Park). Blank cells mean missing. They also have each day's highest and lowest relative humidity and its solar radiation. The ZIPs have none of those three, so their history is backfilled from these files into `data/ftp-history/` and never pruned (task 6b). Each folder's first month and any months it has no file for are set in config: the Observatory Hill folder has none from 2018-04 to 2020-07, so those measures are missing there for that period. Any other missing month fails the build.
+2. **Recent daily values:** monthly CSVs at `ftp://ftp.bom.gov.au/anon/gen/clim_data/IDCKWCDEA0/tables/nsw/<folder>/<folder>-YYYYMM.csv`. The folders are `sydney_(observatory_hill)`, `sydney_airport_amo` and `sydney_olympic_park_(archery_centre)`. These files run one to two days behind and cover 2009 onwards (August 2011 onwards at Olympic Park). Blank cells mean missing. They also have each day's highest and lowest relative humidity and its solar radiation. The ZIPs have none of those three, so their history is backfilled from these files into `data/ftp-history/` and never pruned. Each folder's first month and any months it has no file for are set in config: the Observatory Hill folder has none from 2018-04 to 2020-07, so those measures are missing there for that period. Any other missing month fails the build.
 3. **Live observations:** `ftp://ftp.bom.gov.au/anon/gen/fwo/IDN60920.xml` (latest observations for every NSW station). It includes the running max for 6am–9pm, the overnight min for 6pm–9am, and rain to 9am.
-4. **9am and 3pm readings:** `ftp://ftp.bom.gov.au/anon/gen/fwo/IDN60910.tgz`. It holds one JSON file per NSW station, named by WMO number (`IDN60910.<wmo>.json`), with the last 72 hours of half-hourly observations. The WMO numbers are 94768 (Observatory Hill), 94767 (Sydney Airport) and 95765 (Sydney Olympic Park). Save the temperature (`air_temp`) and relative humidity (`rel_hum`) from the 09:00 and 15:00 readings only. BOM's Daily Weather Observations (DWO) keep the last 13 months of these on its website. The user downloads them by hand to backfill or fill a gap (task 20). So the saved readings cover at most the last 13 months: prune anything older.
+4. **9am and 3pm readings:** `ftp://ftp.bom.gov.au/anon/gen/fwo/IDN60910.tgz`. It holds one JSON file per NSW station, named by WMO number (`IDN60910.<wmo>.json`), with the last 72 hours of half-hourly observations. The WMO numbers are 94768 (Observatory Hill), 94767 (Sydney Airport) and 95765 (Sydney Olympic Park). Save the temperature (`air_temp`) and relative humidity (`rel_hum`) from the 09:00 and 15:00 readings only. BOM's Daily Weather Observations (DWO) keep the last 13 months of these on its website. The user downloads them by hand to backfill or fill a gap (T20). So the saved readings cover at most the last 13 months: prune anything older.
 5. **Forecast:** `ftp://ftp.bom.gov.au/anon/gen/fwo/IDN11060.xml` (the 7-day forecast for NSW towns). Rain comes as a range; the lower bound is the amount with a 50% chance, and the upper bound the amount with a 25% chance.
 6. **Sunrise and sunset:** calculated from each station's latitude and longitude. No API is used.
 
