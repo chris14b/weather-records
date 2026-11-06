@@ -40,3 +40,15 @@ export function periodFact(fact: Partial<CandidateFact> = {}): CandidateFact {
     ...fact,
   });
 }
+
+/** The 12th dry day in a row, the longest dry spell on record, changed by `fact`. */
+export function streakFact(fact: Partial<CandidateFact> = {}): CandidateFact {
+  return dailyFact({
+    from: "2026-10-26",
+    period: { kind: "streak", streak: "dry", ended: false },
+    measure: "rain",
+    direction: "lowest",
+    value: 12,
+    ...fact,
+  });
+}

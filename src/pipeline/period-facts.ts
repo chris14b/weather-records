@@ -312,7 +312,8 @@ function allPeriods(
 ): PeriodValue[] {
   switch (period.kind) {
     case "day":
-      throw new Error("A single day is not a period");
+    case "streak":
+      throw new Error(`A ${period.kind} is not a period of fixed length`);
     case "rolling": {
       const periods: PeriodValue[] = [];
       for (

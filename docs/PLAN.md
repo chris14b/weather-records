@@ -434,7 +434,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 
 ## 11. Streaks
 
-**Status:** todo
+**Status:** done
 
 **Goal:** Facts about runs of days, such as "the 12th dry day in a row, the longest dry spell since 2019" or "the 5th day in a row above 30°C".
 
@@ -447,6 +447,25 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 - Done when: tests pass for streaks that meet a gap, a streak still running, and streaks of equal length.
 
 **Notes:**
+
+- [facts.md](facts.md) section 2c explains the method. The details:
+- New module `src/pipeline/streak-facts.ts` has `generateStreakFacts`, which `generateCandidates` now calls, and `comparableStreaks` for the why. `Period` gained `{ kind: "streak"; streak; ended }`, with `StreakKind` in `src/shared/facts.ts`. A streak fact's `value` is its length in days, and its `measure` and `direction` are those of its days (`rain` and `lowest` for a dry streak).
+- Decisions:
+  - Fixed thresholds, compared among all streaks and those ending in the same season and month: dry days (0 mm, at least 5 in a row), maximums of 30°C or more (3) and 35°C or more (2), and minimums of 20°C or more (3). The minimums follow how common the days are: Observatory Hill has about 29 runs of 3 dry days a year but about one run of 3 days of 30°C.
+  - Wet days (any rain) were built and tried, then dropped: at Olympic Park in February 2020, "the last of 5 days in a row with rain" took the slot of "the wettest 3 days on record". A 2-day minimum was tried first too, and gave "the 2nd dry day in a row" in Today.
+  - A 0 mm multi-day total counts as dry days. There are none in the ZIPs today, so only the test covers it.
+  - A streak that starts after a missing day or on the series' first day gets no facts, since it may have started earlier. One that ends before a missing day hasn't `ended`.
+  - Scoring is unchanged: `compared` and `comparedSince` count days, so streaks score on the days' scale, and no weight was needed once the minimum lengths were set.
+  - Selection keeps only a streak's latest day in the window, and puts it in the section of that day. Rain spells never absorb a streak.
+- Wording: "the 12th dry day in a row, the longest dry spell since 2019" while running, "the last of 14 dry days in a row, the longest dry spell since September 2024" once ended, and "the 4th day in a row of 30°C or more, the equal longest run of 30°C days on record".
+- The real data: in December 2025, Observatory Hill had 7 days in a row of 30°C or more (18–24 December), equal with 31 January to 6 February 2011 for the longest on record. Sydney Airport's record is 8 days (2011 and 2018).
+- Snapshot changes, reviewed: each new streak replaces a weaker fact on its last day.
+  - Observatory Hill to 2013-01-18 gains "the last of 9 nights in a row of 20°C or more, the longest run of 20°C nights since January 2011" (6.57) and "the last of 13 dry days in a row, the longest dry spell since 20 May 2012" (5.47), both ending 13 January. They push out "the gloomiest day since 6 October 2012".
+  - Observatory Hill to 2026-10-13: This month's "the last of 14 dry days in a row, the longest dry spell since September 2024" (6.61) replaces "the biggest day-to-day drop in maximum temperature in spring since 2017" (5.14) on 22 September, since This month has one fact per day.
+  - Olympic Park to 2020-02-12 gains "the last of 6 nights in a row of 20°C or more" in This month. 1986-08-08 gains a 6-day dry spell in This week.
+- Weak spots for task 18: from January 2025 to October 2026 at Observatory Hill, 30 dry spells score above 1.75 (about 16 a year), 9 of them below 3, so short ones such as "the last of 5 dry days in a row, the longest dry spell since 24 June" (1.79) can fill This week. Raising `dry`'s minimum to 7 days, or a weight, would cut them.
+- Not handled: cold days and nights, and the station change (see 2c). Streaks aren't in `smoke:facts`; `smoke:sections` shows them.
+- Speed: streaks take about 0.25 s for Observatory Hill's window.
 
 ---
 

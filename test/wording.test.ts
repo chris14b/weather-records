@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest";
 import type { CandidateFact } from "../src/pipeline/candidates.ts";
 import { describeFact, ordinal } from "../src/pipeline/wording.ts";
 import type { Lead } from "../src/shared/facts.ts";
-import { dailyFact, periodFact } from "./facts.ts";
+import { dailyFact, periodFact, streakFact } from "./facts.ts";
 
 const words = (fact: Partial<CandidateFact>, lead: Lead = "rank") =>
   describeFact(dailyFact(fact), lead);
@@ -349,5 +349,111 @@ describe("ordinal", () => {
         "rank",
       ),
     ).toBe("the wettest 3 days on record, until Thursday");
+  });
+});
+
+describe("describeFact for streaks", () => {
+  const streakWords = (fact: Partial<CandidateFact>, lead: Lead = "rank") =>
+    describeFact(streakFact(fact), lead);
+
+  test.each([
+    [{}, "the 12th dry day in a row, the longest dry spell on record"],
+    [
+      { rank: 2, ties: 1 },
+      "the 12th dry day in a row, the equal 2nd longest dry spell on record",
+    ],
+    [
+      { comparison: "season" as const },
+      "the 12th dry day in a row, the longest dry spell in spring on record",
+    ],
+    [
+      { comparison: "month" as const },
+      "the 12th dry day in a row, the longest dry spell in November on record",
+    ],
+    [
+      {
+        period: {
+          kind: "streak" as const,
+          streak: "max30" as const,
+          ended: false,
+        },
+        measure: "maxTemp" as const,
+        direction: "highest" as const,
+        value: 3,
+      },
+      "the 3rd day in a row of 30°C or more, the longest run of 30°C days on record",
+    ],
+    [
+      {
+        period: {
+          kind: "streak" as const,
+          streak: "min20" as const,
+          ended: false,
+        },
+        measure: "minTemp" as const,
+        direction: "highest" as const,
+        value: 21,
+      },
+      "the 21st night in a row of 20°C or more, the longest run of 20°C nights on record",
+    ],
+  ])("words a streak still running: %o", (fact, expected) => {
+    expect(streakWords(fact)).toBe(expected);
+  });
+
+  test.each([
+    [
+      "dry",
+      "the last of 12 dry days in a row, the longest dry spell on record",
+    ],
+    [
+      "max35",
+      "the last of 12 days in a row of 35°C or more, the longest run of 35°C days on record",
+    ],
+  ] as const)("words a %s streak that has ended", (streak, expected) => {
+    expect(
+      streakWords({ period: { kind: "streak", streak, ended: true } }),
+    ).toBe(expected);
+  });
+
+  test.each([
+    ["2026-02-08", "since 8 February"],
+    ["2019-03-20", "since 2019"],
+  ])("words a streak's since on %s", (date, expected) => {
+    expect(streakWords({ since: { date, value: 14 } }, "since")).toBe(
+      `the 12th dry day in a row, the longest dry spell ${expected}`,
+    );
+  });
+
+  test("says a streak is short of records and when a later one beat it", () => {
+    expect(
+      streakWords({
+        date: "2026-11-01",
+        from: "2026-10-28",
+        value: 5,
+        period: { kind: "streak", streak: "dry", ended: true },
+        fullRecord: false,
+        recordStart: "2009-01-01",
+        beatenBy: { date: "2026-11-05", value: 6 },
+      }),
+    ).toBe(
+      "the last of 5 dry days in a row, the longest dry spell since 2009, until Thursday",
+    );
+  });
+
+  test("names the longest gap when too many comparable days are missing", () => {
+    expect(
+      streakWords({
+        missingDays: 5000,
+        gaps: [{ from: "1950-01-01", to: "1960-12-31" }],
+      }),
+    ).toBe(
+      "the 12th dry day in a row, the longest dry spell on record (no records from January 1950 to December 1960)",
+    );
+  });
+
+  test("says a streak is provisional", () => {
+    expect(streakWords({ status: "provisional" })).toBe(
+      "provisionally the 12th dry day in a row, the longest dry spell on record",
+    );
   });
 });

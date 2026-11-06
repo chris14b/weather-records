@@ -210,7 +210,10 @@ describe("selectFacts", () => {
 
     expect(
       thisWeek
-        .filter(({ measure }) => measure === "rain")
+        .filter(
+          ({ measure, direction }) =>
+            measure === "rain" && direction === "highest",
+        )
         .map(({ from, date, period, text }) => ({ from, date, period, text })),
     ).toEqual([
       {
@@ -224,6 +227,41 @@ describe("selectFacts", () => {
         date: "2026-11-04",
         period: { kind: "rolling", days: 3 },
         text: "the wettest 3 days on record",
+      },
+    ]);
+  });
+
+  test("shows a streak once, on its latest day, even though every day of it is a fact", () => {
+    const { today, thisWeek, thisMonth } = selectAll([
+      series("maxTemp", () => 20, {
+        "2020-01-10": 32,
+        "2020-01-11": 32,
+        "2020-01-12": 32,
+        "2026-11-03": 31,
+        "2026-11-04": 31,
+        "2026-11-05": 31,
+        "2026-11-06": 31,
+      }),
+    ]);
+
+    expect(
+      [...today, ...thisWeek, ...thisMonth]
+        .filter(({ period }) => period.kind === "streak")
+        .map(({ from, date, text, why }) => ({
+          from,
+          date,
+          text,
+          leaders: why.leaders,
+        })),
+    ).toEqual([
+      {
+        from: "2026-11-03",
+        date: "2026-11-06",
+        text: "the 4th day in a row of 30°C or more, the longest run of 30°C days on record",
+        leaders: [
+          { date: "2026-11-06", value: 4, rank: 1 },
+          { date: "2020-01-12", value: 3, rank: 2 },
+        ],
       },
     ]);
   });

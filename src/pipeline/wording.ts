@@ -6,6 +6,7 @@ import type {
   FactMeasure,
   Lead,
   Period,
+  StreakKind,
 } from "../shared/facts.ts";
 import type { CandidateFact } from "./candidates.ts";
 import { comparisonKey } from "./daily-facts.ts";
@@ -90,17 +91,47 @@ const periodSuperlatives: Partial<
   minTemp: { highest: "warmest", lowest: "coldest" },
 };
 
+interface StreakPhrase {
+  /** One day of the streak, which takes an "s" for more than one. */
+  noun: string;
+  /** What each day was, after "in a row". */
+  condition: string;
+  spell: string;
+}
+
+const streakPhrases: Record<StreakKind, StreakPhrase> = {
+  dry: { noun: "dry day", condition: "", spell: "dry spell" },
+  max30: {
+    noun: "day",
+    condition: " of 30°C or more",
+    spell: "run of 30°C days",
+  },
+  max35: {
+    noun: "day",
+    condition: " of 35°C or more",
+    spell: "run of 35°C days",
+  },
+  min20: {
+    noun: "night",
+    condition: " of 20°C or more",
+    spell: "run of 20°C nights",
+  },
+};
+
 /**
  * What a fact's day or period was, without naming it: e.g. "the 2nd hottest October day on
- * record" or "the wettest 7 days since 2022".
+ * record", "the wettest 7 days since 2022" or "the 12th dry day in a row, the longest dry
+ * spell since 2019".
  */
 export function describeFact(fact: CandidateFact, lead: Lead): string {
-  const { beatenBy, date, status } = fact;
+  const { beatenBy, date, status, period } = fact;
   const ranked = lead === "rank" ? rankWords(fact) : "";
   const text = [
-    fact.period.kind === "day"
+    period.kind === "day"
       ? dayHead(fact, ranked)
-      : periodHead(fact, fact.period, ranked),
+      : period.kind === "streak"
+        ? streakHead(fact, period, ranked)
+        : periodHead(fact, period, ranked),
     lead === "rank" ? rankScope(fact) : sinceScope(fact),
     lead === "rank" ? caveat(fact) : "",
     beatenBy === null ? "" : `, until ${laterDay(beatenBy.date, date)}`,
@@ -126,10 +157,34 @@ function dayHead(
   return `the ${ranked}${phrase.superlative} ${subject(comparison, phrase, date)}`;
 }
 
+// A streak still running may grow, so it is "the 12th dry day in a row" until it has ended.
+function streakHead(
+  { value, comparison, date }: CandidateFact,
+  { streak, ended }: Extract<Period, { kind: "streak" }>,
+  ranked: string,
+): string {
+  const { noun, condition, spell } = streakPhrases[streak];
+  const days = ended
+    ? `the last of ${String(value)} ${noun}s in a row${condition}`
+    : `the ${ordinal(value)} ${noun} in a row${condition}`;
+  return `${days}, the ${ranked}longest ${spell}${streakComparison(comparison, date)}`;
+}
+
+function streakComparison(comparison: Comparison, date: string): string {
+  switch (comparison) {
+    case "season":
+      return ` in ${comparisonKey(date, "season")}`;
+    case "month":
+      return ` in ${format(date, { month: "long" })}`;
+    default:
+      return "";
+  }
+}
+
 // A period's maximum is its days', so "the hottest October"; its minimum needs saying.
 function periodHead(
   { measure, direction, comparison, date }: CandidateFact,
-  period: Exclude<Period, { kind: "day" }>,
+  period: Exclude<Period, { kind: "day" | "streak" }>,
   ranked: string,
 ): string {
   const superlative = periodSuperlatives[measure]?.[direction];
@@ -143,7 +198,7 @@ function periodHead(
 }
 
 function periodName(
-  period: Exclude<Period, { kind: "day" }>,
+  period: Exclude<Period, { kind: "day" | "streak" }>,
   comparison: Comparison,
   date: string,
 ): string {
@@ -211,6 +266,7 @@ function sinceScope({
   switch (period.kind) {
     case "day":
     case "rolling":
+    case "streak":
       return ` since ${earlierDay(since.date, date)}`;
     case "month":
       if (!period.toDate && comparison === "all")
@@ -222,7 +278,7 @@ function sinceScope({
 
 function caveat(fact: CandidateFact): string {
   if (coverage(fact) >= minimumCoverage) return "";
-  if (fact.period.kind !== "day") {
+  if (fact.period.kind !== "day" && fact.period.kind !== "streak") {
     return ` (with ${String(fact.missingDays)} ${missingUnit(fact)} too incomplete to compare)`;
   }
   const longest = fact.gaps.reduce<DateRange | undefined>(
@@ -236,7 +292,7 @@ function caveat(fact: CandidateFact): string {
 }
 
 function missingUnit({ period, comparison }: CandidateFact): string {
-  if (period.kind === "day") return "days";
+  if (period.kind === "day" || period.kind === "streak") return "days";
   if (period.kind === "rolling") return "runs of days";
   if (period.toDate || comparison !== "all") return "years";
   return `${period.kind}s`;

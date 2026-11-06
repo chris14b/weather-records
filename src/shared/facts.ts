@@ -37,13 +37,21 @@ export type Comparison = "all" | "year" | "season" | "month" | "calendarDate";
 export type CalendarPeriod = "month" | "season" | "year";
 
 /**
- * The span of days a fact is about: one day, the N days to its date, or a calendar month,
- * season or year, either complete or so far.
+ * A kind of day that a streak is a run of: no rain, a maximum of 30°C or 35°C or more, or
+ * a minimum of 20°C or more.
+ */
+export type StreakKind = "dry" | "max30" | "max35" | "min20";
+
+/**
+ * The span of days a fact is about: one day, the N days to its date, a calendar month,
+ * season or year, either complete or so far, or a streak of days to its date, which has
+ * `ended` if the day after it broke it.
  */
 export type Period =
   | { kind: "day" }
   | { kind: "rolling"; days: number }
-  | { kind: CalendarPeriod; toDate: boolean };
+  | { kind: CalendarPeriod; toDate: boolean }
+  | { kind: "streak"; streak: StreakKind; ended: boolean };
 
 /** Provisional values come from the live feed and may change when the daily files confirm them. */
 export type ValueStatus = "confirmed" | "provisional";

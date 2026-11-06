@@ -11,6 +11,7 @@ import type { StationOffset } from "../shared/locations.ts";
 import { generateDailyFacts } from "./daily-facts.ts";
 import { generatePeriodFacts } from "./period-facts.ts";
 import type { Series } from "./series.ts";
+import { generateStreakFacts } from "./streak-facts.ts";
 
 /**
  * How one day or period ranks against the comparable ones up to and including it. Every
@@ -63,9 +64,13 @@ export interface CandidatesRequest {
   offsets?: readonly StationOffset[];
 }
 
-/** Every candidate fact about the days and periods in the window. */
+/** Every candidate fact about the days, periods and streaks in the window. */
 export function generateCandidates(
   request: CandidatesRequest,
 ): CandidateFact[] {
-  return [...generateDailyFacts(request), ...generatePeriodFacts(request)];
+  return [
+    ...generateDailyFacts(request),
+    ...generatePeriodFacts(request),
+    ...generateStreakFacts(request),
+  ];
 }

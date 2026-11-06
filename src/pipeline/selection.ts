@@ -12,6 +12,7 @@ import { daysBetween } from "./dates.ts";
 import { comparablePeriods } from "./period-facts.ts";
 import { scoreFact, type ScoredFact } from "./scoring.ts";
 import type { Series } from "./series.ts";
+import { comparableStreaks } from "./streak-facts.ts";
 import { describeFact } from "./wording.ts";
 
 type Section = Exclude<keyof LocationFacts, "locationId">;
@@ -98,7 +99,7 @@ export function selectFacts({
   );
   const strongest = [
     ...Map.groupBy(
-      facts.map(scoreFact),
+      latestOfEachStreak(facts).map(scoreFact),
       ({ fact }) =>
         `${fact.date} ${families[fact.measure]} ${fact.direction} ${isCalendar(fact.period) ? "calendar" : fact.period.kind}`,
     ).values(),
@@ -131,13 +132,41 @@ export function selectFacts({
 }
 
 function isCalendar(period: Period): boolean {
-  return period.kind !== "day" && period.kind !== "rolling";
+  return (
+    period.kind === "month" ||
+    period.kind === "season" ||
+    period.kind === "year"
+  );
 }
 
-// A day or a run of days goes in the section its first day falls in.
+// A streak has a fact for every day it runs, each longer than the last, so only its
+// latest is worth showing.
+function latestOfEachStreak(
+  facts: readonly CandidateFact[],
+): readonly CandidateFact[] {
+  const streakKey = ({ period, measure, from }: CandidateFact) =>
+    period.kind === "streak" ? `${measure} ${period.streak} ${from}` : "";
+  const latest = new Map<string, string>();
+  for (const fact of facts) {
+    const key = streakKey(fact);
+    if (key !== "" && fact.date > (latest.get(key) ?? "")) {
+      latest.set(key, fact.date);
+    }
+  }
+  return facts.filter((fact) => {
+    const key = streakKey(fact);
+    return key === "" || latest.get(key) === fact.date;
+  });
+}
+
+// A day or a run of days goes in the section its first day falls in, and a streak in the
+// section of the day it reached its length.
 function sectionOf(fact: CandidateFact, latest: string): Section | undefined {
   if (isCalendar(fact.period)) return "thisMonth";
-  const ago = daysBetween(fact.from, latest);
+  const ago = daysBetween(
+    fact.period.kind === "streak" ? fact.date : fact.from,
+    latest,
+  );
   if (ago === 0) return "today";
   if (ago <= 6) return "thisWeek";
   return ago <= 30 ? "thisMonth" : undefined;
@@ -149,7 +178,7 @@ function isPartOfSpell(
   facts: readonly ScoredFact[],
   latest: string,
 ): boolean {
-  if (isCalendar(fact.period)) return false;
+  if (isCalendar(fact.period) || fact.period.kind === "streak") return false;
   return facts.some((spell) => {
     const section = sectionOf(spell.fact, latest);
     return (
@@ -213,12 +242,14 @@ function present(
 function explain(fact: CandidateFact, series: readonly Series[]): FactWhy {
   const { measure, direction, comparison, date, from } = fact;
   const source = series.find((s) => s.measure === measure);
+  // A dry streak's direction is lowest, but the longest streak still leads.
+  const order = fact.period.kind === "streak" ? "highest" : direction;
   const ranked = (
     source === undefined ? [] : comparables(source, fact)
   ).toSorted((a, b) =>
     a.value === b.value
       ? a.date.localeCompare(b.date)
-      : beats(a.value, b.value, direction)
+      : beats(a.value, b.value, order)
         ? -1
         : 1,
   );
@@ -255,6 +286,7 @@ function explain(fact: CandidateFact, series: readonly Series[]): FactWhy {
   };
 
   function comparables(source: Series, { period }: CandidateFact): Spell[] {
+    if (period.kind === "streak") return comparableStreaks(source, fact);
     if (period.kind !== "day") {
       return comparablePeriods(source, fact).flatMap((spell) =>
         spell.value === null ? [] : [{ ...spell, value: spell.value }],

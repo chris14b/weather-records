@@ -38,7 +38,7 @@ exports[`selectFacts on real data > chooses the facts at sydney-observatory-hill
     "1986-08-05 6.45 the wettest day since November 1984, until Wednesday",
     "1986-08-05 3.98 the smallest August temperature range since 1977",
     "1986-08-04 3.49 the coldest August day since August 1983, until Tuesday",
-    "1986-08-03 1.98 the biggest day-to-day drop in maximum temperature since 25 July, until Monday",
+    "1986-07-29..1986-08-03 3.04 the last of 6 dry days in a row, the longest dry spell since 13 July",
     "1986-08-02 4.25 the coldest August night since 1979",
     "1986-08-02 4.14 the biggest temperature range since 25 April",
   ],
@@ -59,7 +59,8 @@ exports[`selectFacts on real data > chooses the facts at sydney-observatory-hill
   "thisWeek": [
     "2013-01-15 2.94 the coldest night since 27 December 2012",
     "2013-01-14 3.02 the biggest day-to-day drop in minimum temperature since 10 December 2012",
-    "2013-01-13 4.14 the gloomiest day since 6 October 2012",
+    "2013-01-05..2013-01-13 6.57 the last of 9 nights in a row of 20°C or more, the longest run of 20°C nights since January 2011",
+    "2013-01-01..2013-01-13 5.47 the last of 13 dry days in a row, the longest dry spell since 20 May 2012",
     "2013-01-12 5.77 the warmest night since 28 February 2012",
   ],
   "today": [
@@ -76,7 +77,7 @@ exports[`selectFacts on real data > chooses the facts at sydney-observatory-hill
     "2026-01-01..2026-10-13 4.76 the start to the year with the warmest nights on record (with 10 years too incomplete to compare)",
     "2026-01-01..2026-10-13 3.88 the equal hottest start to the year on record",
     "2026-09-01..2026-09-30 3.54 the September with the 2nd warmest nights on record",
-    "2026-09-22 5.14 the biggest day-to-day drop in maximum temperature in spring since 2017",
+    "2026-09-09..2026-09-22 6.61 the last of 14 dry days in a row, the longest dry spell since September 2024",
     "2026-09-21 5.37 the hottest day since 18 February, until 12 October",
   ],
   "thisWeek": [
@@ -100,6 +101,7 @@ exports[`selectFacts on real data > chooses the facts at sydney-olympic-park for
 {
   "thisMonth": [
     "2020-02-02 6.99 the warmest night since February 2017",
+    "2020-01-24..2020-01-29 5.87 the last of 6 nights in a row of 20°C or more, the longest run of 20°C nights since 8 February 2019",
     "2020-01-26 5.91 the warmest night since January 2019, until 2 February",
     "2020-01-24 5.82 the warmest night since 19 February 2019, until Sunday",
   ],

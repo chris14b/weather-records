@@ -5,7 +5,7 @@ This explains how the pipeline turns a location's daily data into the few facts 
 There are four steps:
 
 1. Build one **series** per measure.
-2. **Rank** every recent day against the comparable days before it (`daily-facts.ts`), and every recent period against the comparable periods before it (`period-facts.ts`). `generateCandidates` in `candidates.ts` does both.
+2. **Rank** every recent day against the comparable days before it (`daily-facts.ts`), every recent period against the comparable periods before it (`period-facts.ts`), and every recent streak against the earlier streaks (`streak-facts.ts`). `generateCandidates` in `candidates.ts` does all three.
 3. **Score** each ranking by how unusual it is (`scoring.ts`).
 4. **Select** the best for each section, and **word** them (`selection.ts`, `wording.ts`).
 
@@ -88,6 +88,36 @@ Runs of days overlap, so they need three rules of their own:
 
 066214 reads about 0.3°C warmer than 066062 for maximums and 0.3°C cooler for minimums (`reads` in `locations.ts`). A mean over a month is much more sensitive to that than a day's extreme. So a mean temperature is compared twice: as measured, and with each period's average station offset taken out. A period beats another only if it does so both ways, and it is matched if either way matches it. This only ever makes a fact weaker: to 29 October 2026, Observatory Hill's start to the year is the 3rd hottest rather than the hottest, because 2013's and 2019's were within the offset. Pass `offsets: stationOffsets(location)`.
 
+## 2c. Streaks
+
+`generateStreakFacts` ranks runs of days in a row that each meet a fixed threshold:
+
+| Streak  | Each day           | Shortest | Direction | Wording                                                                   |
+| ------- | ------------------ | -------- | --------- | ------------------------------------------------------------------------- |
+| `dry`   | 0 mm of rain       | 5 days   | lowest    | "the 12th dry day in a row, the longest dry spell since 2019"             |
+| `max30` | a maximum of 30°C+ | 3 days   | highest   | "the 4th day in a row of 30°C or more, the longest run of 30°C days…"     |
+| `max35` | a maximum of 35°C+ | 2 days   | highest   | "the 2nd day in a row of 35°C or more, the longest run of 35°C days…"     |
+| `min20` | a minimum of 20°C+ | 3 days   | highest   | "the 9th night in a row of 20°C or more, the longest run of 20°C nights…" |
+
+- **Fixed thresholds**, not ones relative to the time of year, because the wording can name them and readers know what 30°C means. The time of year comes in through the comparisons: a streak is compared with all earlier streaks, and with those that ended in the same season and the same month. "Of the year so far" and the calendar date were left out, as for runs of days.
+- **The shortest streak** worth a fact depends on how common the days are. Observatory Hill has about 29 runs of 3 or more dry days a year, 18 of 5 or more, about one run of 3 days of 30°C or more, and almost never 3 days of 35°C. Wet days were tried and dropped: a run of days with rain mostly repeated the rain totals over 3 and 7 days, and crowded them out.
+- **One fact per day of a streak:** each day in the window that a streak reaches gets a fact for its length so far, judged against the streaks that ended before it began. So a streak keeps the rank it had at the time, and "the 12th dry day in a row" is true on the 12th day even if the 13th was dry too.
+- **Ranks and sinces:** `rank` is 1 plus the number of earlier comparable streaks that were longer, `ties` the number exactly as long, and `since` the last day of the most recent one at least as long. A streak is keyed by its last day, so one from 20 October to 3 November is a November streak.
+- **Days, not streaks, are counted:** `compared` and `comparedSince` count comparable days with a value, as for a day fact, and `missingDays` and `gaps` are the days that can't be judged. So a streak scores on the days' scale: the longest dry spell on record at Observatory Hill scores about as much as its hottest day.
+- **Ended:** a streak's `period.ended` is true when the day after it has a value that breaks it. Its wording then changes to "the last of 12 dry days in a row".
+- **Beaten:** `beatenBy` is the first later day in the window on which a separate comparable streak grew longer than this one. Its own later days don't count.
+- **Status:** provisional if any of its days is.
+- **Direction:** a dry streak's is `lowest`, so in selection it never competes with facts about wet days. Its leaders in the why still run longest first.
+
+### Missing days
+
+A missing day ends a streak. Nothing is counted through it.
+
+- A streak that starts on the series' first day, or just after a missing day, gets no facts, since it may have started earlier. It is still compared with later streaks at its known length.
+- A streak that ends just before a missing day hasn't ended: its wording stays "the 12th dry day in a row".
+- A multi-day rain total of 0 mm shows that every day it covers was dry, so those days count as dry. Any other multi-day total leaves its days missing, since one of them had rain but which is unknown. None of the totals in the ZIPs are 0 mm today.
+- The 2020 Observatory Hill station change is not handled. Streaks compare the joined series as day facts do. On days above 30°C the two stations agree closely, and the new station's lower minimums can only shorten a run of warm nights.
+
 ## 3. Scoring
 
 ### The idea
@@ -101,7 +131,7 @@ The two are on the same scale. A fact takes the larger, and its wording **leads*
 
 ### Adjustments
 
-Periods score the same way, counting comparable periods instead of days. A run of days ends on every day, so it is already on the days' scale. Calendar periods aren't: a record October scores log(160), not log(160 × 31). They are shown apart from the days (see 4), so they only compete with each other.
+Periods score the same way, counting comparable periods instead of days. A run of days ends on every day, so it is already on the days' scale, and a streak counts days (see 2c). Calendar periods aren't: a record October scores log(160), not log(160 × 31). They are shown apart from the days (see 4), so they only compete with each other.
 
 These keep ranks easy to set from scoring too high:
 
@@ -120,7 +150,7 @@ These keep ranks easy to set from scoring too high:
 
 ## 4. Selection
 
-`selectFacts` scores every candidate. For each date, it keeps only the strongest fact per **family**, direction and kind of period, because related measures say much the same thing. That also leaves one comparison per measure: "hottest this month" and "hottest this year" aren't both shown. The kinds are single days, runs of days, and calendar periods, so the 3 and 7 days to a day compete, and so do a month, a season and a year so far that end on the same day. The families are:
+`selectFacts` scores every candidate. A streak has a fact for every day in the window it reached, so only its latest day is kept: a streak still running shows on today, and a long one doesn't reappear in This week for each day it ran. For each date, it keeps only the strongest fact per **family**, direction and kind of period, because related measures say much the same thing. That also leaves one comparison per measure: "hottest this month" and "hottest this year" aren't both shown. The kinds are single days, runs of days, calendar periods and streaks, so the 3 and 7 days to a day compete, and so do a month, a season and a year so far that end on the same day, and streaks of 30°C and 35°C days. The families are:
 
 - max and 3pm temperature
 - min and 9am temperature
@@ -132,9 +162,9 @@ These keep ranks easy to set from scoring too high:
 
 A change isn't in its measure's family. A cold change often makes a day both "the coldest day since…" and "the biggest drop in maximum since…", but the two say different things: how cold it was, and how suddenly it got there.
 
-A run of days is a **spell**, and stands for what overlaps it. A day fact in the same family and direction inside a spell that scores at least as well is dropped, and so is a weaker overlapping run. So the February 2020 rain at Olympic Park shows as "the wettest 3 days on record" beside "the wettest day on record", instead of four wet days in a row. The spell must score enough for its section, or it drops nothing.
+A run of days is a **spell**, and stands for what overlaps it. A day fact in the same family and direction inside a spell that scores at least as well is dropped, and so is a weaker overlapping run. So the February 2020 rain at Olympic Park shows as "the wettest 3 days on record" beside "the wettest day on record", instead of four wet days in a row. The spell must score enough for its section, or it drops nothing. A streak is never dropped this way: "the 5th day in a row of 30°C or more" says something that "the hottest day since…" doesn't.
 
-It then fills the sections, counting back from the latest day that has any fact (`sectionRules`). A day goes in the section its date falls in, and a run of days in the section its first day falls in, so the 3 days to today are in This week:
+It then fills the sections, counting back from the latest day that has any fact (`sectionRules`). A day goes in the section its date falls in, and a run of days in the section its first day falls in, so the 3 days to today are in This week. A streak goes in the section of its last day, so a streak still running is in Today:
 
 | Section    | Days before the latest | Per day | In all | First fact needs | Further facts need |
 | ---------- | ---------------------- | ------- | ------ | ---------------- | ------------------ |
@@ -171,6 +201,11 @@ Each list runs latest first, then by score.
   - A since is a day for a run of days ("since 8 February"). For months among all months it is a month ("since March", "since March 2025") or a year. Everything else is compared once a year, so its since is a year.
   - A period with under 95% coverage says how many earlier ones were too incomplete: "(with 10 years too incomplete to compare)".
   - The site names the period from `period`, `from` and `date`: "October", "The 3 days to Tuesday", "November so far".
+- **Streaks:**
+  - Still running, it counts up: "the 12th dry day in a row", "the 4th day in a row of 30°C or more".
+  - Once ended: "the last of 12 dry days in a row".
+  - Then its rank or since: "the longest dry spell on record", "the equal 2nd longest run of 30°C days in summer on record", "the longest run of 20°C nights in February since 2019". A since is a day, as for days.
+  - Its `value` is the number of days, not a measurement. The site names it from `date` alone: "Today: the 12th dry day in a row".
 
 Each fact also has a `why` for the site:
 
@@ -178,10 +213,10 @@ Each fact also has a `why` for the site:
 - the record start, missing days and gaps
 - the previous record holder (the best earlier comparable day)
 - the since and `beatenBy` days
-- the 10 best comparable days or periods up to the fact's date, counting overlapping runs of days once
+- the 10 best comparable days, periods or streaks up to the fact's date, counting overlapping runs of days once
 
 ## Trying it out
 
 - `npm run smoke:facts [location-id] [date] [max-rank]` prints one day's candidate facts.
-- `npm run smoke:sections [location-id] [date]` prints the three sections for the 31 days to a date, with day and period facts.
+- `npm run smoke:sections [location-id] [date]` prints the three sections for the 31 days to a date, with day, period and streak facts.
 - The snapshot tests in `test/selection.test.ts` record the sections for five real windows, so any change to the scoring shows up as a diff to review.
