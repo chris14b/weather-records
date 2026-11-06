@@ -1,9 +1,9 @@
 import type { Comparison, FactMeasure, Lead } from "../shared/facts.ts";
-import type { DailyFact } from "./daily-facts.ts";
+import type { CandidateFact } from "./candidates.ts";
 import { daysBetween } from "./dates.ts";
 
 export interface ScoredFact {
-  fact: DailyFact;
+  fact: CandidateFact;
   score: number;
   lead: Lead;
 }
@@ -43,7 +43,7 @@ const measureWeights: Record<FactMeasure, number> = {
 };
 
 /** Scores a fact by its rank or its since, whichever is more striking; see docs/facts.md. */
-export function scoreFact(fact: DailyFact): ScoredFact {
+export function scoreFact(fact: CandidateFact): ScoredFact {
   const rank = rankScore(fact);
   const since = sinceScore(fact);
   return {
@@ -57,11 +57,11 @@ export function scoreFact(fact: DailyFact): ScoredFact {
 }
 
 /** The share of comparable days up to the fact's date that have a value. */
-export function coverage({ compared, missingDays }: DailyFact): number {
+export function coverage({ compared, missingDays }: CandidateFact): number {
   return compared / (compared + missingDays);
 }
 
-function rankScore(fact: DailyFact): number {
+function rankScore(fact: CandidateFact): number {
   const { rank, ties, compared, comparison } = fact;
   const atLeastAsExtreme = rank + ties;
   if (atLeastAsExtreme > lowestRank) return 0;
@@ -72,7 +72,11 @@ function rankScore(fact: DailyFact): number {
   );
 }
 
-function recordWeight({ comparison, recordStart, date }: DailyFact): number {
+function recordWeight({
+  comparison,
+  recordStart,
+  date,
+}: CandidateFact): number {
   if (comparison === "year") return 1;
   const years = daysBetween(recordStart, date) / 365.25;
   return Math.min(1, Math.cbrt(years / fullStrengthYears));
@@ -84,7 +88,7 @@ function sinceScore({
   since,
   gaps,
   comparedSince,
-}: DailyFact): number {
+}: CandidateFact): number {
   if (since === null || comparison === "year" || comparison === "calendarDate")
     return 0;
   // A gap after the since day might hold a day that matched or beat this one.

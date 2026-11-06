@@ -5,7 +5,7 @@ This explains how the pipeline turns a location's daily data into the few facts 
 There are four steps:
 
 1. Build one **series** per measure.
-2. **Rank** every recent day against the comparable days before it (`daily-facts.ts`).
+2. **Rank** every recent day against the comparable days before it (`daily-facts.ts`), and every recent period against the comparable periods before it (`period-facts.ts`). `generateCandidates` in `candidates.ts` does both.
 3. **Score** each ranking by how unusual it is (`scoring.ts`).
 4. **Select** the best for each section, and **word** them (`selection.ts`, `wording.ts`).
 
@@ -23,7 +23,7 @@ A series is one measure's single-day values for a location, in date order (`seri
 
 - A series whose history goes back to when records began has `fullRecord` set. Only those may say "on record"; the others say "since 2009" and so on.
 - Missing days are simply absent. Nothing is filled in, and nothing is counted through a gap.
-- A multi-day rain or temperature total is left out, so the days it covers count as missing. A ZIP value with a blank period counts as a single day only on a series' first day or after a day with a value. Otherwise it probably is an accumulation, and is left out too.
+- A multi-day rain or temperature total is left out of the days, so the days it covers count as missing. It is kept apart, as the series' `multiDay`, for rain totals over periods (see 2b). A ZIP value with a blank period counts as a single day only on a series' first day or after a day with a value. Otherwise it probably is an accumulation, and is left out too.
 - A **change** is left out when either its day or the day before has no value, so a change is never taken across a gap. Only the maximum and minimum have changes. Changes in rain, range and humidity were judged not worth showing.
 - A value from a live snapshot is `provisional`. Everything else is `confirmed`. A range is provisional if either its max or its min is, and a change if either day's value is.
 
@@ -52,6 +52,42 @@ That's a few thousand candidates per location. Each is judged only against the c
 
 For example, if the maximums so far are 30, 35, 28, 33, then the 33 is the 2nd highest of 4. Its since is the 35, and its `comparedSince` is 2.
 
+## 2b. Periods
+
+`generatePeriodFacts` ranks periods longer than a day the same way, with the same fields. A period is named by its last day, its `date`, and also has a `from`. Every period compared with it has the same kind, so the dates in its why are last days too.
+
+| Period                                      | Measures                               | Facts for                                          | Comparisons                          |
+| ------------------------------------------- | -------------------------------------- | -------------------------------------------------- | ------------------------------------ |
+| `rolling`: the 3 or 7 days to a day         | total rain                             | every day in the window                            | all, season, month (of its last day) |
+| `month`, complete                           | total rain, mean maximum, mean minimum | the latest complete one, if it ended in the window | all months, the same month           |
+| `season`, complete                          | the same                               | the same                                           | the same season                      |
+| `year`, complete                            | the same                               | the same                                           | all years                            |
+| `month`, `season`, `year` so far (`toDate`) | the same                               | the current one, to the measure's latest day       | the same days of every earlier year  |
+
+- **Complete** means the period's last day is no later than the measure's latest day. Until then, it is a period so far. A period so far needs at least 7 days, and a season or year so far must be past its first month, or it would only repeat a shorter one. On its last day, a period is complete instead.
+- **So far** compares, for example, 1–10 November with 1–10 November of every earlier year. 29 February is compared with the 28th in other years.
+- **Directions:** both for calendar periods ("the wettest October", "the driest October"). Runs of days have only `highest`, since a dry week is not news.
+
+### Missing days
+
+A period with too many missing days has no value. It isn't compared, and counts towards the fact's `missingDays` and `gaps`, as a missing day does. Nothing is filled in.
+
+- **Rain** must have every day: a missing day might have been the wettest. A multi-day total counts when it falls wholly inside the period. One that crosses the period's start or end leaves the period incomplete.
+- **Temperatures** are averaged over the days that have values. In each calendar month the period covers, at most a sixth of the days may be missing (5 of 30 or 31, 4 of 28), and no more than 3 in a row. This follows the WMO's rule for monthly means. The multi-day temperature values are left out, as for days.
+- Means are rounded to 0.1°C, as BOM does, and totals to 0.1 mm.
+
+### Runs of days
+
+Runs of days overlap, so they need three rules of their own:
+
+- **Spells:** a run gets facts only if it starts and ends wet, and no day in it holds two thirds of its rain (`largestDayShare`). Otherwise it would repeat a shorter run, or one wet day.
+- **Overlaps:** a run that an overlapping earlier run matched or beat gets no facts. During a long wet spell, only the runs that set a new peak count.
+- **Rank:** earlier runs that beat it are counted once per spell, that is, once per stretch of consecutive end days. A week of heavy rain counts once, not once for each run that holds it. `compared` and `comparedSince` count runs, one per day, so a run scores on the same scale as a day.
+
+### The 2020 Observatory Hill station change
+
+066214 reads about 0.3°C warmer than 066062 for maximums and 0.3°C cooler for minimums (`reads` in `locations.ts`). A mean over a month is much more sensitive to that than a day's extreme. So a mean temperature is compared twice: as measured, and with each period's average station offset taken out. A period beats another only if it does so both ways, and it is matched if either way matches it. This only ever makes a fact weaker: to 29 October 2026, Observatory Hill's start to the year is the 3rd hottest rather than the hottest, because 2013's and 2019's were within the offset. Pass `offsets: stationOffsets(location)`.
+
 ## 3. Scoring
 
 ### The idea
@@ -64,6 +100,8 @@ Every score is the log of "how many comparable days pass for each fact like this
 The two are on the same scale. A fact takes the larger, and its wording **leads** with that one. For scale, a once-a-year fact among all days scores about log(365), or 5.9. A once-a-week fact scores about log(7), or 1.9.
 
 ### Adjustments
+
+Periods score the same way, counting comparable periods instead of days. A run of days ends on every day, so it is already on the days' scale. Calendar periods aren't: a record October scores log(160), not log(160 × 31). They are shown apart from the days (see 4), so they only compete with each other.
 
 These keep ranks easy to set from scoring too high:
 
@@ -82,7 +120,7 @@ These keep ranks easy to set from scoring too high:
 
 ## 4. Selection
 
-`selectFacts` scores every candidate. For each date, it keeps only the strongest fact per **family** and direction, because related measures say much the same thing. That also leaves one comparison per measure: "hottest this month" and "hottest this year" aren't both shown. The families are:
+`selectFacts` scores every candidate. For each date, it keeps only the strongest fact per **family**, direction and kind of period, because related measures say much the same thing. That also leaves one comparison per measure: "hottest this month" and "hottest this year" aren't both shown. The kinds are single days, runs of days, and calendar periods, so the 3 and 7 days to a day compete, and so do a month, a season and a year so far that end on the same day. The families are:
 
 - max and 3pm temperature
 - min and 9am temperature
@@ -94,7 +132,9 @@ These keep ranks easy to set from scoring too high:
 
 A change isn't in its measure's family. A cold change often makes a day both "the coldest day since…" and "the biggest drop in maximum since…", but the two say different things: how cold it was, and how suddenly it got there.
 
-It then fills the sections, counting back from the latest day that has any fact (`sectionRules`):
+A run of days is a **spell**, and stands for what overlaps it. A day fact in the same family and direction inside a spell that scores at least as well is dropped, and so is a weaker overlapping run. So the February 2020 rain at Olympic Park shows as "the wettest 3 days on record" beside "the wettest day on record", instead of four wet days in a row. The spell must score enough for its section, or it drops nothing.
+
+It then fills the sections, counting back from the latest day that has any fact (`sectionRules`). A day goes in the section its date falls in, and a run of days in the section its first day falls in, so the 3 days to today are in This week:
 
 | Section    | Days before the latest | Per day | In all | First fact needs | Further facts need |
 | ---------- | ---------------------- | ------- | ------ | ---------------- | ------------------ |
@@ -102,7 +142,11 @@ It then fills the sections, counting back from the latest day that has any fact 
 | This week  | 1–6                    | 2       | 12     | 1.75             | 3.5                |
 | This month | 7–30                   | 1       | 5      | 5                | —                  |
 
-A score of 1.75 is a since of about 6 days, so "the warmest day since last Tuesday" can show in the last week. Older days need about a once-a-year fact. Each list runs latest first, then by score.
+A score of 1.75 is a since of about 6 days, so "the warmest day since last Tuesday" can show in the last week. Older days need about a once-a-year fact.
+
+The latest complete month, season and year, and the current ones so far, go in This month as well, with an allowance of their own so they never crowd out its days (`calendarRule`): up to 3, each scoring at least 3, about a once-in-20-years period.
+
+Each list runs latest first, then by score.
 
 ## 5. Wording
 
@@ -120,6 +164,13 @@ A score of 1.75 is a since of about 6 days, so "the warmest day since last Tuesd
 - **Gaps:** a rank-led fact with under 95% coverage names its longest gap, e.g. "(no records from March 2018 to July 2020)".
 - **Beaten:** ", until Friday" within 6 days, otherwise ", until 3 November".
 - **Provisional:** these facts start with "provisionally".
+- **Periods:**
+  - Rain and maximums: "the wettest October", "the 3rd hottest month", "the driest spring", "the hottest year", "the hottest start to October", "the wettest start to the year".
+  - A period's minimum needs saying: "the October with the warmest nights", "the start to spring with the 2nd coldest nights".
+  - Runs of days: "the wettest 3 days", "the wettest 7 days in spring", "the wettest 3 days in October".
+  - A since is a day for a run of days ("since 8 February"). For months among all months it is a month ("since March", "since March 2025") or a year. Everything else is compared once a year, so its since is a year.
+  - A period with under 95% coverage says how many earlier ones were too incomplete: "(with 10 years too incomplete to compare)".
+  - The site names the period from `period`, `from` and `date`: "October", "The 3 days to Tuesday", "November so far".
 
 Each fact also has a `why` for the site:
 
@@ -127,10 +178,10 @@ Each fact also has a `why` for the site:
 - the record start, missing days and gaps
 - the previous record holder (the best earlier comparable day)
 - the since and `beatenBy` days
-- the 10 best comparable days up to the fact's date
+- the 10 best comparable days or periods up to the fact's date, counting overlapping runs of days once
 
 ## Trying it out
 
 - `npm run smoke:facts [location-id] [date] [max-rank]` prints one day's candidate facts.
-- `npm run smoke:sections [location-id] [date]` prints the three sections for the 31 days to a date.
+- `npm run smoke:sections [location-id] [date]` prints the three sections for the 31 days to a date, with day and period facts.
 - The snapshot tests in `test/selection.test.ts` record the sections for five real windows, so any change to the scoring shows up as a diff to review.

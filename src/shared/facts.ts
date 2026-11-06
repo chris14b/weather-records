@@ -33,6 +33,18 @@ export type Direction = "highest" | "lowest";
  */
 export type Comparison = "all" | "year" | "season" | "month" | "calendarDate";
 
+/** A calendar period that facts can be about. Seasons are meteorological, so summer starts in December. */
+export type CalendarPeriod = "month" | "season" | "year";
+
+/**
+ * The span of days a fact is about: one day, the N days to its date, or a calendar month,
+ * season or year, either complete or so far.
+ */
+export type Period =
+  | { kind: "day" }
+  | { kind: "rolling"; days: number }
+  | { kind: CalendarPeriod; toDate: boolean };
+
 /** Provisional values come from the live feed and may change when the daily files confirm them. */
 export type ValueStatus = "confirmed" | "provisional";
 
@@ -53,7 +65,10 @@ export interface RankedDay extends DayValue {
 /** Whether a fact's wording leads with its rank ("the 2nd hottest") or its since ("since 2018"). */
 export type Lead = "rank" | "since";
 
-/** The detail behind a fact, for its "why". */
+/**
+ * The detail behind a fact, for its "why". Every period in it has the same kind as the
+ * fact's, so each is named by its last day.
+ */
 export interface FactWhy {
   value: number;
   rank: number;
@@ -80,7 +95,11 @@ export interface FactWhy {
 
 /** A fact chosen for the home page. */
 export interface Fact {
+  /** The last day the fact covers, which the page names ("today", "last Tuesday"). */
   date: string;
+  /** The first day it covers: the same as `date` for a single day. */
+  from: string;
+  period: Period;
   measure: FactMeasure;
   direction: Direction;
   comparison: Comparison;
@@ -88,7 +107,10 @@ export interface Fact {
   lead: Lead;
   /** Higher is more unusual: about the log of how many comparable days pass for each fact like it. */
   score: number;
-  /** What the day was, without naming the day, e.g. "the hottest day of the year so far". */
+  /**
+   * What the day or period was, without naming it: e.g. "the hottest day of the year so
+   * far" or "the 3rd wettest October on record".
+   */
   text: string;
   why: FactWhy;
 }
@@ -98,9 +120,9 @@ export interface LocationFacts {
   locationId: string;
   /** The latest day with data. */
   today: Fact[];
-  /** The 6 days before it. */
+  /** The 6 days before it, and runs of days that start in them. */
   thisWeek: Fact[];
-  /** 7 to 30 days before it. */
+  /** 7 to 30 days before it, and the latest calendar periods. */
   thisMonth: Fact[];
 }
 

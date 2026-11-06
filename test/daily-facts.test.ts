@@ -1,8 +1,6 @@
 import { describe, expect, test } from "vitest";
-import {
-  generateDailyFacts,
-  type DailyFact,
-} from "../src/pipeline/daily-facts.ts";
+import type { CandidateFact } from "../src/pipeline/candidates.ts";
+import { generateDailyFacts } from "../src/pipeline/daily-facts.ts";
 import { addDays } from "../src/pipeline/dates.ts";
 import { layerRecent } from "../src/pipeline/layering.ts";
 import {
@@ -39,7 +37,7 @@ function factsFor(
   input: Series | Series[],
   windowEnd: string,
   windowDays = 31,
-): DailyFact[] {
+): CandidateFact[] {
   return generateDailyFacts({
     locationId: "test",
     series: Array.isArray(input) ? input : [input],
@@ -49,11 +47,11 @@ function factsFor(
 }
 
 function find(
-  facts: readonly DailyFact[],
+  facts: readonly CandidateFact[],
   date: string,
   comparison: Comparison = "all",
   direction: Direction = "highest",
-): DailyFact {
+): CandidateFact {
   const fact = facts.find(
     (f) =>
       f.date === date &&

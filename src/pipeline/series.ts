@@ -16,34 +16,53 @@ export interface SeriesDay {
   status: ValueStatus;
 }
 
+/** A value for several days, such as a rain total over a weekend, from `from` to `date`. */
+export interface MultiDayValue extends SeriesDay {
+  from: string;
+}
+
 /** One measure's single-day values for a location, in date order. */
 export interface Series<Measure extends FactMeasure = FactMeasure> {
   measure: Measure;
   days: readonly SeriesDay[];
+  /** Values for several days, left out of `days`, in date order. */
+  multiDay?: readonly MultiDayValue[];
   /** Whether the values go back to when records began. */
   fullRecord: boolean;
 }
 
 /**
- * Keeps a layered ZIP measure's single-day values. Multi-day values are left out, so the
- * days they cover are missing.
+ * Keeps a layered ZIP measure's single-day values. Multi-day values are kept apart, so
+ * the days they cover are missing from `days`. A value whose period is unknown or zero is
+ * left out.
  */
 export function layeredSeries<Measure extends FactMeasure>(
   measure: Measure,
   records: readonly LayeredRecord[],
 ): Series<Measure> {
   const dates = new Set(records.map(({ date }) => date));
+  const day = ({ date, value, source }: LayeredRecord): SeriesDay => ({
+    date,
+    value,
+    status: source === "snapshot" ? "provisional" : "confirmed",
+  });
   return {
     measure,
     days: records
       .filter(({ date, periodDays }, index) =>
         isSingleDay(periodDays, index === 0 || dates.has(addDays(date, -1))),
       )
-      .map(({ date, value, source }) => ({
-        date,
-        value,
-        status: source === "snapshot" ? "provisional" : "confirmed",
-      })),
+      .map(day),
+    multiDay: records.flatMap((record) =>
+      record.periodDays !== null && record.periodDays > 1
+        ? [
+            {
+              ...day(record),
+              from: addDays(record.date, 1 - record.periodDays),
+            },
+          ]
+        : [],
+    ),
     fullRecord: true,
   };
 }

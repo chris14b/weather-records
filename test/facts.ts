@@ -1,10 +1,12 @@
-import type { DailyFact } from "../src/pipeline/daily-facts.ts";
+import type { CandidateFact } from "../src/pipeline/candidates.ts";
 
 /** A record-setting hottest day among 50,000 days since 1900, changed by `fact`. */
-export function dailyFact(fact: Partial<DailyFact> = {}): DailyFact {
+export function dailyFact(fact: Partial<CandidateFact> = {}): CandidateFact {
   return {
     locationId: "test",
     date: "2026-11-06",
+    from: fact.date ?? "2026-11-06",
+    period: { kind: "day" },
     measure: "maxTemp",
     direction: "highest",
     value: 40,
@@ -22,4 +24,19 @@ export function dailyFact(fact: Partial<DailyFact> = {}): DailyFact {
     beatenBy: null,
     ...fact,
   };
+}
+
+/** The wettest October on record among 160 since 1866, changed by `fact`. */
+export function periodFact(fact: Partial<CandidateFact> = {}): CandidateFact {
+  return dailyFact({
+    date: "2026-10-31",
+    from: "2026-10-01",
+    period: { kind: "month", toDate: false },
+    measure: "rain",
+    value: 400,
+    comparison: "month",
+    compared: 160,
+    recordStart: "1866-01-01",
+    ...fact,
+  });
 }

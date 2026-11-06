@@ -1,10 +1,10 @@
 import { describe, expect, test } from "vitest";
-import type { DailyFact } from "../src/pipeline/daily-facts.ts";
+import type { CandidateFact } from "../src/pipeline/candidates.ts";
 import { describeFact, ordinal } from "../src/pipeline/wording.ts";
 import type { Lead } from "../src/shared/facts.ts";
-import { dailyFact } from "./facts.ts";
+import { dailyFact, periodFact } from "./facts.ts";
 
-const words = (fact: Partial<DailyFact>, lead: Lead = "rank") =>
+const words = (fact: Partial<CandidateFact>, lead: Lead = "rank") =>
   describeFact(dailyFact(fact), lead);
 
 describe("describeFact", () => {
@@ -218,5 +218,136 @@ describe("ordinal", () => {
     [111, "111th"],
   ])("%i is %s", (n, expected) => {
     expect(ordinal(n)).toBe(expected);
+  });
+
+  test.each([
+    [{}, "the wettest October on record"],
+    [{ rank: 3 }, "the 3rd wettest October on record"],
+    [{ direction: "lowest" as const }, "the driest October on record"],
+    [{ comparison: "all" as const }, "the wettest month on record"],
+    [{ measure: "maxTemp" as const }, "the hottest October on record"],
+    [
+      { measure: "minTemp" as const, rank: 2, ties: 1 },
+      "the October with the equal 2nd warmest nights on record",
+    ],
+    [
+      {
+        measure: "minTemp" as const,
+        direction: "lowest" as const,
+        comparison: "all" as const,
+      },
+      "the month with the coldest nights on record",
+    ],
+    [
+      {
+        period: { kind: "season" as const, toDate: false },
+        comparison: "season" as const,
+      },
+      "the wettest spring on record",
+    ],
+    [
+      {
+        period: { kind: "year" as const, toDate: false },
+        comparison: "all" as const,
+      },
+      "the wettest year on record",
+    ],
+    [
+      {
+        period: { kind: "month" as const, toDate: true },
+        measure: "maxTemp" as const,
+      },
+      "the hottest start to October on record",
+    ],
+    [
+      {
+        period: { kind: "season" as const, toDate: true },
+        comparison: "season" as const,
+      },
+      "the wettest start to spring on record",
+    ],
+    [
+      {
+        period: { kind: "year" as const, toDate: true },
+        comparison: "all" as const,
+        measure: "minTemp" as const,
+      },
+      "the start to the year with the warmest nights on record",
+    ],
+    [
+      {
+        period: { kind: "rolling" as const, days: 3 },
+        comparison: "all" as const,
+      },
+      "the wettest 3 days on record",
+    ],
+    [
+      {
+        period: { kind: "rolling" as const, days: 7 },
+        comparison: "season" as const,
+      },
+      "the wettest 7 days in spring on record",
+    ],
+    [
+      { period: { kind: "rolling" as const, days: 7 }, rank: 2 },
+      "the 2nd wettest 7 days in October on record",
+    ],
+  ])("words a period: %o", (fact, expected) => {
+    expect(describeFact(periodFact(fact), "rank")).toBe(expected);
+  });
+
+  test.each([
+    [{}, "2018-10-31", "the wettest October since 2018"],
+    [
+      { comparison: "all" as const },
+      "2026-03-31",
+      "the wettest month since March",
+    ],
+    [
+      { comparison: "all" as const },
+      "2025-03-31",
+      "the wettest month since March 2025",
+    ],
+    [
+      { comparison: "all" as const },
+      "2019-03-31",
+      "the wettest month since 2019",
+    ],
+    [
+      {
+        period: { kind: "rolling" as const, days: 3 },
+        comparison: "all" as const,
+      },
+      "2026-02-08",
+      "the wettest 3 days since 8 February",
+    ],
+  ])("words a period's since: %o on %s", (fact, date, expected) => {
+    expect(
+      describeFact(
+        periodFact({ ...fact, since: { date, value: 500 } }),
+        "since",
+      ),
+    ).toBe(expected);
+  });
+
+  test("says how many earlier periods were too incomplete to compare", () => {
+    expect(describeFact(periodFact({ missingDays: 20 }), "rank")).toBe(
+      "the wettest October on record (with 20 years too incomplete to compare)",
+    );
+  });
+
+  test("says when a later run of days beat it", () => {
+    expect(
+      describeFact(
+        periodFact({
+          period: { kind: "rolling", days: 3 },
+          comparison: "all",
+          date: "2026-11-03",
+          from: "2026-11-01",
+          beatenBy: { date: "2026-11-05", value: 500 },
+        }),
+        "rank",
+      ),
+    ).toBe("the wettest 3 days on record, until Thursday");
   });
 });

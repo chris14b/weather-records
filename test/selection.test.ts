@@ -1,11 +1,12 @@
 import { describe, expect, test } from "vitest";
+import { generateCandidates } from "../src/pipeline/candidates.ts";
 import { generateDailyFacts } from "../src/pipeline/daily-facts.ts";
 import { addDays, daysBetween } from "../src/pipeline/dates.ts";
 import { readSavedSeries } from "../src/pipeline/saved-series.ts";
 import { selectFacts } from "../src/pipeline/selection.ts";
 import { changeSeries, type Series } from "../src/pipeline/series.ts";
 import type { Fact, FactMeasure, LocationFacts } from "../src/shared/facts.ts";
-import { locations } from "../src/shared/locations.ts";
+import { locations, stationOffsets } from "../src/shared/locations.ts";
 
 const latest = "2026-11-06";
 
@@ -59,6 +60,20 @@ const selected = selectFacts({
 
 const summary = (facts: readonly Fact[]) =>
   facts.map(({ date, measure, text }) => ({ date, measure, text }));
+
+function selectAll(allSeries: readonly Series[]): LocationFacts {
+  return selectFacts({
+    locationId: "test",
+    facts: generateCandidates({
+      locationId: "test",
+      series: allSeries,
+      windowEnd: latest,
+    }),
+    series: allSeries,
+  });
+}
+
+const wetFifteenth = (date: string) => (date.endsWith("-15") ? 100 : 0);
 
 describe("selectFacts", () => {
   test("puts the latest day's strongest facts in today", () => {
@@ -182,6 +197,63 @@ describe("selectFacts", () => {
     ]);
   });
 
+  test("lets a spell of rain stand for the weaker days and spells inside it", () => {
+    const { thisWeek } = selectAll([
+      series("maxTemp", () => 20, { "2026-11-06": 30 }),
+      series("rain", wetFifteenth, {
+        "2026-11-01": 30,
+        "2026-11-02": 60,
+        "2026-11-03": 80,
+        "2026-11-04": 150,
+      }),
+    ]);
+
+    expect(
+      thisWeek
+        .filter(({ measure }) => measure === "rain")
+        .map(({ from, date, period, text }) => ({ from, date, period, text })),
+    ).toEqual([
+      {
+        from: "2026-11-04",
+        date: "2026-11-04",
+        period: { kind: "day" },
+        text: "the wettest day on record",
+      },
+      {
+        from: "2026-11-02",
+        date: "2026-11-04",
+        period: { kind: "rolling", days: 3 },
+        text: "the wettest 3 days on record",
+      },
+    ]);
+  });
+
+  test("adds the latest calendar periods to This month without crowding out its days", () => {
+    const { thisMonth } = selectAll([
+      series("maxTemp", () => 20, { "2026-11-06": 30 }),
+      series(
+        "rain",
+        (date) => wetFifteenth(date) || (date.startsWith("2026-10") ? 5 : 1),
+        { "2026-10-10": 300 },
+      ),
+    ]);
+
+    expect(
+      thisMonth.map(({ from, date, text }) => ({ from, date, text })),
+    ).toEqual([
+      {
+        from: "2026-10-01",
+        date: "2026-10-31",
+        text: "the wettest month on record",
+      },
+      {
+        from: "2026-10-10",
+        date: "2026-10-10",
+        text: "the wettest day on record",
+      },
+    ]);
+  });
+
   test("has empty sections when there are no facts", () => {
     expect(selectFacts({ locationId: "test", facts: [], series: [] })).toEqual({
       locationId: "test",
@@ -197,8 +269,12 @@ describe("selectFacts on real data", () => {
     Object.fromEntries(
       (["today", "thisWeek", "thisMonth"] as const).map((section) => [
         section,
-        facts[section].map(
-          ({ date, score, text }) => `${date} ${score.toFixed(2)} ${text}`,
+        facts[section].map(({ from, date, score, text }) =>
+          [
+            from === date ? date : `${from}..${date}`,
+            score.toFixed(2),
+            text,
+          ].join(" "),
         ),
       ]),
     );
@@ -216,10 +292,11 @@ describe("selectFacts on real data", () => {
 
     const facts = selectFacts({
       locationId: id,
-      facts: generateDailyFacts({
+      facts: generateCandidates({
         locationId: id,
         series: locationSeries,
         windowEnd,
+        offsets: stationOffsets(location),
       }),
       series: locationSeries,
     });

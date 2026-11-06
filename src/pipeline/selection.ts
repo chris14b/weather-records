@@ -3,10 +3,13 @@ import type {
   FactMeasure,
   FactWhy,
   LocationFacts,
+  Period,
   RankedDay,
 } from "../shared/facts.ts";
-import { beats, comparisonKey, type DailyFact } from "./daily-facts.ts";
+import type { CandidateFact } from "./candidates.ts";
+import { beats, comparisonKey } from "./daily-facts.ts";
 import { daysBetween } from "./dates.ts";
+import { comparablePeriods } from "./period-facts.ts";
 import { scoreFact, type ScoredFact } from "./scoring.ts";
 import type { Series } from "./series.ts";
 import { describeFact } from "./wording.ts";
@@ -14,8 +17,6 @@ import { describeFact } from "./wording.ts";
 type Section = Exclude<keyof LocationFacts, "locationId">;
 
 interface SectionRule {
-  /** Days before the latest day, inclusive. */
-  daysAgo: { from: number; to: number };
   minimumScore: number;
   /** For a day's second and later facts. */
   minimumExtraScore: number;
@@ -27,26 +28,34 @@ interface SectionRule {
 // latest week. Earlier days need about a once-a-year fact.
 const sectionRules: Record<Section, SectionRule> = {
   today: {
-    daysAgo: { from: 0, to: 0 },
     minimumScore: 1.75,
     minimumExtraScore: 2.5,
     perDay: 3,
     total: 3,
   },
   thisWeek: {
-    daysAgo: { from: 1, to: 6 },
     minimumScore: 1.75,
     minimumExtraScore: 3.5,
     perDay: 2,
     total: 12,
   },
   thisMonth: {
-    daysAgo: { from: 7, to: 30 },
     minimumScore: 5,
     minimumExtraScore: 5,
     perDay: 1,
     total: 5,
   },
+};
+
+/**
+ * The latest months, seasons and years go in This month, apart from its days. They are
+ * scored among periods of their own kind, so a once-in-20-years period scores log(20).
+ */
+const calendarRule: SectionRule = {
+  minimumScore: 3,
+  minimumExtraScore: 3,
+  perDay: 3,
+  total: 3,
 };
 
 // Facts about measures in the same family say much the same about a day. A change isn't in
@@ -71,8 +80,8 @@ const leaderCount = 10;
 
 export interface SelectionRequest {
   locationId: string;
-  /** Every candidate fact for the location's window, from `generateDailyFacts`. */
-  facts: readonly DailyFact[];
+  /** Every candidate fact for the location's window, from `generateCandidates`. */
+  facts: readonly CandidateFact[];
   /** The series the facts were made from. */
   series: readonly Series[];
 }
@@ -90,13 +99,29 @@ export function selectFacts({
   const strongest = [
     ...Map.groupBy(
       facts.map(scoreFact),
-      ({ fact }) => `${fact.date} ${families[fact.measure]} ${fact.direction}`,
+      ({ fact }) =>
+        `${fact.date} ${families[fact.measure]} ${fact.direction} ${isCalendar(fact.period) ? "calendar" : fact.period.kind}`,
     ).values(),
-  ].map((group) => group.reduce(stronger));
-  const section = (name: Section) =>
-    pick(strongest, latest, sectionRules[name]).map((scored) =>
-      present(scored, series),
+  ]
+    .map((group) => group.reduce(stronger))
+    .filter((candidate, _, all) => !isPartOfSpell(candidate, all, latest));
+  const inSection = (name: Section, calendar = false) =>
+    strongest.filter(
+      ({ fact }) =>
+        isCalendar(fact.period) === calendar &&
+        sectionOf(fact, latest) === name,
     );
+  const section = (name: Section) =>
+    [
+      ...pick(inSection(name), sectionRules[name]),
+      ...(name === "thisMonth"
+        ? pick(inSection(name, true), calendarRule)
+        : []),
+    ]
+      .toSorted(
+        (a, b) => b.fact.date.localeCompare(a.fact.date) || b.score - a.score,
+      )
+      .map((candidate) => present(candidate, series));
   return {
     locationId,
     today: section("today"),
@@ -105,23 +130,55 @@ export function selectFacts({
   };
 }
 
+function isCalendar(period: Period): boolean {
+  return period.kind !== "day" && period.kind !== "rolling";
+}
+
+// A day or a run of days goes in the section its first day falls in.
+function sectionOf(fact: CandidateFact, latest: string): Section | undefined {
+  if (isCalendar(fact.period)) return "thisMonth";
+  const ago = daysBetween(fact.from, latest);
+  if (ago === 0) return "today";
+  if (ago <= 6) return "thisWeek";
+  return ago <= 30 ? "thisMonth" : undefined;
+}
+
+// A spell stands for the days and the weaker spells that overlap it, which would only repeat it.
+function isPartOfSpell(
+  { fact, score }: ScoredFact,
+  facts: readonly ScoredFact[],
+  latest: string,
+): boolean {
+  if (isCalendar(fact.period)) return false;
+  return facts.some((spell) => {
+    const section = sectionOf(spell.fact, latest);
+    return (
+      spell.fact !== fact &&
+      spell.fact.period.kind === "rolling" &&
+      families[spell.fact.measure] === families[fact.measure] &&
+      spell.fact.direction === fact.direction &&
+      overlaps(spell.fact, fact) &&
+      (fact.period.kind === "day"
+        ? spell.score >= score
+        : spell.score > score ||
+          (spell.score === score && spell.fact.date > fact.date)) &&
+      section !== undefined &&
+      spell.score >= sectionRules[section].minimumScore
+    );
+  });
+}
+
 function stronger(best: ScoredFact, other: ScoredFact): ScoredFact {
   return other.score > best.score ? other : best;
 }
 
 function pick(
   facts: readonly ScoredFact[],
-  latest: string,
-  { daysAgo, minimumScore, minimumExtraScore, perDay, total }: SectionRule,
+  { minimumScore, minimumExtraScore, perDay, total }: SectionRule,
 ): ScoredFact[] {
   const perDate = new Map<string, number>();
   const picked: ScoredFact[] = [];
-  const candidates = facts
-    .filter(({ fact }) => {
-      const ago = daysBetween(fact.date, latest);
-      return ago >= daysAgo.from && ago <= daysAgo.to;
-    })
-    .toSorted((a, b) => b.score - a.score);
+  const candidates = facts.toSorted((a, b) => b.score - a.score);
   for (const candidate of candidates) {
     if (picked.length === total) break;
     const { date } = candidate.fact;
@@ -131,9 +188,7 @@ function pick(
     perDate.set(date, count + 1);
     picked.push(candidate);
   }
-  return picked.toSorted(
-    (a, b) => b.fact.date.localeCompare(a.fact.date) || b.score - a.score,
-  );
+  return picked;
 }
 
 function present(
@@ -142,6 +197,8 @@ function present(
 ): Fact {
   return {
     date: fact.date,
+    from: fact.from,
+    period: fact.period,
     measure: fact.measure,
     direction: fact.direction,
     comparison: fact.comparison,
@@ -153,25 +210,26 @@ function present(
   };
 }
 
-function explain(fact: DailyFact, series: readonly Series[]): FactWhy {
-  const { measure, direction, comparison, date } = fact;
-  const days = series.find((s) => s.measure === measure)?.days ?? [];
-  const key = comparisonKey(date, comparison);
-  const ranked = days
-    .filter(
-      (day) => day.date <= date && comparisonKey(day.date, comparison) === key,
-    )
-    .toSorted((a, b) =>
-      a.value === b.value
-        ? a.date.localeCompare(b.date)
-        : beats(a.value, b.value, direction)
-          ? -1
-          : 1,
-    );
+function explain(fact: CandidateFact, series: readonly Series[]): FactWhy {
+  const { measure, direction, comparison, date, from } = fact;
+  const source = series.find((s) => s.measure === measure);
+  const ranked = (
+    source === undefined ? [] : comparables(source, fact)
+  ).toSorted((a, b) =>
+    a.value === b.value
+      ? a.date.localeCompare(b.date)
+      : beats(a.value, b.value, direction)
+        ? -1
+        : 1,
+  );
+  // Overlapping runs of days share their rain, so each spell is counted by its best run.
+  const best: Spell[] = [];
+  for (const spell of ranked) {
+    if (best.length === leaderCount) break;
+    if (best.every((other) => !overlaps(other, spell))) best.push(spell);
+  }
   const leaders: RankedDay[] = [];
-  for (const [index, { date: leaderDate, value }] of ranked
-    .slice(0, leaderCount)
-    .entries()) {
+  for (const [index, { date: leaderDate, value }] of best.entries()) {
     const previous = leaders[index - 1];
     leaders.push({
       date: leaderDate,
@@ -179,7 +237,7 @@ function explain(fact: DailyFact, series: readonly Series[]): FactWhy {
       rank: previous?.value === value ? previous.rank : index + 1,
     });
   }
-  const record = ranked.find((day) => day.date < date);
+  const record = ranked.find((spell) => spell.date < from);
   return {
     value: fact.value,
     rank: fact.rank,
@@ -195,4 +253,32 @@ function explain(fact: DailyFact, series: readonly Series[]): FactWhy {
     beatenBy: fact.beatenBy,
     leaders,
   };
+
+  function comparables(source: Series, { period }: CandidateFact): Spell[] {
+    if (period.kind !== "day") {
+      return comparablePeriods(source, fact).flatMap((spell) =>
+        spell.value === null ? [] : [{ ...spell, value: spell.value }],
+      );
+    }
+    const key = comparisonKey(date, comparison);
+    return source.days
+      .filter(
+        (day) =>
+          day.date <= date && comparisonKey(day.date, comparison) === key,
+      )
+      .map((day) => ({ from: day.date, date: day.date, value: day.value }));
+  }
+}
+
+interface Span {
+  from: string;
+  date: string;
+}
+
+interface Spell extends Span {
+  value: number;
+}
+
+function overlaps(a: Span, b: Span): boolean {
+  return a.from <= b.date && b.from <= a.date;
 }

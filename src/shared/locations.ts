@@ -26,6 +26,18 @@ export interface Station extends StationPeriod {
   dailyFolder: DailyFolder;
   /** The WMO number that names the station's file of recent readings (IDN60910). Only stations still open have one. */
   wmo?: string;
+  /** How much higher it reads than the station before it, in °C. */
+  reads?: StationReadings;
+}
+
+export interface StationReadings {
+  maxTemp: number;
+  minTemp: number;
+}
+
+/** How much higher than a location's first station its stations read from a date on. */
+export interface StationOffset extends StationReadings {
+  from: string;
 }
 
 /** An `<area>` of type `location` in the BOM 7-day town forecast. */
@@ -72,6 +84,7 @@ export const locations: readonly Location[] = [
         dailyFolder: observatoryHillFolder,
         from: "2020-09-01",
         wmo: "94768",
+        reads: { maxTemp: 0.3, minTemp: -0.3 },
       },
     ],
   },
@@ -126,4 +139,19 @@ export function currentStation(location: Location): Station {
   const station = location.stations.at(-1);
   if (station === undefined) throw new Error(`${location.id} has no stations`);
   return station;
+}
+
+/** The offset from each station change on, relative to the location's first station. */
+export function stationOffsets(location: Location): StationOffset[] {
+  const offsets: StationOffset[] = [];
+  for (const { from, reads } of location.stations) {
+    if (from === undefined || reads === undefined) continue;
+    const before = offsets.at(-1) ?? { maxTemp: 0, minTemp: 0 };
+    offsets.push({
+      from,
+      maxTemp: before.maxTemp + reads.maxTemp,
+      minTemp: before.minTemp + reads.minTemp,
+    });
+  }
+  return offsets;
 }

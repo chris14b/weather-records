@@ -3,6 +3,7 @@
 exports[`selectFacts on real data > chooses the facts at sydney-airport for the 31 days to 2026-10-29 1`] = `
 {
   "thisMonth": [
+    "2026-01-01..2026-10-29 4.34 the start to the year with the warmest nights on record",
     "2026-10-14 5.57 the wettest day since 18 January",
     "2026-10-12 5.45 the hottest day since 22 February",
   ],
@@ -23,6 +24,8 @@ exports[`selectFacts on real data > chooses the facts at sydney-airport for the 
 exports[`selectFacts on real data > chooses the facts at sydney-observatory-hill for the 31 days to 1986-08-08 1`] = `
 {
   "thisMonth": [
+    "1986-08-01..1986-08-08 3.89 the wettest start to August on record",
+    "1986-07-01..1986-07-31 3.18 the month with the coldest nights since July 1984",
     "1986-07-28 5.93 the coldest day since July 1985",
     "1986-07-27 8.68 the coldest night since 1970",
     "1986-07-26 8.06 the 3rd biggest day-to-day drop in minimum temperature on record",
@@ -70,6 +73,9 @@ exports[`selectFacts on real data > chooses the facts at sydney-observatory-hill
 exports[`selectFacts on real data > chooses the facts at sydney-observatory-hill for the 31 days to 2026-10-13 1`] = `
 {
   "thisMonth": [
+    "2026-01-01..2026-10-13 4.76 the start to the year with the warmest nights on record (with 10 years too incomplete to compare)",
+    "2026-01-01..2026-10-13 3.88 the equal hottest start to the year on record",
+    "2026-09-01..2026-09-30 3.54 the September with the 2nd warmest nights on record",
     "2026-09-22 5.14 the biggest day-to-day drop in maximum temperature in spring since 2017",
     "2026-09-21 5.37 the hottest day since 18 February, until 12 October",
   ],
@@ -100,9 +106,10 @@ exports[`selectFacts on real data > chooses the facts at sydney-olympic-park for
   "thisWeek": [
     "2020-02-11 2.08 the hottest day since 3 February",
     "2020-02-10 5.20 the wettest day on record",
+    "2020-02-08..2020-02-10 5.17 the wettest 3 days on record",
     "2020-02-09 5.89 the gloomiest day since March 2018",
-    "2020-02-09 4.30 the 4th wettest day on record, until Monday",
-    "2020-02-08 2.99 the 3rd wettest summer day on record, until Sunday",
+    "2020-02-09 4.22 the most humid day since 18 September 2019",
+    "2020-02-08 1.89 the 2nd most humid day of the year so far, until Sunday",
     "2020-02-07 4.96 the wettest day since 18 September 2019, until Saturday",
     "2020-02-07 4.58 the smallest temperature range since 26 August 2019",
     "2020-02-06 2.94 the biggest day-to-day rise in minimum temperature in February since February 2017",

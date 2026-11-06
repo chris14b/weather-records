@@ -385,7 +385,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 
 ## 10. Facts for longer periods
 
-**Status:** todo
+**Status:** done
 
 **Goal:** Facts for weeks, months, seasons and years, such as "the 3rd wettest October on record" or "the hottest start to October on record".
 
@@ -404,6 +404,31 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 - Done when: tests pass for each period type, for a period with too many missing days, and for a multi-day rain total at a period's edge.
 
 **Notes:**
+
+- [facts.md](facts.md) section 2b explains the method. Both complete periods and periods so far were done.
+- New and changed modules:
+  - `src/pipeline/candidates.ts` has `CandidateFact`, which replaces task 7's `DailyFact` for day and period facts alike, and `generateCandidates`, which runs both generators. Every candidate now has a `from` and a `period`. Task 13 should call `generateCandidates({ locationId, series, windowEnd, offsets: stationOffsets(location) })` and pass the result to `selectFacts`.
+  - `src/pipeline/period-facts.ts` has `generatePeriodFacts`, and `comparablePeriods`, which the why's leaders use.
+  - `src/shared/facts.ts` has `Period` (`day`, `rolling` with its `days`, or `month`, `season` or `year` with `toDate`) and `CalendarPeriod`. `Fact` gained `from` and `period`. The dates in a period fact's why are each period's last day, since all of them have the fact's kind. Task 11 can add a streak kind to `Period`; a streak's length gives its first day.
+  - `Series` gained `multiDay`: the multi-day values that `layeredSeries` leaves out of `days`, with their `from`. Only rain totals use them.
+  - Each station can have `reads`, how much higher it reads than the one before it. Only 066214 has one (+0.3°C maximum, −0.3°C minimum). `stationOffsets(location)` turns these into offsets from the first station by date.
+- Decisions:
+  - Periods: rain over the 3 and 7 days to each day, and the latest complete month, season and year and the current ones so far. Measures: total rain, mean maximum and mean minimum. Runs of days are rain only.
+  - Comparisons: runs of days against all runs, the same season and the same month (of their last day). Months against all months and the same month, seasons against the same season, years against all years. A period so far against the same days of earlier years. "All seasons" and "of the year so far" were left out as not worth reading.
+  - "The last full week" is the 7 days to a day, not a calendar week, since nothing else compares by weekday. A run of days goes in the section its first day falls in, so the runs to the latest day are in This week. The latest calendar periods go in This month with their own allowance (`calendarRule`), so they never crowd out its days.
+  - Missing days: rain totals need every day. Means follow the WMO's rule: in each month, at most a sixth of the days missing and no more than 3 in a row. A multi-day total counts only when wholly inside the period. 29 February is compared with the 28th.
+  - Spells: a run needs wet first and last days, no day with two thirds of its rain, and no overlapping earlier run that matched it. Earlier runs that beat it count once per stretch of consecutive end days. In selection, a spell absorbs the day facts and weaker runs it overlaps, if it scores enough to show.
+  - The station change: mean temperatures are compared both as measured and with the offset taken out, and must hold both ways. It matters: to 29 October 2026, Observatory Hill's start to the year is the 3rd hottest rather than the hottest, and 2024 is the 5th hottest year rather than the 2nd. Daily facts still compare the two stations as one series.
+  - Scoring: calendar periods score in periods, so a record October is log(160) ≈ 5.1, below a record October day. Scaling by the period's length was tried first, but it gave "the wettest start to the year since 2025" (since last year) a score of 5.7. They are shown apart from the days, so their scale doesn't matter, and `calendarRule` needs 3, about once in 20 years. Runs of days end every day, so they score on the days' scale unchanged.
+  - Dedupe: one fact per date, family and direction among single days, among runs of days, and among calendar periods. So a month, season and year so far ending on the same day give one fact per family.
+- Wording examples: "the 3rd wettest October on record", "the wettest month since March 2025", "the hottest start to the year on record", "the October with the warmest nights on record", "the start to spring with the 2nd warmest nights on record", "the wettest 3 days in October since 2022". An incomplete record says "(with 10 years too incomplete to compare)". The site should name a period from `period`, `from` and `date` ("October", "The 3 days to Tuesday", "November so far").
+- Review of the snapshot output:
+  - Olympic Park in February 2020 now reads "the wettest day on record" (10 February) beside "the wettest 3 days on record" (8–10 February), instead of also "the 4th wettest day on record" and "the 3rd wettest summer day on record" on the days before.
+  - Observatory Hill to 8 August 1986 gains "the wettest start to August on record" (3.89) and "the month with the coldest nights since July 1984". The flood itself stays a day fact: 327.6 mm is more than two thirds of any run holding it.
+  - Recent windows gain "the start to the year with the warmest nights on record" at both Observatory Hill and Sydney Airport, and "the September with the 2nd warmest nights on record". The ZIPs end on 30 October, so October isn't complete in the data yet.
+  - Weak spots: Observatory Hill's year so far has 10 incomplete years in the 1800s, so its record carries the "(with 10 years too incomplete to compare)" caveat, which is long for a headline. A period so far shows every day until the period ends, so it can sit in This month for months. Task 16 should look at both.
+- Not handled: humidity, solar and the readings over periods; hot or cold runs of days (task 11's streaks may cover these); period facts in `smoke:facts`, which still prints one day's day facts. `smoke:sections` shows both, with each period's dates.
+- Speed: periods take about 0.7 s for Observatory Hill's window, mostly the 3- and 7-day runs over 160 years.
 
 ---
 
@@ -593,5 +618,36 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
   - If they don't, record why in the notes and keep the FTP values only.
 - Scope: update the data sources section of CLAUDE.md, and the solar history's start date in task 7's wording.
 - Done when: the comparison is recorded in the notes, and either the solar series starts about 1990 with tests covering the loader and layering, or the reason it doesn't is recorded.
+
+**Notes:**
+
+---
+
+## 20. The 2020 Observatory Hill station change
+
+**Status:** todo
+
+**Goal:** Decide how facts compare values across the Observatory Hill station change, so the site never claims a record that only the change made. Research first, then agree the approach with the user before changing code.
+
+- Background, found on 2026-11-06 while finishing task 10:
+  - The two stations recorded side by side from 2017-10-18 to 2020-08-31, and both ZIPs hold those days (1,045 shared days for temperature, 1,030 for rain).
+  - Maximum: 066214 reads +0.34°C higher on average, but the gap is seasonal: about +0.5 to +0.8°C in summer (December +0.77) and about +0.1°C in winter. On days above 30°C the two agree (−0.03°C on average), so daily heat records aren't inflated. Daily differences vary widely: 5% to 95% of days fall between −0.6 and +1.9°C.
+  - Minimum: 066214 reads −0.27°C lower, steadily all year (−0.14 to −0.35°C by month).
+  - Rain: 066214's gauge caught about 6% more (3,228 mm against 3,050 mm). Most days are identical.
+  - What task 10 does now: mean temperatures over periods are compared both as measured and with a flat offset taken out (`reads` on 066214 in `locations.ts`: +0.3°C maximum, −0.3°C minimum), and a fact must hold both ways. Daily facts and rain compare the stations as one series. See [facts.md](facts.md) section 2b.
+  - A forum post quoting the station history says 066214 became the main site in October 2017. BOM's own pages found so far say only that 066062 closed on 2020-08-31 and 066214 opened in 2017. No BOM write-up of the changeover was found.
+- Research first, and report to the user before any code:
+  - Find BOM's own account of the change, especially the ACORN-SAT station catalogue's entry for Sydney: when 066214 became the primary site, and what difference BOM measured.
+  - Check which station the FTP daily folder `sydney_(observatory_hill)` followed from 2017-10 to 2018-03, by comparing those months' temperatures with each ZIP. A cutover in October 2017 would otherwise credit 066062's humidity and solar to 066214.
+  - Decide whether the overlap is long enough to trust for rain, and for monthly rather than seasonal offsets.
+- Options to put to the user. The cutover date and how comparisons cross it are separate choices.
+  - Cutover: keep 2020-09-01, or move it to October 2017 if BOM confirms that date. Moving it lengthens the new station's own record and may match BOM's, but the stations still differ across the join wherever it falls.
+  - Comparison:
+    1. No handling: compare the raw joined record, as BOM publishes it, and rely on the site's note.
+    2. Measured offsets, applied cautiously: keep task 10's both-ways rule, with seasonal offsets measured from the overlap instead of a flat 0.3°C. Extend it to daily minimums, and decide about rain.
+    3. Restart averages at the new station: compare monthly, seasonal and yearly means only within 066214 ("since 2017"), and keep daily extremes joined.
+  - Claude's suggestion on 2026-11-06 was the October 2017 cutover, if BOM confirms the date and the FTP check is clean, with option 2. Option 3 is the alternative if the site should never depend on an offset.
+- Scope, once decided: the config, and a test that recomputes any offsets from the overlap in the ZIPs, so a yearly refresh flags drift. Update CLAUDE.md's Locations section, [facts.md](facts.md) and the snapshot tests.
+- Done when: the research is recorded in the notes, the user has chosen, and tests cover the chosen handling.
 
 **Notes:**

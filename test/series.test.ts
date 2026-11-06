@@ -40,11 +40,12 @@ describe("layeredSeries", () => {
         { date: "2026-10-31", value: 0, status: "confirmed" },
         { date: "2026-11-01", value: 4.6, status: "provisional" },
       ],
+      multiDay: [],
       fullRecord: true,
     });
   });
 
-  test("leaves out multi-day totals and zero-day periods", () => {
+  test("keeps multi-day totals apart and leaves out zero-day periods", () => {
     const series = layeredSeries("rain", [
       record("2026-03-17", 0.2),
       record("2026-03-20", 22.2, { periodDays: 3 }),
@@ -55,6 +56,14 @@ describe("layeredSeries", () => {
     expect(series.days.map(({ date }) => date)).toEqual([
       "2026-03-17",
       "2026-03-22",
+    ]);
+    expect(series.multiDay).toEqual([
+      {
+        from: "2026-03-18",
+        date: "2026-03-20",
+        value: 22.2,
+        status: "confirmed",
+      },
     ]);
   });
 

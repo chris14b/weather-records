@@ -5,8 +5,8 @@ import {
   type DayValue,
   type Direction,
   type FactMeasure,
-  type ValueStatus,
 } from "../shared/facts.ts";
+import type { CandidateFact } from "./candidates.ts";
 import { addDays } from "./dates.ts";
 import type { Series, SeriesDay } from "./series.ts";
 
@@ -19,37 +19,6 @@ const comparisons: readonly Comparison[] = [
 ];
 
 const minimumGapDays = 7;
-
-/** How one day ranks against the comparable days up to and including it. */
-export interface DailyFact {
-  locationId: string;
-  date: string;
-  measure: FactMeasure;
-  direction: Direction;
-  value: number;
-  status: ValueStatus;
-  comparison: Comparison;
-  /** One more than the number of comparable days that beat it, so tied days share a rank. */
-  rank: number;
-  /** Earlier comparable days with exactly the same value. */
-  ties: number;
-  /** Comparable days with a value, including this one. */
-  compared: number;
-  /** The first date of the measure's series. */
-  recordStart: string;
-  /** Whether the series goes back to when records began, so "on record" is true. */
-  fullRecord: boolean;
-  /** Comparable days between the record start and this day with no value. */
-  missingDays: number;
-  /** Runs of at least a week of missing days that include a comparable day, before this day. */
-  gaps: DateRange[];
-  /** The most recent earlier comparable day that matched or beat it; null if none did. */
-  since: DayValue | null;
-  /** Comparable days with a value after `since`, including this one; all of them if `since` is null. */
-  comparedSince: number;
-  /** The first later comparable day, up to the end of the window, that beat it. */
-  beatenBy: DayValue | null;
-}
 
 export interface DailyFactsRequest {
   locationId: string;
@@ -68,7 +37,7 @@ export function generateDailyFacts({
   series,
   windowEnd,
   windowDays = 31,
-}: DailyFactsRequest): DailyFact[] {
+}: DailyFactsRequest): CandidateFact[] {
   const windowStart = addDays(windowEnd, 1 - windowDays);
   return series.flatMap(({ measure, days, fullRecord }) => {
     const first = days[0];
@@ -101,9 +70,11 @@ export function generateDailyFacts({
             other > index && date <= windowEnd && keys[other] === key,
         );
         return directionsFor(measure, day.value).map(
-          (direction): DailyFact => ({
+          (direction): CandidateFact => ({
             locationId,
             date: day.date,
+            from: day.date,
+            period: { kind: "day" },
             measure,
             direction,
             value: day.value,
@@ -139,7 +110,10 @@ function rank(
   day: SeriesDay,
   earlier: readonly SeriesDay[],
   direction: Direction,
-): Pick<DailyFact, "rank" | "ties" | "compared" | "since" | "comparedSince"> {
+): Pick<
+  CandidateFact,
+  "rank" | "ties" | "compared" | "since" | "comparedSince"
+> {
   const beaten = earlier.filter((other) =>
     beats(other.value, day.value, direction),
   ).length;
