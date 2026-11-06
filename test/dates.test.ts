@@ -1,5 +1,10 @@
 import { describe, expect, test } from "vitest";
-import { addDays, monthsBetween, sydneyDate } from "../src/pipeline/dates.ts";
+import {
+  addDays,
+  daysBetween,
+  monthsBetween,
+  sydneyDate,
+} from "../src/pipeline/dates.ts";
 
 describe("addDays", () => {
   test.each([
@@ -8,6 +13,16 @@ describe("addDays", () => {
     ["2026-03-01", -1, "2026-02-28"],
   ])("%s plus %i is %s", (date, days, expected) => {
     expect(addDays(date, days)).toBe(expected);
+  });
+});
+
+describe("daysBetween", () => {
+  test.each([
+    ["2024-02-28", "2024-03-01", 2],
+    ["2026-12-31", "2027-01-01", 1],
+    ["2026-03-01", "2026-02-28", -1],
+  ])("from %s to %s is %i", (from, to, expected) => {
+    expect(daysBetween(from, to)).toBe(expected);
   });
 });
 

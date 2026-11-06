@@ -1,15 +1,9 @@
-import { locations } from "../shared/locations.ts";
+import { locationById } from "../shared/locations.ts";
 import { dailyFilePath, parseDailyFile } from "./daily-files.ts";
 import { sydneyDate } from "./dates.ts";
 import { connectToBom } from "./ftp.ts";
 
-const id = process.argv[2] ?? "sydney-observatory-hill";
-const location = locations.find((l) => l.id === id);
-if (location === undefined) {
-  throw new Error(
-    `No location ${id}. Choose from ${locations.map((l) => l.id).join(", ")}`,
-  );
-}
+const location = locationById(process.argv[2] ?? "sydney-observatory-hill");
 
 const station = location.stations.at(-1);
 if (station === undefined) throw new Error(`${location.id} has no stations`);

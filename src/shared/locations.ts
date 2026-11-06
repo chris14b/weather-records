@@ -110,6 +110,17 @@ export const locations: readonly Location[] = [
   },
 ];
 
+/** The location with this id; throws, listing the ids, if there is none. */
+export function locationById(id: string): Location {
+  const location = locations.find((l) => l.id === id);
+  if (location === undefined) {
+    throw new Error(
+      `Unknown location ${id}; use one of ${locations.map((l) => l.id).join(", ")}`,
+    );
+  }
+  return location;
+}
+
 /** The station a location reports from now: its last. */
 export function currentStation(location: Location): Station {
   const station = location.stations.at(-1);

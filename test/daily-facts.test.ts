@@ -1,12 +1,14 @@
 import { describe, expect, test } from "vitest";
-import { generateDailyFacts } from "../src/pipeline/daily-facts.ts";
+import {
+  generateDailyFacts,
+  type DailyFact,
+} from "../src/pipeline/daily-facts.ts";
 import { addDays } from "../src/pipeline/dates.ts";
 import { layerRecent } from "../src/pipeline/layering.ts";
 import { layeredSeries, type Series } from "../src/pipeline/series.ts";
 import { loadLocationHistory } from "../src/pipeline/stations.ts";
 import type {
   Comparison,
-  DailyFact,
   Direction,
   FactMeasure,
 } from "../src/shared/facts.ts";
@@ -92,6 +94,7 @@ describe("generateDailyFacts", () => {
       rank: 1,
       ties: 0,
       since: null,
+      comparedSince: 3,
     });
   });
 
@@ -115,9 +118,9 @@ describe("generateDailyFacts", () => {
       "2026-01-07",
     );
 
-    expect(find(facts, "2026-01-07").since).toEqual({
-      date: "2026-01-04",
-      value: 38,
+    expect(find(facts, "2026-01-07")).toMatchObject({
+      since: { date: "2026-01-04", value: 38 },
+      comparedSince: 3,
     });
   });
 

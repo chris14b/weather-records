@@ -1,0 +1,110 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`selectFacts on real data > chooses the facts at sydney-airport for the 31 days to 2026-10-29 1`] = `
+{
+  "thisMonth": [
+    "2026-10-14 5.57 the wettest day since 18 January",
+    "2026-10-12 5.45 the hottest day since 22 February",
+  ],
+  "thisWeek": [
+    "2026-10-28 2.36 the lowest humidity since 12 October",
+    "2026-10-27 1.95 the coldest night since 20 October, until Thursday",
+    "2026-10-26 2.40 the coldest day since 15 October",
+    "2026-10-25 5.29 the warmest night since 10 April",
+    "2026-10-24 2.48 the hottest day since 12 October, until Sunday",
+    "2026-10-23 1.95 the wettest day since 16 October",
+  ],
+  "today": [
+    "2026-10-29 2.64 the coldest night since 15 October",
+  ],
+}
+`;
+
+exports[`selectFacts on real data > chooses the facts at sydney-observatory-hill for the 31 days to 1986-08-08 1`] = `
+{
+  "thisMonth": [
+    "1986-07-28 5.93 the coldest day since July 1985",
+    "1986-07-27 8.68 the coldest night since 1970",
+    "1986-07-26 7.98 the coldest night since 1978, until Sunday",
+    "1986-07-25 6.03 the smallest temperature range since May 1984",
+    "1986-07-09 5.87 the coldest day since 18 July 1985, until 28 July",
+  ],
+  "thisWeek": [
+    "1986-08-07 2.39 the 9th wettest day of the year so far",
+    "1986-08-06 10.75 the wettest day on record",
+    "1986-08-05 6.45 the wettest day since November 1984, until Wednesday",
+    "1986-08-05 3.98 the smallest August temperature range since 1977",
+    "1986-08-04 3.49 the coldest August day since August 1983, until Tuesday",
+    "1986-08-02 4.25 the coldest August night since 1979",
+    "1986-08-02 4.14 the biggest temperature range since 25 April",
+  ],
+  "today": [
+    "1986-08-08 2.64 the warmest night since 25 July",
+  ],
+}
+`;
+
+exports[`selectFacts on real data > chooses the facts at sydney-observatory-hill for the 31 days to 2013-01-18 1`] = `
+{
+  "thisMonth": [
+    "2013-01-08 9.26 the 5th hottest day on record, until 18 January",
+    "2012-12-31 5.93 the sunniest day since January 2011",
+    "2012-12-26 5.28 the wettest day since 12 June",
+  ],
+  "thisWeek": [
+    "2013-01-15 2.94 the coldest night since 27 December 2012",
+    "2013-01-14 2.94 the wettest day since 26 December 2012",
+    "2013-01-13 4.14 the gloomiest day since 6 October 2012",
+    "2013-01-12 5.77 the warmest night since 28 February 2012",
+  ],
+  "today": [
+    "2013-01-18 10.86 the hottest day on record",
+    "2013-01-18 9.70 the biggest temperature range on record",
+  ],
+}
+`;
+
+exports[`selectFacts on real data > chooses the facts at sydney-observatory-hill for the 31 days to 2026-10-13 1`] = `
+{
+  "thisMonth": [
+    "2026-09-21 5.37 the hottest day since 18 February, until 12 October",
+  ],
+  "thisWeek": [
+    "2026-10-12 5.46 the hottest day since 18 February",
+    "2026-10-12 5.05 the biggest temperature range since 10 January",
+    "2026-10-11 4.89 the sunniest day since 24 February",
+    "2026-10-10 2.94 the hottest day since 21 September, until Monday",
+    "2026-10-09 4.88 the sunniest day since 24 February, until Sunday",
+    "2026-10-08 2.08 the coldest night since 30 September, until Friday",
+    "2026-10-07 2.87 the smallest October temperature range since October 2024, until Tuesday",
+  ],
+  "today": [
+    "2026-10-13 4.95 the smallest temperature range since 8 February",
+    "2026-10-13 3.51 the gloomiest October day since 2022",
+    "2026-10-13 3.09 the warmest night since 21 September",
+  ],
+}
+`;
+
+exports[`selectFacts on real data > chooses the facts at sydney-olympic-park for the 31 days to 2020-02-12 1`] = `
+{
+  "thisMonth": [
+    "2020-02-02 6.99 the warmest night since February 2017",
+    "2020-01-26 5.91 the warmest night since January 2019, until 2 February",
+    "2020-01-24 5.82 the warmest night since 19 February 2019, until Sunday",
+  ],
+  "thisWeek": [
+    "2020-02-11 2.08 the hottest day since 3 February",
+    "2020-02-10 5.20 the wettest day on record",
+    "2020-02-09 5.89 the gloomiest day since March 2018",
+    "2020-02-09 4.30 the 4th wettest day on record, until Monday",
+    "2020-02-08 2.99 the 3rd wettest summer day on record, until Sunday",
+    "2020-02-07 4.96 the wettest day since 18 September 2019, until Saturday",
+    "2020-02-07 4.58 the smallest temperature range since 26 August 2019",
+    "2020-02-06 2.70 the smallest temperature range since 17 January, until Friday",
+  ],
+  "today": [
+    "2020-02-12 2.20 the warmest night since 3 February",
+  ],
+}
+`;

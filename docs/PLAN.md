@@ -292,7 +292,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 
 ## 8. Scoring, selection and wording
 
-**Status:** todo
+**Status:** done
 
 **Goal:** Choose the few facts worth showing, and word them well.
 
@@ -316,6 +316,40 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 - Done when: snapshot tests pass for the selected facts on a few chosen real dates, and a short written review of their output is added to the notes.
 
 **Notes:**
+
+- [facts.md](facts.md) explains the whole method, including task 7's ranking. The notes below are the history and the details.
+- New modules in `src/pipeline/`: `scoring.ts` (`scoreFact`), `wording.ts` (`describeFact`, `ordinal`), `selection.ts` (`selectFacts`) and `saved-series.ts` (`readSavedSeries`, which builds a location's series from the files on disk; `smoke:facts` now uses it). `DailyFact` moved from `src/shared/facts.ts` into `daily-facts.ts`, because only the pipeline uses it. It also gained `comparedSince`: the comparable days with a value after `since`, including the day itself.
+- `src/shared/facts.ts` now has the `facts.json` types. `FactsFile` holds `generatedAt` and one `LocationFacts` per location, with `today`, `thisWeek` and `thisMonth` lists of `Fact`. Each `Fact` has its date, measure, direction, comparison, status, `lead` (`rank` or `since`), `score`, `text` and a `why`. Task 11 should call `selectFacts({ locationId, facts, series })` with `generateDailyFacts`' output and the same series.
+- Scoring is in natural-log units of "comparable days per fact like this one". A rank scores `log(compared / (rank + ties))`, and a since scores `log(comparedSince)`. The fact takes the larger and leads its wording with it. A once-a-year fact among all days scores about 5.9, and the hottest day on record at Observatory Hill about 10.9. Then:
+  - Ranks: a rank whose `rank + ties` is above 10 scores 0, so the many 100% humidity ties never show. Calendar dates score only at rank 1.
+  - Record length: a rank is multiplied by the cube root of the record's years over 30 (capped at 1), except for the year so far. Olympic Park's 15 years give 0.79, and readings from this month about 0.14. A square root was tried first, but it put "the wettest day on record" at Olympic Park in February 2020 below the This month bar.
+  - Missing days: a rank is multiplied by the share of comparable days with a value.
+  - Since: there is no since score for `year` (its since is always the same day as the `all` one) or `calendarDate`, nor when a gap falls after the since day.
+  - Weights: then the score is multiplied by a comparison weight (all 1, season 0.85, month 0.8, year 0.75, calendar date 0.6) and a measure weight (1 for temperature and rain, down to 0.75 for the 9am and 3pm humidity).
+- Selection: for each date, only the strongest fact per family of measures and direction is kept. The families are max and 3pm temperature, min and 9am temperature, rain, range, humidity (all four) and solar. The latest day with any fact is Today, even if it isn't the window's end. Then each section has its own rules (`sectionRules` in `selection.ts`):
+  - **Today:** up to 3 facts, the first scoring at least 1.75 (a since of 6 days) and the others at least 2.5.
+  - **This week:** the 6 days before it, up to 2 facts per day, the first at least 1.75 and the second at least 3.5.
+  - **This month:** 7 to 30 days before it, 1 fact per day and 5 in all, each at least 5.
+  - Each list runs latest first, then by score.
+- Wording: `text` never names its own day, so the site can put "Today" or "Last Tuesday" in front. Examples:
+  - Ranks: "the 2nd hottest day on record", "the equal 3rd wettest October day on record", "the coldest night of the year so far", "the hottest 6 November on record".
+  - Short records say "since 2009" instead of "on record", from the record's start (as "March 2026" if it is under 3 years old and doesn't start on 1 January).
+  - A rank whose comparable days have under 95% coverage names its longest gap: "(no records from March 2018 to July 2020)".
+  - A since is a day and month in the same year, the full date within 365 days, a month and year within 3 years, and the year beyond that. A weekday was tried, but "since Wednesday, until Wednesday" was ambiguous.
+  - A beaten fact ends with ", until Friday" within 6 days, or ", until 3 November".
+  - Provisional facts start with "provisionally". Forecast wording is task 10's.
+- The `why` has the value, rank, ties, compared, record start, missing days and gaps, plus `record` (the best earlier comparable day, so the previous record holder), `since`, `beatenBy` and `leaders`. The leaders are the 10 best comparable days up to the fact's date, with tied values sharing a rank and the earliest first. Values have no units in `facts.json`; the site should add them from the measure.
+- Snapshot tests in `test/selection.test.ts` cover five real windows, saved in `test/__snapshots__/`. They read `data/raw/` and `data/ftp-history/`, so refreshing the ZIPs may change them. Review the change before updating them with `npx vitest run -u`. `npm run smoke:sections [location-id] [date]` prints the three sections for a 31-day window.
+- Review of the snapshot output:
+  - The headline records come out on top and read well. At Observatory Hill on 2013-01-18, Today is "the hottest day on record" (10.86) and "the biggest temperature range on record", and This month has "the 5th hottest day on record, until 18 January" for 2013-01-08. The 1986-08-06 flood is "the wettest day on record" (10.75), with the day before it "the wettest day since November 1984, until Wednesday".
+  - Task 8's own example works: on 2026-10-13, Today leads with "the smallest temperature range since 8 February" (4.95), beside "the gloomiest October day since 2022".
+  - A since usually beats a modest rank, which reads better. "The coldest night since 1970" (1986-07-27) is chosen over a rank of around 20th.
+  - Weak spots:
+    - This week is often filled by short sinces such as "the coldest night since 20 October". These are true, but they are much alike from day to day.
+    - A year-so-far rank such as "the 9th wettest day of the year so far" still gets in at around 2.4.
+    - Quiet days give Today nothing at all, as on 2026-10-30, whose only data is a minimum and rain.
+    - Task 14 should retune `sectionRules` and the weights once real output has run for a couple of weeks.
+  - At Olympic Park, the February 2020 rain gives "the wettest day on record" (5.20), "the 4th wettest day on record, until Monday" and "the 3rd wettest summer day on record, until Sunday" on consecutive days. These are right but repetitive. Task 9's period facts ("the wettest 3 days on record") may be the better way to say this.
 
 ---
 

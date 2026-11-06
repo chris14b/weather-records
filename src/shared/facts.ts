@@ -33,36 +33,65 @@ export interface DayValue {
   value: number;
 }
 
-/** How one day ranks against the comparable days up to and including it. */
-export interface DailyFact {
-  locationId: string;
-  date: string;
-  measure: FactMeasure;
-  direction: Direction;
+export interface RankedDay extends DayValue {
+  rank: number;
+}
+
+/** Whether a fact's wording leads with its rank ("the 2nd hottest") or its since ("since 2018"). */
+export type Lead = "rank" | "since";
+
+/** The detail behind a fact, for its "why". */
+export interface FactWhy {
   value: number;
-  status: ValueStatus;
-  comparison: Comparison;
-  /** One more than the number of comparable days that beat it, so tied days share a rank. */
   rank: number;
   /** Earlier comparable days with exactly the same value. */
   ties: number;
   /** Comparable days with a value, including this one. */
   compared: number;
-  /** The first date of the measure's series. */
   recordStart: string;
-  /** Whether the series goes back to when records began, so "on record" is true. */
+  /** Whether the series goes back to when records began. */
   fullRecord: boolean;
   /** Comparable days between the record start and this day with no value. */
   missingDays: number;
-  /** Runs of at least a week of missing days that include a comparable day, before this day. */
+  /** Runs of at least a week of missing days that include a comparable day. */
   gaps: DateRange[];
-  /** The most recent earlier comparable day that matched or beat it; null if none did. */
+  /** The best earlier comparable day. */
+  record: DayValue | null;
+  /** The most recent earlier comparable day that matched or beat it. */
   since: DayValue | null;
-  /** The first later comparable day, up to the end of the window, that beat it. */
+  /** The first later comparable day that beat it. */
   beatenBy: DayValue | null;
+  /** The best comparable days up to and including this one. */
+  leaders: RankedDay[];
+}
+
+/** A fact chosen for the home page. */
+export interface Fact {
+  date: string;
+  measure: FactMeasure;
+  direction: Direction;
+  comparison: Comparison;
+  status: ValueStatus;
+  lead: Lead;
+  /** Higher is more unusual: about the log of how many comparable days pass for each fact like it. */
+  score: number;
+  /** What the day was, without naming the day, e.g. "the hottest day of the year so far". */
+  text: string;
+  why: FactWhy;
+}
+
+/** The facts for each section of a location's home page, latest first. */
+export interface LocationFacts {
+  locationId: string;
+  /** The latest day with data. */
+  today: Fact[];
+  /** The 6 days before it. */
+  thisWeek: Fact[];
+  /** 7 to 30 days before it. */
+  thisMonth: Fact[];
 }
 
 export interface FactsFile {
   generatedAt: string;
-  facts: DailyFact[];
+  locations: LocationFacts[];
 }

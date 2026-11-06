@@ -71,6 +71,8 @@ The build must **fail loudly** in any of these cases rather than publish wrong f
 
 ## Facts
 
+How facts are made, ranked, chosen and worded is explained in [docs/facts.md](docs/facts.md). Keep it in step with the code.
+
 - **Comparisons:** against all records, this year, the same month in every year, the same calendar date, and the same season. Don't compare against the same weekday.
 - **Ranks:** a fact can give a rank, such as "the 2nd coldest" or "the equal 3rd wettest", not only "the coldest". Tied values share a rank.
 - **Scoring:** narrow comparisons and short records score lower, because they make records easy to set. Show a small number of the best facts, without near-duplicates.

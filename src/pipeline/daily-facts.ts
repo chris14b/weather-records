@@ -1,10 +1,10 @@
 import type {
   Comparison,
-  DailyFact,
   DateRange,
   DayValue,
   Direction,
   FactMeasure,
+  ValueStatus,
 } from "../shared/facts.ts";
 import { addDays } from "./dates.ts";
 import type { Series, SeriesDay } from "./series.ts";
@@ -18,6 +18,37 @@ const comparisons: readonly Comparison[] = [
 ];
 
 const minimumGapDays = 7;
+
+/** How one day ranks against the comparable days up to and including it. */
+export interface DailyFact {
+  locationId: string;
+  date: string;
+  measure: FactMeasure;
+  direction: Direction;
+  value: number;
+  status: ValueStatus;
+  comparison: Comparison;
+  /** One more than the number of comparable days that beat it, so tied days share a rank. */
+  rank: number;
+  /** Earlier comparable days with exactly the same value. */
+  ties: number;
+  /** Comparable days with a value, including this one. */
+  compared: number;
+  /** The first date of the measure's series. */
+  recordStart: string;
+  /** Whether the series goes back to when records began, so "on record" is true. */
+  fullRecord: boolean;
+  /** Comparable days between the record start and this day with no value. */
+  missingDays: number;
+  /** Runs of at least a week of missing days that include a comparable day, before this day. */
+  gaps: DateRange[];
+  /** The most recent earlier comparable day that matched or beat it; null if none did. */
+  since: DayValue | null;
+  /** Comparable days with a value after `since`, including this one; all of them if `since` is null. */
+  comparedSince: number;
+  /** The first later comparable day, up to the end of the window, that beat it. */
+  beatenBy: DayValue | null;
+}
 
 export interface DailyFactsRequest {
   locationId: string;
@@ -102,23 +133,28 @@ function rank(
   day: SeriesDay,
   earlier: readonly SeriesDay[],
   direction: Direction,
-): Pick<DailyFact, "rank" | "ties" | "compared" | "since"> {
+): Pick<DailyFact, "rank" | "ties" | "compared" | "since" | "comparedSince"> {
   const beaten = earlier.filter((other) =>
     beats(other.value, day.value, direction),
   ).length;
   const ties = earlier.filter((other) => other.value === day.value).length;
-  const since = earlier.findLast(
+  const sinceIndex = earlier.findLastIndex(
     (other) => !beats(day.value, other.value, direction),
   );
   return {
     rank: beaten + 1,
     ties,
     compared: earlier.length + 1,
-    since: dayValue(since),
+    since: dayValue(earlier[sinceIndex]),
+    comparedSince: earlier.length - sinceIndex,
   };
 }
 
-function beats(value: number, other: number, direction: Direction): boolean {
+export function beats(
+  value: number,
+  other: number,
+  direction: Direction,
+): boolean {
   return direction === "highest" ? value > other : value < other;
 }
 
@@ -142,7 +178,7 @@ const seasons = [
 ] as const;
 
 /** Days with the same key are compared with each other. */
-function comparisonKey(date: string, comparison: Comparison): string {
+export function comparisonKey(date: string, comparison: Comparison): string {
   switch (comparison) {
     case "all":
       return "";
