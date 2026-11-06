@@ -131,6 +131,23 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 
 ---
 
+## 5b. Daily files that start in the month before
+
+**Status:** todo
+
+**Goal:** Read a current month's daily file that starts with the last days of the month before, so early-month runs don't fail.
+
+- Background: on 2026-11-06, every location's `IDCKWCDEA0` file for November 2026 had 7 rows, 30 October to 5 November. Its title still says "for November 2026". The 30 and 31 October rows are identical to the same days in the October file. Complete months hold only their own days: September has 30 rows and October 31. The October file saved on 2026-10-30, with 29 days, started on 1 October. So the current month's file seems to show at least the last 7 days. That is a guess from one case; a file from the 6th or 7th of a month would confirm when the padding stops.
+- `parseDailyFile` expects rows to run day by day from the 1st, so `updateDailyFiles` fails on every location until a month has 7 days. Task 15's build would fail in the first week of every month.
+- Scope: skip leading rows from the previous month, only when they run on consecutive days and end on its last day, so the next row is the 1st. They needn't be kept, since the previous month's file has the same days, and the build reads that file too. Any other row from another month must still fail the build.
+- Scope: the real Observatory Hill file from 2026-11-06 is saved as `test/fixtures/sydney_(observatory_hill)-202611.csv`. Test with it that the skipped rows are left out, that a file with only previous-month rows gives no days, and that a previous-month row anywhere else still fails.
+- Scope: add the quirk to task 5's notes.
+- Done when: the tests pass, and `updateDailyFiles` runs on the real current month in the first week of a month without failing.
+
+**Notes:**
+
+---
+
 ## 6. Live observations and forecast
 
 **Status:** done (reopened 2026-10-30 for the follow-up below, before the first pass was committed, and finished the same day)

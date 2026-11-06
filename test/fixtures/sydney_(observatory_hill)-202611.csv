@@ -1,0 +1,21 @@
+'IDCKWCDE51,,,,,,,,,,
+Australian Government Bureau of Meteorology,,,,,,,,,,
+South Australia,,,,,,,,,,
+
+Daily Evapotranspiration for SYDNEY (OBSERVATORY HILL) New South Wales for November 2026,,,,,,,,,,
+Issued at 04:31 GMT on Friday 06 November 2026,,,,,,,,,,
+© Copyright Commonwealth of Australia 2026 Bureau of Meteorology (ABN 92 637 533 532),,,,,,,,,,
+Please note Copyright Disclaimer and Privacy Notice <http://www.bom.gov.au/other/copyright.shtml>,,,,,,,,,,
+
+,,Evapo-,,Pan,,,Maximum,Minimum,Average,
+,,Transpiration,Rain,Evaporation,Maximum,Minimum,Relative,Relative,10m Wind,Solar
+Station Name,Date,0000-2400,0900-0900,0900-0900,Temperature,Temperature,Humidity,Humidity,Speed,Radiation
+,,(mm),(mm),(mm),(°C),(°C),(%),(%),(m/sec),(MJ/sq m)
+SYDNEY (OBSERVATORY HILL),30/10/2026,4.1,0.0, ,23.9,16.8,80,53,0.00,25.52
+SYDNEY (OBSERVATORY HILL),31/10/2026,3.6,0.0, ,28.2,16.4,88,43,0.00,20.52
+SYDNEY (OBSERVATORY HILL),01/11/2026,4.1,0.0, ,24.5,19.3,84,61,0.00,23.66
+SYDNEY (OBSERVATORY HILL),02/11/2026,3.9,0.0, ,25.2,17.8,90,55,0.00,22.62
+SYDNEY (OBSERVATORY HILL),03/11/2026,3.5,1.2, ,25.1,19.5,95,64,0.00,19.09
+SYDNEY (OBSERVATORY HILL),04/11/2026,3.5,49.6, ,25.0,16.8,95,42,0.00,20.28
+SYDNEY (OBSERVATORY HILL),05/11/2026,4.1,0.4, ,23.6,16.8,78,29,0.00,26.50
+Totals:,,26.8,51.2, ,,,,,, 
