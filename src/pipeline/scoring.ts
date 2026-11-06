@@ -38,6 +38,8 @@ const measureWeights: Record<FactMeasure, number> = {
   temp3pm: 0.8,
   relHum9am: 0.75,
   relHum3pm: 0.75,
+  maxTempChange: 0.9,
+  minTempChange: 0.85,
 };
 
 /** Scores a fact by its rank or its since, whichever is more striking; see docs/facts.md. */

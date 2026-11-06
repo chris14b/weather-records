@@ -1,3 +1,9 @@
+/** A measure whose day-to-day change facts can be about. */
+export type ChangingMeasure = "maxTemp" | "minTemp";
+
+/** A day's value minus the day before's, e.g. `maxTempChange`. */
+export type ChangeMeasure = `${ChangingMeasure}Change`;
+
 /** A daily measure that facts can be about. */
 export type FactMeasure =
   | "maxTemp"
@@ -10,7 +16,14 @@ export type FactMeasure =
   | "temp9am"
   | "relHum9am"
   | "temp3pm"
-  | "relHum3pm";
+  | "relHum3pm"
+  | ChangeMeasure;
+
+export function isChangeMeasure(
+  measure: FactMeasure,
+): measure is ChangeMeasure {
+  return measure.endsWith("Change");
+}
 
 export type Direction = "highest" | "lowest";
 

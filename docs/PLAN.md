@@ -355,7 +355,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 
 ## 9. Day-to-day changes
 
-**Status:** todo
+**Status:** done
 
 **Goal:** Facts about how much a day changed from the day before, such as "the biggest day-to-day drop in maximum since 2019".
 
@@ -369,6 +369,17 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 - Done when: tests pass for a change series that meets a gap, and the real data gives a fact for the 14.9°C drop at Observatory Hill on 13 October 2026.
 
 **Notes:**
+
+- [facts.md](facts.md) covers the method. The details:
+- On 2026-11-06 the user decided against changes in humidity and in the range, so only the maximum and minimum have them. Both were built and tried first: the humidity rise on 2026-10-13 ("since November 2023") outscored the drop in maximum, and the range drop mostly repeated it.
+- `changeSeries` in `series.ts` makes `maxTempChange` and `minTempChange`, and `locationSeries` now returns 13 series. The `ChangeMeasure` type and `isChangeMeasure` are in `src/shared/facts.ts`. `Series` is now generic over its measure, so `changeSeries` only accepts a measure that has a change.
+- A rise gets only `highest` facts and a drop only `lowest`, and a day with no change gets none, so a rise is never worded as "the biggest drop".
+- Weights: maximum 0.9, minimum 0.85. At 1, changes filled most of the 2026-10-13 window.
+- Families: the changes in maximum and minimum share one family, so only the stronger shows on a day. A change doesn't share its measure's family, so "the coldest day since…" and "the biggest drop in maximum since…" can both show. A selection test covers this.
+- Wording puts the comparison after the change: "the biggest day-to-day drop in maximum temperature in October since 2017". The `periodAfter` flag on a phrase in `wording.ts` does this.
+- The real data: on 2026-10-13 at Observatory Hill, the 14.9°C drop is the biggest on any 13 October, and the biggest October drop since 31 October 2017, which had exactly the same drop (35.4°C to 20.5°C). Today now shows "the biggest day-to-day drop in maximum temperature in October since 2017" (4.00), between the smallest range since 8 February and "the gloomiest October day since 2022". Its rank among all days is outside the top 10, because bigger drops are common in summer.
+- Snapshot changes, reviewed: change facts replace a few weak This week entries, such as "the coldest day since 15 October" at Sydney Airport. On 2013-01-18, Today gains "the 2nd biggest day-to-day rise in maximum temperature on record" (9.14), and 1986-07-26 is now "the 3rd biggest day-to-day drop in minimum temperature on record" (8.06), replacing "the coldest night since 1978".
+- Not handled: a change across the 2020 Observatory Hill station change (2020-08-31 to 2020-09-01) subtracts one station's value from the other's, as the joined series does elsewhere. Year-so-far ranks such as "the 7th biggest day-to-day drop in maximum temperature of the year so far" still get into This week, as task 8 found for other measures.
 
 ---
 

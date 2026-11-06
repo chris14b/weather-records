@@ -9,7 +9,7 @@ exports[`selectFacts on real data > chooses the facts at sydney-airport for the 
   "thisWeek": [
     "2026-10-28 2.36 the lowest humidity since 12 October",
     "2026-10-27 1.95 the coldest night since 20 October, until Thursday",
-    "2026-10-26 2.40 the coldest day since 15 October",
+    "2026-10-26 2.53 the 7th biggest day-to-day drop in maximum temperature of the year so far",
     "2026-10-25 5.29 the warmest night since 10 April",
     "2026-10-24 2.48 the hottest day since 12 October, until Sunday",
     "2026-10-23 1.95 the wettest day since 16 October",
@@ -25,9 +25,9 @@ exports[`selectFacts on real data > chooses the facts at sydney-observatory-hill
   "thisMonth": [
     "1986-07-28 5.93 the coldest day since July 1985",
     "1986-07-27 8.68 the coldest night since 1970",
-    "1986-07-26 7.98 the coldest night since 1978, until Sunday",
+    "1986-07-26 8.06 the 3rd biggest day-to-day drop in minimum temperature on record",
     "1986-07-25 6.03 the smallest temperature range since May 1984",
-    "1986-07-09 5.87 the coldest day since 18 July 1985, until 28 July",
+    "1986-07-17 5.89 the biggest day-to-day rise in minimum temperature since September 1983",
   ],
   "thisWeek": [
     "1986-08-07 2.39 the 9th wettest day of the year so far",
@@ -35,6 +35,7 @@ exports[`selectFacts on real data > chooses the facts at sydney-observatory-hill
     "1986-08-05 6.45 the wettest day since November 1984, until Wednesday",
     "1986-08-05 3.98 the smallest August temperature range since 1977",
     "1986-08-04 3.49 the coldest August day since August 1983, until Tuesday",
+    "1986-08-03 1.98 the biggest day-to-day drop in maximum temperature since 25 July, until Monday",
     "1986-08-02 4.25 the coldest August night since 1979",
     "1986-08-02 4.14 the biggest temperature range since 25 April",
   ],
@@ -47,19 +48,21 @@ exports[`selectFacts on real data > chooses the facts at sydney-observatory-hill
 exports[`selectFacts on real data > chooses the facts at sydney-observatory-hill for the 31 days to 2013-01-18 1`] = `
 {
   "thisMonth": [
+    "2013-01-09 6.29 the biggest day-to-day drop in maximum temperature since January 2010",
     "2013-01-08 9.26 the 5th hottest day on record, until 18 January",
     "2012-12-31 5.93 the sunniest day since January 2011",
     "2012-12-26 5.28 the wettest day since 12 June",
   ],
   "thisWeek": [
     "2013-01-15 2.94 the coldest night since 27 December 2012",
-    "2013-01-14 2.94 the wettest day since 26 December 2012",
+    "2013-01-14 3.02 the biggest day-to-day drop in minimum temperature since 10 December 2012",
     "2013-01-13 4.14 the gloomiest day since 6 October 2012",
     "2013-01-12 5.77 the warmest night since 28 February 2012",
   ],
   "today": [
     "2013-01-18 10.86 the hottest day on record",
     "2013-01-18 9.70 the biggest temperature range on record",
+    "2013-01-18 9.14 the 2nd biggest day-to-day rise in maximum temperature on record",
   ],
 }
 `;
@@ -67,21 +70,22 @@ exports[`selectFacts on real data > chooses the facts at sydney-observatory-hill
 exports[`selectFacts on real data > chooses the facts at sydney-observatory-hill for the 31 days to 2026-10-13 1`] = `
 {
   "thisMonth": [
+    "2026-09-22 5.14 the biggest day-to-day drop in maximum temperature in spring since 2017",
     "2026-09-21 5.37 the hottest day since 18 February, until 12 October",
   ],
   "thisWeek": [
     "2026-10-12 5.46 the hottest day since 18 February",
-    "2026-10-12 5.05 the biggest temperature range since 10 January",
+    "2026-10-12 5.12 the biggest day-to-day rise in maximum temperature since 19 December 2025",
     "2026-10-11 4.89 the sunniest day since 24 February",
-    "2026-10-10 2.94 the hottest day since 21 September, until Monday",
+    "2026-10-10 4.90 the biggest day-to-day rise in maximum temperature since 18 February, until Monday",
     "2026-10-09 4.88 the sunniest day since 24 February, until Sunday",
     "2026-10-08 2.08 the coldest night since 30 September, until Friday",
     "2026-10-07 2.87 the smallest October temperature range since October 2024, until Tuesday",
   ],
   "today": [
     "2026-10-13 4.95 the smallest temperature range since 8 February",
+    "2026-10-13 4.00 the biggest day-to-day drop in maximum temperature in October since 2017",
     "2026-10-13 3.51 the gloomiest October day since 2022",
-    "2026-10-13 3.09 the warmest night since 21 September",
   ],
 }
 `;
@@ -101,7 +105,7 @@ exports[`selectFacts on real data > chooses the facts at sydney-olympic-park for
     "2020-02-08 2.99 the 3rd wettest summer day on record, until Sunday",
     "2020-02-07 4.96 the wettest day since 18 September 2019, until Saturday",
     "2020-02-07 4.58 the smallest temperature range since 26 August 2019",
-    "2020-02-06 2.70 the smallest temperature range since 17 January, until Friday",
+    "2020-02-06 2.94 the biggest day-to-day rise in minimum temperature in February since February 2017",
   ],
   "today": [
     "2020-02-12 2.20 the warmest night since 3 February",

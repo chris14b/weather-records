@@ -5,7 +5,11 @@ import {
 } from "../src/pipeline/daily-facts.ts";
 import { addDays } from "../src/pipeline/dates.ts";
 import { layerRecent } from "../src/pipeline/layering.ts";
-import { layeredSeries, type Series } from "../src/pipeline/series.ts";
+import {
+  changeSeries,
+  layeredSeries,
+  type Series,
+} from "../src/pipeline/series.ts";
 import { loadLocationHistory } from "../src/pipeline/stations.ts";
 import type {
   Comparison,
@@ -266,6 +270,17 @@ describe("generateDailyFacts", () => {
     );
   });
 
+  test("makes only biggest-rise facts for a rise, biggest-drop facts for a drop, and none for no change", () => {
+    const facts = factsFor(
+      series("2026-01-01", [2.5, -14.9, 0], "maxTempChange"),
+      "2026-01-03",
+    );
+
+    expect(
+      new Set(facts.map(({ date, direction }) => `${date} ${direction}`)),
+    ).toEqual(new Set(["2026-01-01 highest", "2026-01-02 lowest"]));
+  });
+
   test("passes on each day's status and the series' record start", () => {
     const humidity: Series = {
       measure: "minRelHum",
@@ -307,7 +322,7 @@ describe("generateDailyFacts", () => {
     ).toBe(1);
   });
 
-  test("finds the hottest day on record at Observatory Hill on 2013-01-18", async () => {
+  describe("at Observatory Hill", async () => {
     const [observatoryHill] = locations;
     if (observatoryHill === undefined) throw new Error("No locations");
     const history = await loadLocationHistory(
@@ -320,17 +335,31 @@ describe("generateDailyFacts", () => {
       layerRecent("maxTemp", history, []),
     );
 
-    const facts = factsFor(maxTemp, "2013-01-18", 1);
+    test("finds the hottest day on record on 2013-01-18", () => {
+      const facts = factsFor(maxTemp, "2013-01-18", 1);
 
-    expect(find(facts, "2013-01-18")).toMatchObject({
-      locationId: "test",
-      value: 45.8,
-      status: "confirmed",
-      rank: 1,
-      ties: 0,
-      since: null,
-      recordStart: "1859-01-01",
-      fullRecord: true,
+      expect(find(facts, "2013-01-18")).toMatchObject({
+        locationId: "test",
+        value: 45.8,
+        status: "confirmed",
+        rank: 1,
+        ties: 0,
+        since: null,
+        recordStart: "1859-01-01",
+        fullRecord: true,
+      });
+    });
+
+    test("finds the 14.9°C drop in maximum on 2026-10-13", () => {
+      const facts = factsFor(changeSeries(maxTemp), "2026-10-13", 1);
+
+      expect(find(facts, "2026-10-13", "month", "lowest")).toMatchObject({
+        measure: "maxTempChange",
+        value: -14.9,
+        ties: 2,
+        since: { date: "2017-10-31", value: -14.9 },
+      });
+      expect(find(facts, "2026-10-13", "calendarDate", "lowest").rank).toBe(1);
     });
   });
 });

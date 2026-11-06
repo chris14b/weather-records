@@ -1,10 +1,11 @@
-import type {
-  Comparison,
-  DateRange,
-  DayValue,
-  Direction,
-  FactMeasure,
-  ValueStatus,
+import {
+  isChangeMeasure,
+  type Comparison,
+  type DateRange,
+  type DayValue,
+  type Direction,
+  type FactMeasure,
+  type ValueStatus,
 } from "../shared/facts.ts";
 import { addDays } from "./dates.ts";
 import type { Series, SeriesDay } from "./series.ts";
@@ -123,9 +124,14 @@ export function generateDailyFacts({
   });
 }
 
-// A dry day is never the wettest of anything, and the lowest rain is always 0 mm.
+// A dry day is never the wettest of anything, and the lowest rain is always 0 mm. Only a
+// rise can be the biggest rise, and only a drop the biggest drop.
 function directionsFor(measure: FactMeasure, value: number): Direction[] {
   if (measure === "rain") return value > 0 ? ["highest"] : [];
+  if (isChangeMeasure(measure)) {
+    if (value > 0) return ["highest"];
+    return value < 0 ? ["lowest"] : [];
+  }
   return ["highest", "lowest"];
 }
 

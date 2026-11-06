@@ -1,4 +1,5 @@
 import type {
+  ChangingMeasure,
   Comparison,
   DateRange,
   Direction,
@@ -12,6 +13,22 @@ import { coverage, minimumCoverage } from "./scoring.ts";
 interface Phrase {
   superlative: string;
   noun: string;
+  /** Whether the comparison follows the noun ("in October") rather than leading it. */
+  periodAfter?: boolean;
+}
+
+const changing: Record<ChangingMeasure, string> = {
+  maxTemp: "maximum temperature",
+  minTemp: "minimum temperature",
+};
+
+function changePhrases(measure: ChangingMeasure): Record<Direction, Phrase> {
+  const phrase = (change: string) => ({
+    superlative: "biggest",
+    noun: `day-to-day ${change} in ${changing[measure]}`,
+    periodAfter: true,
+  });
+  return { highest: phrase("rise"), lowest: phrase("drop") };
 }
 
 const phrases: Record<FactMeasure, Record<Direction, Phrase>> = {
@@ -59,16 +76,20 @@ const phrases: Record<FactMeasure, Record<Direction, Phrase>> = {
     highest: { superlative: "most humid", noun: "3pm" },
     lowest: { superlative: "driest", noun: "3pm" },
   },
+  maxTempChange: changePhrases("maxTemp"),
+  minTempChange: changePhrases("minTemp"),
 };
 
 /** What a fact's day was, without naming the day: e.g. "the 2nd hottest October day on record". */
 export function describeFact(fact: DailyFact, lead: Lead): string {
   const { measure, direction, comparison, date, beatenBy, status } = fact;
-  const { superlative, noun } = phrases[measure][direction];
+  const phrase = phrases[measure][direction];
   const ranked =
-    lead === "rank" ? `${rankWords(fact)}${superlative}` : superlative;
+    lead === "rank"
+      ? `${rankWords(fact)}${phrase.superlative}`
+      : phrase.superlative;
   const text = [
-    `the ${ranked} ${subject(comparison, noun, date)}`,
+    `the ${ranked} ${subject(comparison, phrase, date)}`,
     lead === "rank" ? rankScope(fact) : sinceScope(fact),
     lead === "rank" ? caveat(fact) : "",
     beatenBy === null ? "" : `, until ${laterDay(beatenBy.date, date)}`,
@@ -90,17 +111,26 @@ function rankWords({ rank, ties }: DailyFact): string {
   return `${ties > 0 ? "equal " : ""}${rank > 1 ? `${ordinal(rank)} ` : ""}`;
 }
 
-function subject(comparison: Comparison, noun: string, date: string): string {
+function subject(
+  comparison: Comparison,
+  { noun, periodAfter = false }: Phrase,
+  date: string,
+): string {
   switch (comparison) {
     case "all":
       return noun;
     case "year":
       return `${noun} of the year so far`;
-    case "season":
-      return `${comparisonKey(date, "season")} ${noun}`;
-    case "month":
-      return `${format(date, { month: "long" })} ${noun}`;
+    case "season": {
+      const season = comparisonKey(date, "season");
+      return periodAfter ? `${noun} in ${season}` : `${season} ${noun}`;
+    }
+    case "month": {
+      const month = format(date, { month: "long" });
+      return periodAfter ? `${noun} in ${month}` : `${month} ${noun}`;
+    }
     case "calendarDate":
+      if (periodAfter) return `${noun} on ${dayMonth(date)}`;
       return noun === "day" ? dayMonth(date) : `${dayMonth(date)} ${noun}`;
   }
 }

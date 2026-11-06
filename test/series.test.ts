@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import type { LayeredRecord } from "../src/pipeline/layering.ts";
 import {
+  changeSeries,
   columnSeries,
   layeredSeries,
   rangeSeries,
@@ -110,6 +111,68 @@ describe("rangeSeries", () => {
       ],
       fullRecord: true,
     });
+  });
+});
+
+describe("changeSeries", () => {
+  test("subtracts the day before's value, naming the series after its measure", () => {
+    const max: Series<"maxTemp"> = {
+      measure: "maxTemp",
+      days: [
+        { date: "2026-10-11", value: 27.2, status: "confirmed" },
+        { date: "2026-10-12", value: 34.8, status: "confirmed" },
+        { date: "2026-10-13", value: 19.9, status: "confirmed" },
+      ],
+      fullRecord: true,
+    };
+
+    expect(changeSeries(max)).toEqual({
+      measure: "maxTempChange",
+      days: [
+        { date: "2026-10-12", value: 7.6, status: "confirmed" },
+        { date: "2026-10-13", value: -14.9, status: "confirmed" },
+      ],
+      fullRecord: true,
+    });
+  });
+
+  test("leaves out the day of a gap and the day after it", () => {
+    const min: Series<"minTemp"> = {
+      measure: "minTemp",
+      days: [
+        { date: "2026-10-01", value: 14.0, status: "confirmed" },
+        { date: "2026-10-02", value: 15.5, status: "confirmed" },
+        { date: "2026-10-04", value: 13.0, status: "confirmed" },
+        { date: "2026-10-05", value: 13.5, status: "confirmed" },
+      ],
+      fullRecord: true,
+    };
+
+    expect(changeSeries(min)).toEqual({
+      measure: "minTempChange",
+      days: [
+        { date: "2026-10-02", value: 1.5, status: "confirmed" },
+        { date: "2026-10-05", value: 0.5, status: "confirmed" },
+      ],
+      fullRecord: true,
+    });
+  });
+
+  test("marks a change provisional if either day's value is", () => {
+    const min: Series<"minTemp"> = {
+      measure: "minTemp",
+      days: [
+        { date: "2026-11-01", value: 14.1, status: "confirmed" },
+        { date: "2026-11-02", value: 16.4, status: "provisional" },
+        { date: "2026-11-03", value: 12.0, status: "confirmed" },
+      ],
+      fullRecord: true,
+    };
+
+    expect(changeSeries(min).days.map(({ status }) => status)).toEqual([
+      "provisional",
+      "provisional",
+    ]);
   });
 });
 

@@ -11,7 +11,7 @@ There are four steps:
 
 ## 1. Series
 
-A series is one measure's single-day values for a location, in date order (`series.ts`). There are 11:
+A series is one measure's single-day values for a location, in date order (`series.ts`). There are 13:
 
 | Measure                                        | From                                            | Starts                      |
 | ---------------------------------------------- | ----------------------------------------------- | --------------------------- |
@@ -19,18 +19,20 @@ A series is one measure's single-day values for a location, in date order (`seri
 | `range` (max minus min)                        | the two series above, on days with both         | when records began          |
 | `maxRelHum`, `minRelHum`, `solar`              | FTP history (`data/ftp-history/`)               | 2009 (2011 at Olympic Park) |
 | `temp9am`, `relHum9am`, `temp3pm`, `relHum3pm` | saved readings (`data/recent/readings/`)        | when saving began           |
+| `maxTempChange`, `minTempChange`               | each day's value minus the day before's         | when records began          |
 
 - A series whose history goes back to when records began has `fullRecord` set. Only those may say "on record"; the others say "since 2009" and so on.
 - Missing days are simply absent. Nothing is filled in, and nothing is counted through a gap.
 - A multi-day rain or temperature total is left out, so the days it covers count as missing. A ZIP value with a blank period counts as a single day only on a series' first day or after a day with a value. Otherwise it probably is an accumulation, and is left out too.
-- A value from a live snapshot is `provisional`. Everything else is `confirmed`. A range is provisional if either its max or its min is.
+- A **change** is left out when either its day or the day before has no value, so a change is never taken across a gap. Only the maximum and minimum have changes. Changes in rain, range and humidity were judged not worth showing.
+- A value from a live snapshot is `provisional`. Everything else is `confirmed`. A range is provisional if either its max or its min is, and a change if either day's value is.
 
 ## 2. Ranking
 
 `generateDailyFacts` looks at every day in the window: the 31 days to today, by default. For each day that has a value, it makes a candidate fact for every combination of:
 
 - **Measure:** each series.
-- **Direction:** `highest` and `lowest`. Rain has only `highest`, and a dry day gets no facts at all, or every dry day would be "the equal wettest" of something.
+- **Direction:** `highest` and `lowest`. Rain has only `highest`, and a dry day gets no facts at all, or every dry day would be "the equal wettest" of something. For a change, `highest` is the biggest rise and `lowest` the biggest drop. A rise gets only `highest` facts, a drop only `lowest`, and no change none, so a rise is never "the biggest drop".
 - **Comparison:** which days count as comparable.
   - `all`: every day.
   - `year`: the days of the same year so far.
@@ -70,12 +72,13 @@ These keep ranks easy to set from scoring too high:
 - **Missing days:** a rank is multiplied by the share of comparable days that have a value. The missing days might have held something better.
 - **Sinces that don't count:** there is no since score for `year`, because its since is always the same day as the `all` since. There is none for `calendarDate`, and none when a gap falls after the since day, since the gap might have held a day that matched it.
 - **Comparison weight:** all 1, season 0.85, month 0.8, year 0.75, calendar date 0.6 (`comparisonWeights`). Narrow comparisons give many more chances to set a record, and are less interesting to read.
-- **Measure weight:** 1 for temperature and rain, down to 0.75 for 9am and 3pm humidity (`measureWeights`).
+- **Measure weight:** 1 for temperature and rain, down to 0.75 for 9am and 3pm humidity (`measureWeights`). Changes weigh less than their measures: 0.9 for the maximum and 0.85 for the minimum.
 
 ### Worked examples
 
 - **2013-01-18 at Observatory Hill**, 45.8°C: the highest of 55,916 days, with 349 missing. That gives log(55,916) × 1 for the record length × 0.994 for coverage, which is **10.86**. It leads with the rank: "the hottest day on record".
 - **2026-10-13 at Observatory Hill**, a 1.3°C range: only 148th smallest of all days, so the rank scores 0. But no day since 8 February matched it, about 247 comparable days. That gives log(247) × 0.9 for the range weight, which is **4.95**. It leads with the since: "the smallest temperature range since 8 February".
+- **2026-10-13 at Observatory Hill**, a 14.9°C drop in maximum (34.8°C to 19.9°C): only the equal 21st biggest October drop, so the rank scores 0. But no October day since 2017 matched it, about 259 comparable days. That gives log(259) × 0.8 for the month × 0.9 for the change in maximum, which is **4.00**. It leads with the since: "the biggest day-to-day drop in maximum temperature in October since 2017".
 
 ## 4. Selection
 
@@ -87,6 +90,9 @@ These keep ranks easy to set from scoring too high:
 - range
 - humidity (all four)
 - solar
+- changes in maximum and minimum
+
+A change isn't in its measure's family. A cold change often makes a day both "the coldest day since…" and "the biggest drop in maximum since…", but the two say different things: how cold it was, and how suddenly it got there.
 
 It then fills the sections, counting back from the latest day that has any fact (`sectionRules`):
 
@@ -107,6 +113,7 @@ A score of 1.75 is a since of about 6 days, so "the warmest day since last Tuesd
   - "day", "spring day", "October day", or "6 November".
   - The year so far: "day of the year so far".
   - The noun follows the measure: "night" for the minimum, "temperature range", "9am" and so on.
+  - A change is "the biggest day-to-day rise in maximum temperature" or "drop in minimum temperature". Its comparison follows it: "in spring", "in October", "on 13 October".
 - **Scope:**
   - A rank-led fact says "on record", or "since 2009" when the series doesn't go back to when records began.
   - A since-led fact drops the rank and says "since 8 February", "since 20 December 2025", "since August 2024" or "since 2018", depending on how far back it reaches.

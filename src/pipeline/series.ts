@@ -1,4 +1,9 @@
-import type { FactMeasure, ValueStatus } from "../shared/facts.ts";
+import type {
+  ChangeMeasure,
+  ChangingMeasure,
+  FactMeasure,
+  ValueStatus,
+} from "../shared/facts.ts";
 import { addDays } from "./dates.ts";
 import type { FtpHistoryDay } from "./ftp-history.ts";
 import type { DailyRecord } from "./history.ts";
@@ -12,8 +17,8 @@ export interface SeriesDay {
 }
 
 /** One measure's single-day values for a location, in date order. */
-export interface Series {
-  measure: FactMeasure;
+export interface Series<Measure extends FactMeasure = FactMeasure> {
+  measure: Measure;
   days: readonly SeriesDay[];
   /** Whether the values go back to when records began. */
   fullRecord: boolean;
@@ -23,10 +28,10 @@ export interface Series {
  * Keeps a layered ZIP measure's single-day values. Multi-day values are left out, so the
  * days they cover are missing.
  */
-export function layeredSeries(
-  measure: FactMeasure,
+export function layeredSeries<Measure extends FactMeasure>(
+  measure: Measure,
   records: readonly LayeredRecord[],
-): Series {
+): Series<Measure> {
   const dates = new Set(records.map(({ date }) => date));
   return {
     measure,
@@ -53,7 +58,7 @@ function isSingleDay(
 }
 
 /** Each day's maximum minus its minimum, on the days that have both. */
-export function rangeSeries(max: Series, min: Series): Series {
+export function rangeSeries(max: Series, min: Series): Series<"range"> {
   const mins = new Map(min.days.map((day) => [day.date, day]));
   return {
     measure: "range",
@@ -63,16 +68,48 @@ export function rangeSeries(max: Series, min: Series): Series {
       return [
         {
           date,
-          value: Math.round((value - low.value) * 10) / 10,
-          status:
-            status === "confirmed" && low.status === "confirmed"
-              ? "confirmed"
-              : "provisional",
+          value: roundedDifference(value, low.value),
+          status: combinedStatus(status, low.status),
         },
       ];
     }),
     fullRecord: max.fullRecord && min.fullRecord,
   };
+}
+
+/**
+ * Each day's value minus the day before's, on the days where both have one. A change is
+ * provisional if either value is.
+ */
+export function changeSeries(
+  source: Series<ChangingMeasure>,
+): Series<ChangeMeasure> {
+  const byDate = new Map(source.days.map((day) => [day.date, day]));
+  return {
+    measure: `${source.measure}Change`,
+    days: source.days.flatMap(({ date, value, status }) => {
+      const before = byDate.get(addDays(date, -1));
+      if (before === undefined) return [];
+      return [
+        {
+          date,
+          value: roundedDifference(value, before.value),
+          status: combinedStatus(status, before.status),
+        },
+      ];
+    }),
+    fullRecord: source.fullRecord,
+  };
+}
+
+function roundedDifference(value: number, other: number): number {
+  return Math.round((value - other) * 10) / 10;
+}
+
+function combinedStatus(...statuses: ValueStatus[]): ValueStatus {
+  return statuses.every((status) => status === "confirmed")
+    ? "confirmed"
+    : "provisional";
 }
 
 export interface LocationData {
@@ -99,6 +136,8 @@ export function locationSeries(data: LocationData): Series[] {
     columnSeries("relHum9am", data.readings),
     columnSeries("temp3pm", data.readings),
     columnSeries("relHum3pm", data.readings),
+    changeSeries(maxTemp),
+    changeSeries(minTemp),
   ];
 }
 
@@ -109,7 +148,7 @@ export function locationSeries(data: LocationData): Series[] {
 export function columnSeries<Column extends FactMeasure>(
   measure: Column,
   rows: readonly ({ date: string } & Record<Column, number | null>)[],
-): Series {
+): Series<Column> {
   return {
     measure,
     days: rows.flatMap((row) => {

@@ -3,18 +3,18 @@ import { generateDailyFacts } from "../src/pipeline/daily-facts.ts";
 import { addDays, daysBetween } from "../src/pipeline/dates.ts";
 import { readSavedSeries } from "../src/pipeline/saved-series.ts";
 import { selectFacts } from "../src/pipeline/selection.ts";
-import type { Series } from "../src/pipeline/series.ts";
+import { changeSeries, type Series } from "../src/pipeline/series.ts";
 import type { Fact, FactMeasure, LocationFacts } from "../src/shared/facts.ts";
 import { locations } from "../src/shared/locations.ts";
 
 const latest = "2026-11-06";
 
 /** Every day from 2016 to `latest` at `baseline`, except the days given. */
-function series(
-  measure: FactMeasure,
+function series<Measure extends FactMeasure>(
+  measure: Measure,
   baseline: (date: string) => number,
   values: Readonly<Record<string, number>>,
-): Series {
+): Series<Measure> {
   const days = Array.from(
     { length: daysBetween("2016-01-01", latest) + 1 },
     (_, index) => {
@@ -149,6 +149,36 @@ describe("selectFacts", () => {
         value: 20,
         rank: 5,
       })),
+    ]);
+  });
+
+  test("keeps one change in temperature per day, apart from the day's other temperature facts", () => {
+    const max = series("maxTemp", () => 25, {
+      "2026-11-05": 35,
+      "2026-11-06": 15,
+    });
+    const min = series("minTemp", () => 15, {
+      "2026-11-05": 18,
+      "2026-11-06": 8,
+    });
+    const coldChange = [max, changeSeries(max), changeSeries(min)];
+
+    const { today } = selectFacts({
+      locationId: "test",
+      facts: generateDailyFacts({
+        locationId: "test",
+        series: coldChange,
+        windowEnd: latest,
+      }),
+      series: coldChange,
+    });
+
+    expect(today.map(({ measure, text }) => ({ measure, text }))).toEqual([
+      { measure: "maxTemp", text: "the coldest day on record" },
+      {
+        measure: "maxTempChange",
+        text: "the biggest day-to-day drop in maximum temperature on record",
+      },
     ]);
   });
 

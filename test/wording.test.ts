@@ -46,6 +46,66 @@ describe("describeFact", () => {
   });
 
   test.each([
+    [
+      "maxTempChange",
+      "lowest",
+      {},
+      "the biggest day-to-day drop in maximum temperature on record",
+    ],
+    [
+      "minTempChange",
+      "highest",
+      { rank: 2 },
+      "the 2nd biggest day-to-day rise in minimum temperature on record",
+    ],
+    [
+      "minTempChange",
+      "lowest",
+      { comparison: "year" },
+      "the biggest day-to-day drop in minimum temperature of the year so far",
+    ],
+    [
+      "maxTempChange",
+      "highest",
+      { comparison: "season" },
+      "the biggest day-to-day rise in maximum temperature in spring on record",
+    ],
+    [
+      "maxTempChange",
+      "lowest",
+      { comparison: "month" },
+      "the biggest day-to-day drop in maximum temperature in November on record",
+    ],
+    [
+      "maxTempChange",
+      "highest",
+      { comparison: "calendarDate" },
+      "the biggest day-to-day rise in maximum temperature on 6 November on record",
+    ],
+  ] as const)(
+    "words a change in %s, %s: %o",
+    (measure, direction, fact, expected) => {
+      expect(words({ measure, direction, ...fact })).toBe(expected);
+    },
+  );
+
+  test("words a change that leads with its since", () => {
+    expect(
+      words(
+        {
+          measure: "maxTempChange",
+          direction: "lowest",
+          comparison: "month",
+          since: { date: "2017-10-31", value: -14.9 },
+        },
+        "since",
+      ),
+    ).toBe(
+      "the biggest day-to-day drop in maximum temperature in November since 2017",
+    );
+  });
+
+  test.each([
     ["1900-01-01", "since 1900"],
     ["2011-09-01", "since 2011"],
     ["2026-03-14", "since March 2026"],

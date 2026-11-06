@@ -49,7 +49,8 @@ const sectionRules: Record<Section, SectionRule> = {
   },
 };
 
-// Facts about measures in the same family say much the same about a day.
+// Facts about measures in the same family say much the same about a day. A change isn't in
+// its measure's family: "the biggest drop in maximum" says more than "the coldest day".
 const families: Record<FactMeasure, string> = {
   maxTemp: "day",
   temp3pm: "day",
@@ -62,6 +63,8 @@ const families: Record<FactMeasure, string> = {
   relHum9am: "humidity",
   relHum3pm: "humidity",
   solar: "solar",
+  maxTempChange: "temperatureChange",
+  minTempChange: "temperatureChange",
 };
 
 const leaderCount = 10;
