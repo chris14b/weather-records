@@ -52,7 +52,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 - Type-checking uses two projects under `tsconfig.json`: `tsconfig.node.json` (pipeline, shared, tests and config files, Node types, no DOM) and `tsconfig.site.json` (site and shared, DOM, no Node types). Shared code must therefore stay free of both Node and DOM APIs.
 - ESLint uses `typescript-eslint`'s `strictTypeChecked` and `stylisticTypeChecked`. Its config is `eslint.config.js`, not `.ts`, because a TypeScript config needs `jiti` or an unstable flag.
 - Vite's root is `src/site`, and it builds to `dist/`. Vitest has its own `vitest.config.ts` so that it doesn't inherit that root. Tests can live in `test/` or next to the code as `*.test.ts`.
-- `build:data` runs `src/pipeline/build-data.ts`, which only throws "not implemented" until task 11. `src/site/main.ts` is a placeholder.
+- `build:data` runs `src/pipeline/build-data.ts`, which only throws "not implemented" until task 13. `src/site/main.ts` is a placeholder.
 - `npm run format:check` checks formatting without writing. Running Prettier reformatted the Locations table in CLAUDE.md, with no change to its content.
 
 ---
@@ -123,7 +123,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 - The real files differ from what the plan assumed. They are Latin-1, not UTF-8 (the `°C` header). The first line says `'IDCKWCDE51`, and the third says "South Australia" even for NSW. Blank cells hold a single space. Each row names the station, but there is no station number. The name is the official one with " AWS" left out (`SYDNEY OLYMPIC PARK (ARCHERY CENTRE)` for 066212). That rule holds for 512 of the 517 stations in `stations_db.txt`; the 5 exceptions involve punctuation such as `M.O.`. So the parser expects the official name minus " AWS" in the title line and in each row, and it checks the four column header lines exactly. Rows must run day by day from the 1st, and the file must end with its `Totals:` line, so a truncated or gappy file fails loudly. The current month's file holds the days published so far; a future month's file doesn't exist (550).
 - The dates follow the ZIP conventions exactly: for October 2026 at 066214, every value present in both agrees on the same date. The FTP files have gaps that the ZIPs later fill (066214 rain on 2026-10-15).
 - FTP rain is always a single day, so `layerRecent` gives FTP values `periodDays: 1` and `quality: null`. Where Sydney Airport's ZIP has a multi-day total (3 days to 2026-03-20, 22.2 mm), the FTP file has three separate daily values that sum to 21.4 mm. They seem to come from the automatic gauge, not the manual one behind the official figures. So they can differ a little from the ZIP, which wins once it covers the date.
-- Saved copies are `<dir>/<station>.csv` with columns `date,rain,maxTemp,minTemp`, one row per day the FTP file covers (blank cells for missing values, so an all-blank row still records that the day was covered). Task 11 should pass `dir` as `data/recent/daily`; task 6 can put snapshots beside it (for example `data/recent/snapshots/`). `updateDailyFiles` fetches each station's own folder for the months its period overlaps the range to fetch, then assigns the rows by the location's cutover dates through `joinStations`.
+- Saved copies are `<dir>/<station>.csv` with columns `date,rain,maxTemp,minTemp`, one row per day the FTP file covers (blank cells for missing values, so an all-blank row still records that the day was covered). Task 13 should pass `dir` as `data/recent/daily`; task 6 can put snapshots beside it (for example `data/recent/snapshots/`). `updateDailyFiles` fetches each station's own folder for the months its period overlaps the range to fetch, then assigns the rows by the location's cutover dates through `joinStations`.
 - `updateDailyFiles` takes `historyEnd`: the earliest of the location's three last ZIP dates (from `loadLocationHistory`). It fetches every month from the one holding the first day after the later of `historyEnd` and the last saved day, up to the current Sydney month (`sydneyDate` in `dates.ts`). The fetched months replace their saved rows, and rows up to `historyEnd` are pruned, deleting a file when it empties. A missing current-month file is skipped; any earlier missing month is an error. Running it twice gives the same files.
 - Layering, per measure: the ZIP history alone covers every date up to its own last record, so a day missing from it stays missing even if the FTP file has a value. After that, each day takes the first layer (in the order given, so FTP then snapshot) that has a value, so a snapshot can fill a day the FTP file leaves blank. Each record carries `source` (`zip`, `ftp` or `snapshot`) and `station`. The gap check fails when the first recent date after the history's end isn't the next day. Recent days with all-blank values still count as coverage.
 - The ZIPs were downloaded today, so they currently run a day or two ahead of the FTP files and `data/recent/daily/` will stay empty until they age. An end-to-end run against the real data, with the histories cut at 2026-07-20, layered about 98 FTP days onto each series with no gap errors.
@@ -163,13 +163,13 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 - New modules in `src/pipeline/`: `observations.ts` (IDN60920), `readings.ts` (IDN60910), `forecast.ts` (IDN11060), `snapshots.ts` (`downloadLiveFeeds` and `updateSnapshot`), `xml.ts` (a thin typed layer over `fast-xml-parser`) and `errors.ts` (`inContext`, which prefixes errors with the file and element). New runtime dependencies: `fast-xml-parser`, `fast-xml-validator` (the parser's own validator is deprecated, and without it a truncated file could parse quietly) and `nanotar` (reads the tar in memory; `fflate` already gunzips).
 - The CSV reading and writing from task 5 moved into `saved-table.ts` (`readSavedRows`, `writeSavedRows`, `mergeRows`), which all three kinds of saved file share. Each file is described by a schema of its columns in order, each `number` or `text` (e.g. `dailySchema` in `recent.ts`). Text cells can't hold commas, quotes or line breaks; writing one fails. `mergeRows` merges cell by cell: a fresh value replaces a saved one, and a missing fresh value leaves it alone. Task 6b can reuse all of this for `data/ftp-history/`.
 - Each station has an optional `wmo`, set only for the three current stations; 066062's isn't needed or confirmed. `currentStation(location)` in `locations.ts` is a location's last station, the only one in the live feeds.
-- `downloadLiveFeeds(ftp)` downloads all three feeds once, since each covers all of NSW. Task 11 should then call `updateSnapshot` per location with `snapshotDir: "data/recent/snapshots"` and `readingsDir: "data/recent/readings"`, and pass `snapshot.observations` to `layerRecent` as the `snapshot` layer. The forecast isn't saved: task 10 calls `parseForecast(feeds.forecast, location.forecastArea)`.
+- `downloadLiveFeeds(ftp)` downloads all three feeds once, since each covers all of NSW. Task 13 should then call `updateSnapshot` per location with `snapshotDir: "data/recent/snapshots"` and `readingsDir: "data/recent/readings"`, and pass `snapshot.observations` to `layerRecent` as the `snapshot` layer. The forecast isn't saved: task 12 calls `parseForecast(feeds.forecast, location.forecastArea)`.
 - Observations: the station is found by `bom-id`, and its `stn-name`, `description` and `wmo-id` are checked. `rainfall_24hr` must run 9am to 9am, `minimum_air_temperature` 6pm to 9am and `maximum_air_temperature` 6am to 9pm, or the build fails. A value is used only once its window's `end-time-utc` is at or before the observation's time; rain and min are credited to the day the window ends, max to the day it starts. This relies only on each element's own times, so it doesn't matter when BOM rolls the windows over (not observed). The snapshot min covers 6pm–9am, not the official 9am–9am, so like the max it is provisional.
 - Snapshot files use the same `date,rain,maxTemp,minTemp` format as the daily files, and are pruned up to `historyEnd` the same way. A morning run never touches the max, because its window is still open, so it can't overwrite the evening's.
-- Timing to watch in task 13: without daylight saving, the evening run is at 9:15pm, so it saves the max only if the 9pm observation is already published. If not, the 11:15pm backup saves it.
+- Timing to watch in task 15: without daylight saving, the evening run is at 9:15pm, so it saves the max only if the 9pm observation is already published. If not, the 11:15pm backup saves it.
 - Readings: the JSON has no station number, only `wmo` and `name` (the location's name), and both are checked on the header and on every row. It holds 144 half-hourly rows (72 hours, oldest at 3pm three days back) plus special observations at odd minutes, which are ignored. Only rows at exactly `090000` or `150000` local are used. Two identical rows at the same time are fine; two different ones fail. Never pruned (until task 7b).
 - Readings fields (the follow-up, cut back to temperature and humidity by task 7b): `air_temp`, `rel_hum`, `dewpt`, `press_msl`, `cloud_oktas`, `wind_dir`, `wind_spd_kmh` and `gust_kmh` are saved as `temp`, `relHum`, `dewPoint`, `pressure`, `cloud`, `windDir`, `windSpeed` and `gust`, each with a `9am` or `3pm` suffix: all eight 9am columns, then all eight 3pm ones (`readingSchema` in `readings.ts`). Every field must be present in every row, as a number or null; a missing key fails the build. `wind_dir` is the only text column: one of the 16 compass points or `CALM`, with BOM's `-` saved as blank and anything else failing. On 2026-10-30, Observatory Hill had no cloud or gust, Olympic Park no pressure or cloud, and Sydney Airport every field.
-- Forecast: each `forecast-period` is one local day, checked to be consecutive and to end at midnight. Temperatures must be whole numbers, the chance must look like `80%`, and the rain range like `0 to 8 mm`; any other format fails the build. Day 0 has no minimum. Days with a low chance often have no `precipitation_range` at all, so `rain50` and `rain25` are null; task 10 must decide whether that means 0 mm.
+- Forecast: each `forecast-period` is one local day, checked to be consecutive and to end at midnight. Temperatures must be whole numbers, the chance must look like `80%`, and the rain range like `0 to 8 mm`; any other format fails the build. Day 0 has no minimum. Days with a low chance often have no `precipitation_range` at all, so `rain50` and `rain25` are null; task 12 must decide whether that means 0 mm.
 - Fixtures are real feeds from 2:30pm on 2026-10-30: `IDN60920.xml` and `IDN11060.xml` trimmed to the Sydney stations and areas (plus Canberra), and the whole `IDN60910.94768.json`. Tests build the `.tgz` around them, and edit the text to cover other times and failures. `test/fixtures/` is now in `.prettierignore` so the real files stay byte for byte.
 - `npm run smoke:live` downloads the three feeds and prints what each location would save and its forecast, without saving anything.
 
@@ -193,15 +193,15 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
   - The backfill must be resumable, and running it twice must give the same files.
 - Scope: keep these files up to date on every run, from the monthly files the pipeline already downloads. Fetch any month after the last saved day, so a long outage can't leave a gap.
 - Scope: update the data sources section of CLAUDE.md.
-- Out of scope: wind (task 15, deferred), evapotranspiration and pan evaporation.
+- Out of scope: wind (task 17, deferred), evapotranspiration and pan evaporation.
 - Done when: tests cover the parser columns, backfill and resuming, and the backfill has been run for real and committed.
 
 **Notes:**
 
-- The IDCJAC0016 solar ZIP check was split out into task 17 at the user's request on 2026-10-30, so solar comes from the FTP files only for now.
+- The IDCJAC0016 solar ZIP check was split out into task 19 at the user's request on 2026-10-30, so solar comes from the FTP files only for now.
 - `parseDailyFile` now returns `DailyFileDay`: the task 5 fields plus `maxRelHum`, `minRelHum` (%) and `solar` (MJ/m²). `updateDailyFiles` still saves only rain, max and min. `downloadDailyFile` (a missing file is an error unless it's the current month's) and `folderMonths` in `daily-files.ts` are shared by both updaters.
 - `updateFtpHistory` in `src/pipeline/ftp-history.ts` does both the backfill and the update on each run. For each station, it fetches from the month of the day after its last saved day (or from its folder's first month) up to the current month, within the station's own period. It writes the file after every month, so an interrupted run resumes where it stopped. Fetched months replace their saved rows, as in task 5, and nothing is pruned. Every day a file covers gets a row, even an all-blank one.
-- Task 11 should call `updateFtpHistory({ dir: "data/ftp-history", … })` for each location on every run, and wrap the connection in `withDownloadCache` (in `ftp.ts`) so that it and `updateDailyFiles` download the current month only once.
+- Task 13 should call `updateFtpHistory({ dir: "data/ftp-history", … })` for each location on every run, and wrap the connection in `withDownloadCache` (in `ftp.ts`) so that it and `updateDailyFiles` download the current month only once.
 - `npm run backfill:ftp-history` runs the same function for every location. It was run on 2026-10-30: 586 monthly files, ending on 2026-10-28. A second run fetched only October for the three open stations and left the files byte for byte the same.
 - Each station's `dailyFolder` is now an object: its `name`, the month of its first file (`from`) and the months it has no file for (`missing`). The two Observatory Hill stations share one. The folders start in 2009-01 (Observatory Hill, Sydney Airport) and 2011-08 (Olympic Park, whose August 2011 rows are all blank; its first values are on 2011-09-01).
 - **Observatory Hill has a gap:** its folder has no files from 2018-04 to 2020-07, and none of the other Sydney folders cover it (`sydney_harbour_(wedding_cake_west)` stops at 2018-03 too). So Observatory Hill has no humidity or solar from 2018-04-01 to 2020-07-31: 066062's file covers 2009-01 to 2018-03 and 2020-08, and 066214's starts on 2020-09-01. Task 7 must not let a "since YYYY" or rank for these measures reach back across the gap without saying so, because the missing years might have held a higher value.
@@ -218,7 +218,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 **Goal:** Generate candidate facts for single days.
 
 - Scope: measures are daily max, daily min, rain, hottest night (highest min), coldest day (lowest max) and daily range. Also:
-  - Daily highest and lowest humidity and solar radiation from task 6b ("the most humid day", "the sunniest day", "the gloomiest day"). Their history starts in 2009 (2011 at Olympic Park), so "all records" means "since 2009". Observatory Hill has none from 2018-04 to 2020-07 (see task 6b's notes). Task 17 may later extend the solar history.
+  - Daily highest and lowest humidity and solar radiation from task 6b ("the most humid day", "the sunniest day", "the gloomiest day"). Their history starts in 2009 (2011 at Olympic Park), so "all records" means "since 2009". Observatory Hill has none from 2018-04 to 2020-07 (see task 6b's notes). Task 19 may later extend the solar history.
   - 9am and 3pm temperature and humidity, whose records only start when task 6's saving began. So for those, "all records" means "since saving began".
   - For all of these, the wording must not claim "on record" unless the history really goes back to when records began.
 - Scope: comparisons against all records, this year, the same month in every year, and the same calendar date. Both highest and lowest.
@@ -236,7 +236,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 
 - New modules:
   - `src/shared/facts.ts` has the types: `DailyFact`, and a placeholder `FactsFile` (`generatedAt` and a flat `facts` list) that task 8 should regroup by section.
-  - `src/pipeline/series.ts` turns the sources into a `Series` per measure: `layeredSeries` for the ZIP measures, `rangeSeries`, and `columnSeries` for the FTP history and the readings. `locationSeries` builds all 11 at once. Task 11 should pass it the layered rain, max and min, `updateFtpHistory`'s result and `updateSnapshot`'s readings.
+  - `src/pipeline/series.ts` turns the sources into a `Series` per measure: `layeredSeries` for the ZIP measures, `rangeSeries`, and `columnSeries` for the FTP history and the readings. `locationSeries` builds all 11 at once. Task 13 should pass it the layered rain, max and min, `updateFtpHistory`'s result and `updateSnapshot`'s readings.
   - `src/pipeline/daily-facts.ts` has `generateDailyFacts({ locationId, series, windowEnd })`. Pass today in Sydney as `windowEnd`; the window defaults to 31 days.
 - Comparisons: also `season`, because CLAUDE.md lists it, although this task's scope didn't. Seasons are meteorological, so December counts in the same summer as the January and February that follow it.
 - Measures: every measure has a highest and a lowest fact except rain, which has only highest. A dry day gets no facts at all, because otherwise every dry day would be "the equal wettest" of something.
@@ -255,7 +255,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 - Status: snapshot values are `provisional`. ZIP, FTP daily, FTP history and readings values are `confirmed`. A range is provisional if either its max or its min is.
 - Not handled:
   - The 2020 Observatory Hill station change. Its values are compared as one series.
-  - The readings: `data/recent/readings/` is still empty in the repository, so the four reading series have no days until task 11's runs save some. After task 7b they cover at most 13 months, so their "since" can reach back about a year at most.
+  - The readings: `data/recent/readings/` is still empty in the repository, so the four reading series have no days until task 13's runs save some. After task 7b they cover at most 13 months, so their "since" can reach back about a year at most.
 - Size and speed: every fact is a candidate, with no cut-off by rank, so a location's 31-day window gives a few thousand facts. Task 8 should drop the weak ones. Daily highest humidity often ties at 100%, so scoring should penalise large `ties`. Observatory Hill's window takes under a second.
 - Checked against the real data:
   - Observatory Hill on 2013-01-18 is the hottest of 55,916 days (45.8°C), with 349 missing days and 4 month-long gaps in the 1860s and 1900s.
@@ -271,7 +271,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 
 **Goal:** Save only the 9am and 3pm readings that BOM can give back later, and only for as long as it keeps them. This follows the no-gap rule in CLAUDE.md, decided on 2026-11-06.
 
-- Background: task 6 saves eight fields from each 9am and 3pm reading and never prunes them. Only temperature and relative humidity are in BOM's Daily Weather Observations (task 16), which keep the current month and the 12 before it. Dew point, pressure, cloud and wind have no allowed source beyond the 72-hour feed, so a missed week would leave a gap that can never be filled.
+- Background: task 6 saves eight fields from each 9am and 3pm reading and never prunes them. Only temperature and relative humidity are in BOM's Daily Weather Observations (task 18), which keep the current month and the 12 before it. Dew point, pressure, cloud and wind have no allowed source beyond the 72-hour feed, so a missed week would leave a gap that can never be filled.
 - Scope: cut `readingSchema` in `readings.ts` to `temp9am`, `relHum9am`, `temp3pm` and `relHum3pm`.
   - Stop requiring or validating the other six fields in the feed, so the build doesn't fail if BOM changes them.
   - Keep checking `air_temp` and `rel_hum` as before.
@@ -283,7 +283,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 **Notes:**
 
 - `readingSchema` is now `temp9am`, `relHum9am`, `temp3pm` and `relHum3pm`, all numbers. The parser reads only `air_temp` and `rel_hum`, which must still be present in every row, as a number or null. It ignores every other field, so the wind direction check and the text column type for readings are gone. Two rows at the same time now only need to agree on those two fields.
-- `updateSnapshot` takes `today` (today in Sydney), and drops saved readings before `readingsKeptFrom(today)`: the 1st of the same month a year earlier, e.g. 2025-11-01 on 2026-11-06. Task 11 must pass `today`.
+- `updateSnapshot` takes `today` (today in Sydney), and drops saved readings before `readingsKeptFrom(today)`: the 1st of the same month a year earlier, e.g. 2025-11-01 on 2026-11-06. Task 13 must pass `today`.
 - `data/recent/readings/` was still empty, so there was nothing to migrate.
 - `test/live-feeds.ts`'s `readingsJson` now fills in only `air_temp` and `rel_hum`, and a row can add any other field.
 - `npm run smoke:live` was run against the real feed on 2026-11-06 and shows the four columns for every location.
@@ -319,7 +319,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 
 - [facts.md](facts.md) explains the whole method, including task 7's ranking. The notes below are the history and the details.
 - New modules in `src/pipeline/`: `scoring.ts` (`scoreFact`), `wording.ts` (`describeFact`, `ordinal`), `selection.ts` (`selectFacts`) and `saved-series.ts` (`readSavedSeries`, which builds a location's series from the files on disk; `smoke:facts` now uses it). `DailyFact` moved from `src/shared/facts.ts` into `daily-facts.ts`, because only the pipeline uses it. It also gained `comparedSince`: the comparable days with a value after `since`, including the day itself.
-- `src/shared/facts.ts` now has the `facts.json` types. `FactsFile` holds `generatedAt` and one `LocationFacts` per location, with `today`, `thisWeek` and `thisMonth` lists of `Fact`. Each `Fact` has its date, measure, direction, comparison, status, `lead` (`rank` or `since`), `score`, `text` and a `why`. Task 11 should call `selectFacts({ locationId, facts, series })` with `generateDailyFacts`' output and the same series.
+- `src/shared/facts.ts` now has the `facts.json` types. `FactsFile` holds `generatedAt` and one `LocationFacts` per location, with `today`, `thisWeek` and `thisMonth` lists of `Fact`. Each `Fact` has its date, measure, direction, comparison, status, `lead` (`rank` or `since`), `score`, `text` and a `why`. Task 13 should call `selectFacts({ locationId, facts, series })` with `generateDailyFacts`' output and the same series.
 - Scoring is in natural-log units of "comparable days per fact like this one". A rank scores `log(compared / (rank + ties))`, and a since scores `log(comparedSince)`. The fact takes the larger and leads its wording with it. A once-a-year fact among all days scores about 5.9, and the hottest day on record at Observatory Hill about 10.9. Then:
   - Ranks: a rank whose `rank + ties` is above 10 scores 0, so the many 100% humidity ties never show. Calendar dates score only at rank 1.
   - Record length: a rank is multiplied by the cube root of the record's years over 30 (capped at 1), except for the year so far. Olympic Park's 15 years give 0.79, and readings from this month about 0.14. A square root was tried first, but it put "the wettest day on record" at Olympic Park in February 2020 below the This month bar.
@@ -337,7 +337,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
   - A rank whose comparable days have under 95% coverage names its longest gap: "(no records from March 2018 to July 2020)".
   - A since is a day and month in the same year, the full date within 365 days, a month and year within 3 years, and the year beyond that. A weekday was tried, but "since Wednesday, until Wednesday" was ambiguous.
   - A beaten fact ends with ", until Friday" within 6 days, or ", until 3 November".
-  - Provisional facts start with "provisionally". Forecast wording is task 10's.
+  - Provisional facts start with "provisionally". Forecast wording is task 12's.
 - The `why` has the value, rank, ties, compared, record start, missing days and gaps, plus `record` (the best earlier comparable day, so the previous record holder), `since`, `beatenBy` and `leaders`. The leaders are the 10 best comparable days up to the fact's date, with tied values sharing a rank and the earliest first. Values have no units in `facts.json`; the site should add them from the measure.
 - Snapshot tests in `test/selection.test.ts` cover five real windows, saved in `test/__snapshots__/`. They read `data/raw/` and `data/ftp-history/`, so refreshing the ZIPs may change them. Review the change before updating them with `npx vitest run -u`. `npm run smoke:sections [location-id] [date]` prints the three sections for a 31-day window.
 - Review of the snapshot output:
@@ -348,33 +348,73 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
     - This week is often filled by short sinces such as "the coldest night since 20 October". These are true, but they are much alike from day to day.
     - A year-so-far rank such as "the 9th wettest day of the year so far" still gets in at around 2.4.
     - Quiet days give Today nothing at all, as on 2026-10-30, whose only data is a minimum and rain.
-    - Task 14 should retune `sectionRules` and the weights once real output has run for a couple of weeks.
-  - At Olympic Park, the February 2020 rain gives "the wettest day on record" (5.20), "the 4th wettest day on record, until Monday" and "the 3rd wettest summer day on record, until Sunday" on consecutive days. These are right but repetitive. Task 9's period facts ("the wettest 3 days on record") may be the better way to say this.
+    - Task 16 should retune `sectionRules` and the weights once real output has run for a couple of weeks.
+  - At Olympic Park, the February 2020 rain gives "the wettest day on record" (5.20), "the 4th wettest day on record, until Monday" and "the 3rd wettest summer day on record, until Sunday" on consecutive days. These are right but repetitive. Task 10's period facts ("the wettest 3 days on record") may be the better way to say this.
 
 ---
 
-## 9. Facts for longer periods and streaks
+## 9. Day-to-day changes
 
 **Status:** todo
 
-**Goal:** Facts for weeks, months, seasons and years, plus streaks.
+**Goal:** Facts about how much a day changed from the day before, such as "the biggest day-to-day drop in maximum since 2019".
 
-- Scope: rolling 7-day rain, months (full and to date), seasons, year to date, and calendar years.
-- Scope: ranks for periods as well as days, e.g. "the 3rd wettest October on record".
-- Scope: facts about the last full week and the last full month for the home page's week and month sections, using the same scoring and selection as task 8.
-- Scope: phrasing for periods still in progress, such as "hottest start to October on record".
-- Scope: streaks, such as consecutive hot days or dry spells, which must not run through gaps.
-- Scope: **day-to-day changes**, such as "the biggest day-to-day drop in maximum since 2019".
-  - Example: at Observatory Hill on 13 October 2026, the maximum fell from 34.8°C to 19.9°C, a 14.9°C drop.
-  - Make each change a series of its own (today's value minus yesterday's), for the maximum, minimum, range and daily humidity. Leave a day out when either it or the day before is missing. `generateDailyFacts` can then rank the series as is: "highest" is the biggest rise and "lowest" the biggest drop.
+- Background: at Observatory Hill on 13 October 2026, the maximum fell from 34.8°C to 19.9°C, a 14.9°C drop.
+- Scope: make each change a series of its own (today's value minus yesterday's), for the maximum, minimum, range and daily humidity.
+  - Leave a day out when either it or the day before is missing.
+  - `generateDailyFacts` can then rank the series as is: "highest" is the biggest rise and "lowest" the biggest drop.
+  - A change is provisional if either day's value is, as for the range.
   - Rain's change means little, so leave it out.
-- Done when: tests pass for each period type, for streaks that meet a gap, and for a change series that meets a gap.
+- Scope: measure weights, families and wording for the changes, within task 8's scoring, selection and wording. Decide whether a change shares a family with its measure, since a big drop in maximum often comes with "the coldest day since…" on the same day.
+- Done when: tests pass for a change series that meets a gap, and the real data gives a fact for the 14.9°C drop at Observatory Hill on 13 October 2026.
 
 **Notes:**
 
 ---
 
-## 10. Forecast, near-miss and sunrise/sunset facts
+## 10. Facts for longer periods
+
+**Status:** todo
+
+**Goal:** Facts for weeks, months, seasons and years, such as "the 3rd wettest October on record" or "the hottest start to October on record".
+
+- Scope: rolling 7-day rain, months (full and to date), seasons, year to date, and calendar years.
+  - Consider shorter rolling rain totals too. Task 8's review found that the Olympic Park rain of February 2020 might read better as "the wettest 3 days on record".
+  - Decide each period's measures: at least total rain and the mean maximum and minimum.
+- Scope: a fact type for a range of dates in `src/shared/facts.ts`, since today's facts have only one date. Task 11's streaks will reuse it.
+- Scope: ranks and "since" for periods, with the same comparisons as days where they make sense (all records, the same month, the same season).
+- Scope: missing data, written up in [facts.md](facts.md).
+  - Decide how many missing days a period may have before it can't be compared. Never fill them.
+  - A multi-day rain total counts when it falls wholly inside the period. One that crosses the period's start leaves the period incomplete.
+  - Decide whether the 2020 Observatory Hill station change needs care here. A mean over a period is more sensitive than a single day's extreme to the new station's 0.3°C difference.
+- Scope: phrasing for periods still in progress, such as "the hottest start to October on record", compared with the same days of earlier years.
+- Scope: facts about the last full week and the last full month for the home page's This week and This month sections, within task 8's scoring and selection. A period fact shouldn't crowd out, or repeat, the day facts inside it.
+- If this proves too big for one session, do complete periods first and leave periods still in progress to a new task.
+- Done when: tests pass for each period type, for a period with too many missing days, and for a multi-day rain total at a period's edge.
+
+**Notes:**
+
+---
+
+## 11. Streaks
+
+**Status:** todo
+
+**Goal:** Facts about runs of days, such as "the 12th dry day in a row, the longest dry spell since 2019" or "the 5th day in a row above 30°C".
+
+- Scope: decide what counts as a dry day, a hot day and a warm night: fixed thresholds, or relative to the time of year. Record the choice in [facts.md](facts.md).
+- Scope: streaks must not run through gaps. A missing day ends a streak.
+  - A multi-day rain total is never a single day's value. Decide whether a 0 mm total, which shows that every day it covers was dry, may count towards a dry spell.
+- Scope: ranks and "since" for streak lengths, using task 10's fact type for a range of dates. Equal lengths share a rank.
+- Scope: wording for a streak still running, which may grow on later days, and for one that has ended.
+- Scope: scoring and selection within task 8's, so a long streak doesn't appear afresh on every day it runs.
+- Done when: tests pass for streaks that meet a gap, a streak still running, and streaks of equal length.
+
+**Notes:**
+
+---
+
+## 12. Forecast, near-miss and sunrise/sunset facts
 
 **Status:** todo
 
@@ -393,7 +433,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 
 ---
 
-## 11. The `build:data` command
+## 13. The `build:data` command
 
 **Status:** todo
 
@@ -407,7 +447,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 
 ---
 
-## 12. Website
+## 14. Website
 
 **Status:** todo
 
@@ -429,7 +469,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 
 ---
 
-## 13. GitHub Actions and Pages
+## 15. GitHub Actions and Pages
 
 **Status:** todo
 
@@ -444,7 +484,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 
 ---
 
-## 14. Polish and documentation
+## 16. Polish and documentation
 
 **Status:** todo
 
@@ -458,7 +498,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 
 ---
 
-## 15. Wind
+## 17. Wind
 
 **Status:** deferred (the user shelved wind on 2026-10-30)
 
@@ -469,7 +509,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
   - Observatory Hill reports `0.00` every day because it has no wind instrument: BOM measures Sydney's harbour wind at Fort Denison instead. Treat those zeros as missing, never as calm, so there are no wind facts for Observatory Hill.
   - The ZIPs don't include wind, and no allowed source has a history of gusts.
 - Scope: a one-off backfill of the wind column from every FTP daily file since each station's first file, saved in a committed file per station (e.g. `data/wind/<station>.csv`). Keep it up to date from the files the daily run already downloads. It is never pruned, because no ZIP replaces it.
-- Scope: wind measures for the fact generator, with every comparison that has enough history. Rankings and wording ("windiest", "calmest") come from tasks 7–9.
+- Scope: wind measures for the fact generator, with every comparison that has enough history. Rankings and wording ("windiest", "calmest") come from tasks 7–11.
 - Scope: update the data sources section of CLAUDE.md.
 - Out of scope, so ask the user first: saving each day's maximum gust from the live feed. Its records would only begin on the day saving starts.
 - Done when: tests cover the parsing, the backfill, and the rule that Observatory Hill's zeros count as missing.
@@ -478,7 +518,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 
 ---
 
-## 16. Backfill the 9am and 3pm readings
+## 18. Backfill the 9am and 3pm readings
 
 **Status:** todo
 
@@ -499,7 +539,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 
 ---
 
-## 17. Longer solar history from the IDCJAC0016 ZIPs
+## 19. Longer solar history from the IDCJAC0016 ZIPs
 
 **Status:** todo
 
