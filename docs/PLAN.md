@@ -135,7 +135,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 
 **Status:** done (reopened 2026-10-30 for the follow-up below, before the first pass was committed, and finished the same day)
 
-**Follow-up:** save **every useful field** from the 9am and 3pm readings, not just temperature and humidity.
+**Follow-up:** save **every useful field** from the 9am and 3pm readings, not just temperature and humidity. (Reversed on 2026-11-06: task 7b cuts this back to temperature and humidity for at most 13 months, under the no-gap rule in CLAUDE.md.)
 
 - The fields: `air_temp`, `rel_hum`, `dewpt`, `press_msl`, `cloud_oktas`, `wind_dir`, `wind_spd_kmh` and `gust_kmh`.
 - These readings' history only starts when saving starts, so saving them now keeps later facts (e.g. "the lowest 9am pressure since…") possible, even though no facts use them yet.
@@ -255,13 +255,32 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 - Status: snapshot values are `provisional`. ZIP, FTP daily, FTP history and readings values are `confirmed`. A range is provisional if either its max or its min is.
 - Not handled:
   - The 2020 Observatory Hill station change. Its values are compared as one series.
-  - The readings: `data/recent/readings/` is still empty in the repository, so the four reading series have no days until task 11's runs save some.
+  - The readings: `data/recent/readings/` is still empty in the repository, so the four reading series have no days until task 11's runs save some. After task 7b they cover at most 13 months, so their "since" can reach back about a year at most.
 - Size and speed: every fact is a candidate, with no cut-off by rank, so a location's 31-day window gives a few thousand facts. Task 8 should drop the weak ones. Daily highest humidity often ties at 100%, so scoring should penalise large `ties`. Observatory Hill's window takes under a second.
 - Checked against the real data:
   - Observatory Hill on 2013-01-18 is the hottest of 55,916 days (45.8°C), with 349 missing days and 4 month-long gaps in the 1860s and 1900s.
   - Sydney Airport on the same day is its hottest (46.4°C).
   - Observatory Hill on 1986-08-06 is the wettest day in every comparison (327.6 mm).
 - `npm run smoke:facts [location-id] [date] [max-rank]` prints one day's facts from the files on disk, without downloading anything.
+
+---
+
+## 7b. Readings: temperature and humidity for 13 months
+
+**Status:** todo
+
+**Goal:** Save only the 9am and 3pm readings that BOM can give back later, and only for as long as it keeps them. This follows the no-gap rule in CLAUDE.md, decided on 2026-11-06.
+
+- Background: task 6 saves eight fields from each 9am and 3pm reading and never prunes them. Only temperature and relative humidity are in BOM's Daily Weather Observations (task 16), which keep the current month and the 12 before it. Dew point, pressure, cloud and wind have no allowed source beyond the 72-hour feed, so a missed week would leave a gap that can never be filled.
+- Scope: cut `readingSchema` in `readings.ts` to `temp9am`, `relHum9am`, `temp3pm` and `relHum3pm`.
+  - Stop requiring or validating the other six fields in the feed, so the build doesn't fail if BOM changes them.
+  - Keep checking `air_temp` and `rel_hum` as before.
+  - `data/recent/readings/` is still empty, so there's no saved data to migrate. Check this again first.
+- Scope: prune saved readings older than the first day of the month 12 months before the current one, so they never cover more than the Daily Weather Observations do.
+- Scope: update task 6's notes, the `smoke:live` output and the tests.
+- Done when: tests cover the narrower schema and the pruning, including running it twice.
+
+**Notes:**
 
 ---
 
@@ -274,6 +293,10 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 - Scope: an unusualness score based on the rank compared with how many days were compared, how many years back the "since" goes, how narrow the comparison is, and how long the record is.
   - "The 2nd hottest day on record" must outscore "the 8th hottest day this month".
   - Ranks below about 10th aren't worth showing.
+- Scope: score a fact's `since` by how far back it reaches, apart from its rank. "The smallest range since 8 February" (13 October 2026 at Observatory Hill) is worth showing although its rank against every day on record is only 148th.
+  - In This week, a short `since` such as "the warmest day since last Tuesday" is worth showing. Elsewhere it needs to reach much further back.
+- Scope: when one fact has both a rank and a far-reaching `since`, lead with whichever is more striking. "The wettest October day since 2018" beats "the 3rd wettest October day since 2011".
+- Scope: show same-calendar-date facts only at rank 1 ("the hottest 6 November on record"). They are the least interesting comparison.
 - Scope: removing near-duplicates, for example keeping only the strongest of "hottest this month" and "hottest this year" for the same day.
 - Scope: choosing facts for each section of the home page, for each location:
   - **Today:** the latest day.
@@ -301,7 +324,11 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 - Scope: facts about the last full week and the last full month for the home page's week and month sections, using the same scoring and selection as task 8.
 - Scope: phrasing for periods still in progress, such as "hottest start to October on record".
 - Scope: streaks, such as consecutive hot days or dry spells, which must not run through gaps.
-- Done when: tests pass for each period type and for streaks that meet a gap.
+- Scope: **day-to-day changes**, such as "the biggest day-to-day drop in maximum since 2019".
+  - Example: at Observatory Hill on 13 October 2026, the maximum fell from 34.8°C to 19.9°C, a 14.9°C drop.
+  - Make each change a series of its own (today's value minus yesterday's), for the maximum, minimum, range and daily humidity. Leave a day out when either it or the day before is missing. `generateDailyFacts` can then rank the series as is: "highest" is the biggest rise and "lowest" the biggest drop.
+  - Rain's change means little, so leave it out.
+- Done when: tests pass for each period type, for streaks that meet a gap, and for a change series that meets a gap.
 
 **Notes:**
 
@@ -415,7 +442,7 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
 
 **Status:** todo
 
-**Goal:** Give the 9am and 3pm facts about a year of history, from BOM's Daily Weather Observations (DWO). The user wants this done after the site is live.
+**Goal:** Give the 9am and 3pm facts about a year of history, from BOM's Daily Weather Observations (DWO), and make DWO the way to fill any gap that missed runs leave. The user wants this done after the site is live.
 
 - Background:
   - DWO keeps the current month and the 12 before it, one CSV per station per month, at `https://www.bom.gov.au/climate/dwo/YYYYMM/text/<product>.YYYYMM.csv`. The CSV columns include 9am and 3pm temperature and relative humidity.
@@ -424,8 +451,9 @@ Statuses: `todo`, `in progress`, `done`, `blocked`, `deferred` (skip until the u
   - Use only the temperature and humidity columns. The Sydney file takes its cloud and pressure from Sydney Airport and its wind from Fort Denison.
 - Scope: give the user the list of files to download, and add it to [refreshing-history.md](refreshing-history.md).
 - Scope: a parser for the DWO CSVs, which checks that the header names the expected station.
-- Scope: adding the backfilled readings to the saved readings from task 6, for dates before saving began. On overlapping dates the two must agree, or the build fails.
-- Done when: tests cover parsing, the station check and the overlap check, and the 9am and 3pm records start about a year earlier.
+- Scope: adding the downloaded readings to the saved readings from task 6, for any date in the last 13 months that is missing: before saving began, or in a gap left by missed runs. On overlapping dates the two must agree, or the build fails. Task 7b's pruning applies to these readings too.
+- Scope: a way to see which dates the saved readings are missing, so the user knows which months to download. Add the steps to [refreshing-history.md](refreshing-history.md).
+- Done when: tests cover parsing, the station check, the overlap check and filling a gap, and the 9am and 3pm records start about a year earlier.
 
 **Notes:**
 
