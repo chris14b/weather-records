@@ -1,4 +1,10 @@
-import type { Fact } from "../shared/facts.ts";
+import {
+  isChangeMeasure,
+  isForecastStatus,
+  type Fact,
+  type FactMeasure,
+  type FactWhy,
+} from "../shared/facts.ts";
 
 const weekdays = [
   "Monday",
@@ -100,19 +106,42 @@ function seasonName(month: number): string {
   return "spring";
 }
 
-type Named = Pick<Fact, "period" | "from" | "date">;
+type Named = Pick<Fact, "period" | "from" | "date"> &
+  Partial<Pick<Fact, "measure">>;
 
 /** What the site needs of a fact to make a sentence of it. */
-export type Phrased = Named & Pick<Fact, "status" | "text">;
+export type Phrased = Named &
+  Pick<Fact, "status" | "text" | "measure" | "direction" | "comparison"> & {
+    why: Pick<FactWhy, "value" | "forecast">;
+  };
 
-/** What a fact is about, named mid-sentence: "today", "the 3 days to Tuesday", "November so far". */
+/**
+ * A night named by the evening it starts, mid-sentence: "last night", "tonight", "Thursday
+ * night", "the night of 2 November". A minimum is for the 24 hours to 9am, so the night
+ * that ends on `date`.
+ */
+export function nightName(date: string, today: string): string {
+  const evening = addDays(date, -1);
+  const offset = daysFrom(today, evening);
+  if (offset === 0) return "tonight";
+  if (offset === -1) return "last night";
+  if (offset === 1) return "tomorrow night";
+  const name = dayName(evening, today);
+  return Math.abs(offset) <= 6 ? `${name} night` : `the night of ${name}`;
+}
+
+/** What a fact is about, named mid-sentence: "today", "last night", "the 3 days to Tuesday", "November so far". */
 export function periodName(
-  { period, from, date }: Named,
+  { period, from, date, measure }: Named,
   today: string,
 ): string {
   const start = parse(from);
   switch (period.kind) {
     case "day":
+      if (measure === "minTemp") return nightName(date, today);
+      if (measure === "rain") {
+        return `the 24 hours to 9am ${dayName(date, today)}`;
+      }
       return dayName(date, today);
     case "rolling":
       return `the ${String(period.days)} days to ${dayName(date, today)}`;
@@ -128,37 +157,175 @@ export function periodName(
       return period.toDate ? `${season} so far` : season;
     }
     case "year":
-      return period.toDate ? "the year so far" : String(start.year);
+      return String(start.year);
   }
+}
+
+function addDays(date: string, days: number): string {
+  return new Date((utcDay(parse(date)) + days) * 86_400_000)
+    .toISOString()
+    .slice(0, 10);
 }
 
 function capitalise(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-function verb(fact: Phrased, today: string): string {
-  const plural = fact.period.kind === "rolling";
-  if (fact.status === "conditional") return "";
-  if (fact.status === "forecast") return plural ? "are" : "is";
+// A night, the rain to 9am and a 9am reading are over by the time the page names them.
+const overByMorning = new Set<FactMeasure>([
+  "minTemp",
+  "rain",
+  "temp9am",
+  "relHum9am",
+]);
 
+function verb(fact: Phrased, today: string): string {
+  const plural = fact.period.kind === "rolling" || isRainDay(fact);
+  if (fact.status === "forecast") {
+    return `${plural ? "are" : "is"} forecast to be`;
+  }
   const ongoing =
-    "toDate" in fact.period ? fact.period.toDate : fact.date >= today;
+    "toDate" in fact.period
+      ? fact.period.toDate
+      : overByMorning.has(fact.measure)
+        ? fact.date > today
+        : fact.date >= today;
+  if (isHad(fact)) return ongoing ? "has" : "had";
+  if (hasNights(fact)) {
+    if (!ongoing) return "had";
+    return fact.period.kind === "year" ? "has so far had" : "has had";
+  }
   if (ongoing) return plural ? "are" : "is";
   return plural ? "were" : "was";
 }
 
-export interface Sentence {
-  /** The day or period, capitalised: "Saturday", "November so far". */
-  subject: string;
-  /** The rest, without a full stop: "was the wettest day since 16 October". */
-  predicate: string;
+// A day can be "the hottest day", but it has "the lowest peak humidity" or "the coldest 9am".
+function isHad({ measure, direction, period }: Phrased): boolean {
+  if (period.kind !== "day") return false;
+  if (isChangeMeasure(measure)) return true;
+  switch (measure) {
+    case "maxTemp":
+    case "minTemp":
+    case "rain":
+    case "solar":
+      return false;
+    case "minRelHum":
+      return direction === "lowest";
+    default:
+      return true;
+  }
 }
 
-/** A fact as a sentence for the viewer's today, from the subject the site adds and the fact's own text. */
-export function sentence(fact: Phrased, today: string): Sentence {
-  const linking = verb(fact, today);
+// "October had the warmest nights since 2019", but "was the month with the warmest nights".
+function hasNights({ period, measure, comparison }: Phrased): boolean {
+  if (measure !== "minTemp") return false;
+  if (period.kind === "day" || period.kind === "rolling") return false;
+  return !(period.kind === "month" && comparison === "all");
+}
+
+function isRainDay({ period, measure }: Phrased): boolean {
+  return period.kind === "day" && measure === "rain";
+}
+
+const decimal = new Intl.NumberFormat("en-AU", {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+
+const whole = new Intl.NumberFormat("en-AU", { maximumFractionDigits: 1 });
+
+const units: Record<FactMeasure, string> = {
+  maxTemp: "°C",
+  minTemp: "°C",
+  rain: " mm",
+  range: "°C",
+  maxRelHum: "%",
+  minRelHum: "%",
+  solar: " MJ/m²",
+  temp9am: "°C",
+  relHum9am: "%",
+  temp3pm: "°C",
+  relHum3pm: "%",
+  maxTempChange: "°C",
+  minTempChange: "°C",
+};
+
+const isHumidity = (measure: FactMeasure) => units[measure] === "%";
+
+/** A value with its unit: "23.6°C", "49.6 mm", "79%". Forecasts are whole degrees, so they stay that way. */
+export function amount(
+  measure: FactMeasure,
+  value: number,
+  forecast = false,
+): string {
+  const format = forecast || isHumidity(measure) ? whole : decimal;
+  return `${format.format(Math.abs(value))}${units[measure]}`;
+}
+
+function valueClause({ measure, period, direction, status, why }: Phrased) {
+  const value = amount(measure, why.value, isForecastStatus(status));
+  if (period.kind !== "day" && period.kind !== "rolling") {
+    if (measure === "maxTemp") return `with an average top of ${value}`;
+    if (measure === "minTemp") return `with an average low of ${value}`;
+  }
+  if (isChangeMeasure(measure)) {
+    return `${direction === "highest" ? "up" : "down"} ${value}`;
+  }
+  switch (measure) {
+    case "maxTemp":
+      return `with a top of ${value}`;
+    case "minTemp":
+      return `with a low of ${value}`;
+    case "rain":
+      return `with ${value}`;
+    case "minRelHum":
+      if (direction === "highest") return `never below ${value}`;
+  }
+  return `at ${value}`;
+}
+
+// "A low of 10°C tonight (forecast 12°C) would make it…"
+function conditional(fact: Phrased, today: string): Sentence {
+  const { measure, why } = fact;
+  const forecast = why.forecast ?? why.value;
+  const needs = amount(measure, why.value, true);
+  const what =
+    measure === "maxTemp"
+      ? `A top of ${needs}`
+      : measure === "minTemp"
+        ? `A low of ${needs}`
+        : needs;
+  const when = periodName(fact, today);
+  const preposition =
+    fact.period.kind === "rolling"
+      ? "in "
+      : /^(today|tomorrow|tonight|last night|tomorrow night)$/.test(when)
+        ? ""
+        : "on ";
+  const them = fact.period.kind === "rolling" ? "them" : "it";
   return {
+    before: `${what} ${preposition}`,
+    subject: when,
+    after: ` (forecast ${amount(measure, forecast, true)}) would make ${them} ${fact.text}`,
+  };
+}
+
+/**
+ * A sentence in three parts, so the site can set the day or period apart: "Last night" +
+ * " was the coldest night since 15 October, with a low of 11.6°C".
+ */
+export interface Sentence {
+  before: string;
+  subject: string;
+  after: string;
+}
+
+/** A fact as a sentence for the viewer's today, without its full stop. */
+export function sentence(fact: Phrased, today: string): Sentence {
+  if (fact.status === "conditional") return conditional(fact, today);
+  return {
+    before: "",
     subject: capitalise(periodName(fact, today)),
-    predicate: linking === "" ? fact.text : `${linking} ${fact.text}`,
+    after: ` ${verb(fact, today)} ${fact.text}, ${valueClause(fact)}`,
   };
 }

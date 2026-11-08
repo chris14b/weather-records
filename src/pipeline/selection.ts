@@ -81,6 +81,9 @@ const conditionalRule: SectionRule = {
   oncePerFamily: true,
 };
 
+/** The least a forecast fact must score to stand in when the coming days have nothing better. */
+const forecastFloor = 2;
+
 /** A conditional fact must be at least twice as rare as what the forecast gets. */
 const conditionalGain = Math.log(2);
 
@@ -137,9 +140,13 @@ export function selectFacts({
   );
   const groupKey = ({ fact }: ScoredFact) =>
     `${fact.date} ${families[fact.measure]} ${fact.direction} ${isCalendar(fact.period) ? "calendar" : fact.period.kind}`;
+  // A fact that a later day beat would only send the reader to that day's.
+  const scored = facts
+    .filter(({ beatenBy }) => beatenBy === null)
+    .map(scoreFact);
   const strongest = [
     ...Map.groupBy(
-      facts.map(scoreFact),
+      scored,
       (candidate) => `${groupKey(candidate)} ${origin(candidate.fact.status)}`,
     ).values(),
   ].map((group) => group.reduce(stronger));
@@ -163,20 +170,22 @@ export function selectFacts({
     );
   const section = (name: Section) => {
     const extra = extraAllowances[name];
-    return [
+    const picked = [
       ...pick(inSection(name, "days"), sectionRules[name]),
       ...(extra === undefined
         ? []
         : pick(inSection(name, extra.allowance), extra.rule)),
-    ]
-      .toSorted(
-        (a, b) =>
-          (name === "comingWeek" ? -1 : 1) *
-            b.fact.date.localeCompare(a.fact.date) ||
-          Number(a.fact.status === "conditional") -
-            Number(b.fact.status === "conditional") ||
-          b.score - a.score,
-      )
+    ];
+    const shown =
+      name === "comingWeek"
+        ? withFallback(
+            picked,
+            [...inSection(name, "days"), ...inSection(name, "conditional")],
+            latest,
+          )
+        : picked;
+    return shown
+      .toSorted(name === "comingWeek" ? soonestFirst : strongestFirst)
       .map((candidate) => present(candidate, series, forecast));
   };
   return {
@@ -186,6 +195,44 @@ export function selectFacts({
     thisMonth: section("thisMonth"),
     comingWeek: section("comingWeek"),
   };
+}
+
+function strongestFirst(a: ScoredFact, b: ScoredFact): number {
+  return b.score - a.score || b.fact.date.localeCompare(a.fact.date);
+}
+
+function soonestFirst(a: ScoredFact, b: ScoredFact): number {
+  return (
+    a.fact.date.localeCompare(b.fact.date) ||
+    Number(a.fact.status === "conditional") -
+      Number(b.fact.status === "conditional") ||
+    b.score - a.score
+  );
+}
+
+/**
+ * The site moves forecasts about the latest day into Today. If nothing is left for the
+ * coming days, the best forecast fact about them stands in, if it is worth saying at all.
+ */
+function withFallback(
+  picked: readonly ScoredFact[],
+  candidates: readonly ScoredFact[],
+  latest: string,
+): ScoredFact[] {
+  const isAhead = ({ fact }: ScoredFact) => fact.date > latest;
+  if (picked.some(isAhead)) return [...picked];
+  const best = candidates
+    .filter(isAhead)
+    .reduce<ScoredFact | undefined>(
+      (strongestSoFar, candidate) =>
+        strongestSoFar === undefined || candidate.score > strongestSoFar.score
+          ? candidate
+          : strongestSoFar,
+      undefined,
+    );
+  return best === undefined || best.score < forecastFloor
+    ? [...picked]
+    : [...picked, best];
 }
 
 /** Observed, forecast and conditional facts about a day say different things, so each keeps its own. */
@@ -347,7 +394,6 @@ function explain(
       record === undefined ? null : { date: record.date, value: record.value },
     ...(fact.forecast === undefined ? {} : { forecast: fact.forecast }),
     since: fact.since,
-    beatenBy: fact.beatenBy,
     leaders,
   };
 

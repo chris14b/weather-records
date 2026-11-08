@@ -5,7 +5,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 ## How to use this plan
 
 - Each task has a permanent ID, such as `T15`. An ID is never reused or renumbered, and never has a letter after it (no `T5b`). A new task, including one split off another, takes the next ID, and goes where its priority puts it. Its place in the list, not its ID, sets its priority.
-- **Next ID:** T32
+- **Next ID:** T37
 - **Depends on** lists the tasks that must be finished first. A task that is no longer in this plan is finished. Keep every task below the tasks it depends on.
 - The next task is the first one that isn't deferred or blocked and whose dependencies are all finished.
 - Statuses: `todo`, `in progress`, `blocked` (say on what), `deferred` (skip until the user says otherwise). An open task can have **Notes** for whatever a later session needs.
@@ -43,7 +43,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 **Goal:** Each fact as a card that can explain itself.
 
-- Scope: an expandable "why" on each card, from the fact's `why`: the value, its rank, ties and days compared, the previous record holder, the since and `beatenBy` days, missing days and gaps, and for a conditional fact the forecast. Values in `facts.json` have no units, so the site adds them from the measure.
+- Scope: an expandable "why" on each card, from the fact's `why`: the value, its rank, ties and days compared, the previous record holder, the since, missing days and gaps, and for a conditional fact the forecast. Values in `facts.json` have no units; `amount` in `src/site/naming.ts` adds them from the measure.
 - Scope: a small chart of the why's `leaders` (the 10 best comparable days or periods), with the fact itself marked. Decide between hand-written SVG and a charting library, keeping the page light.
 - Done when: tests cover the formatting, and the cards have been checked in the browser for a day fact, a period fact, a forecast fact and a conditional fact.
 
@@ -87,6 +87,46 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 ---
 
+## T32: Location in the URL
+
+**Status:** todo
+
+**Goal:** Each location has its own address, so a link opens the location it was copied from.
+
+- Scope: the selected location goes in the URL, e.g. `?location=sydney-airport`, using the location's `id`. Choosing a location updates it with `history.replaceState`, so the back button doesn't step through every toggle.
+- Scope: a URL with an unknown location falls back to the default. Paths must keep working under T25's `base`.
+- Scope: if T27's remembered choice or geolocation lands first, the URL wins over both.
+- Done when: tests cover reading and writing the parameter, and it has been checked in the browser, including reloading and an unknown location.
+
+---
+
+## T33: Today's forecast and the latest reading
+
+**Status:** todo
+
+**Goal:** Today shows BOM's forecast for the day, and the latest reading the run saw, clearly labelled with its time.
+
+- Background: the user asked for the current temperature. The site can't show a truly current one: `facts.json` is written twice a day, there is no server, the browser can't reach BOM's FTP, and code must never fetch from BOM's website or app API. The honest version is the latest reading at the time of the run, such as "18.4°C at 10:30am", from IDN60920, which the pipeline already downloads. It goes stale within hours, so decide with the user whether it is worth showing, or only the forecast.
+- Scope: pass each location's forecast for today and the coming days through `facts.json` from IDN11060: minimum, maximum, chance of rain, rain range and précis. T30 needs the précis and icon too, so share the field.
+- Scope: show today's forecast in Today, near the headline, and decide whether the Coming week shows each day's forecast beside its facts.
+- Scope: after 9pm the day's forecast is spent, so show tomorrow's, as `forecastStart` does.
+- Done when: tests cover the new fields, and it has been checked in the browser for a morning and an evening `facts.json`.
+
+---
+
+## T35: Mark standout facts
+
+**Status:** todo
+
+**Goal:** The rare facts stand out from the everyday ones at a glance, in every section.
+
+- Background: Today's headline is already sized by its score, but in the lists a record looks the same as "the coldest since 15 October". The user suggested a green dot or an exclamation mark.
+- Scope: choose a threshold from the scores. A once-a-year fact scores about 5.9, and a record among all days about 10. Consider two levels, such as notable and record, and check how many facts each would mark on the selection snapshots and the live `facts.json`, so that marks stay rare.
+- Scope: a mark that fits the glass design and still reads against every sky, isn't conveyed by colour alone, and has text for screen readers. The dots already show the status, so the mark mustn't be confused with them: perhaps a separate badge, or bolder text.
+- Done when: it has been checked in the browser on a day with a record and on an ordinary day.
+
+---
+
 ## T17: Scheduled updates
 
 **Status:** todo
@@ -99,8 +139,44 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 - Scope: two runs must never overlap (a `concurrency` group).
 - Scope: check that FTP works from GitHub's servers.
 - Scope: `facts.json` changes on every run, because of its `generatedAt`, so every run makes a commit. A second run otherwise writes the same files.
+- Scope: check the morning timing against the forecast. On 2026-11-09, BOM issued IDN11060 at 9:45am AEDT, with the next routine issue at 4pm. The 10:45am run gets that issue, but without daylight saving the morning run is at 9:45am and may get the earlier one.
 - Scope: check the evening timing. Without daylight saving, the evening run is at 9:15pm, so it saves the maximum only if the 9pm observation is already published. If not, the 11:15pm backup should save it.
 - Done when: a manual run deploys successfully, the live site shows the current facts, and a scheduled run has done the same.
+
+---
+
+## T34: When the next update is due
+
+**Status:** todo
+
+**Depends on:** T17
+
+**Goal:** Beside "Updated…", the page says when the next update is due.
+
+- Scope: work out the next run in the browser from the schedule in CLAUDE.md (10:45am and 10:15pm with daylight saving, 9:45am and 9:15pm without; the times are fixed in UTC). Keep the schedule in one place that the page and the workflow both use, or test that they match.
+- Scope: GitHub often starts scheduled runs late, so say "next update due around 10:45pm", and once that time has passed without a new `facts.json`, say it is running late rather than giving a time in the past. Decide how this fits T27's stale-data banner.
+- Done when: tests cover the next time either side of each run and across a daylight saving change, and it has been checked in the browser.
+
+---
+
+## T36: Live updates through the day
+
+**Status:** todo
+
+**Depends on:** T17
+
+**Goal:** Today follows the day as it happens: the latest temperature, and facts such as "the hottest day since February" as soon as the running maximum gets there.
+
+- Background, from 2026-11-09:
+  - The browser can't fetch the data itself. BOM's feeds are FTP, which browsers can't open, and code must never fetch BOM's website or app API. So something must fetch the feeds for the page.
+  - IDN60920 refreshes about every 30 minutes, so "live" means at best half-hourly. Its running maximum and the rain since 9am are already there.
+  - This changes a settled decision in CLAUDE.md (twice-daily runs, no server, `facts.json` up to 12 hours old), so agree the approach with the user first.
+- Options to put to the user:
+  1. **A frequent static run**, Claude's suggestion: a second GitHub Actions workflow every 30 minutes that downloads only IDN60920 and IDN60910, rebuilds `facts.json` and deploys, without committing. The twice-daily runs still commit the data, so nothing is lost if the frequent ones fail. It stays free on a public repository and needs no server. But GitHub often starts scheduled runs 10 to 30 minutes late or skips them at busy times, so the page must show the reading's time.
+  2. **A small server**, such as a scheduled serverless function (e.g. a Cloudflare Worker with a cron trigger) that fetches the feeds and writes the latest facts to storage the page reads. It is more reliable and timely than option 1, but it is a second system to deploy, monitor and secure, and the fact pipeline would have to run there too or be split.
+- Scope, once chosen: a "latest reading" with its time in Today (which takes over T33's latest reading), Today's facts recomputed from the running maximum and the rain since 9am, and the background (T30) still never claiming more than the data shows.
+- Scope: decide how a fact during the day is worded, since the day isn't over: "Today is so far the hottest day since February".
+- Done when: the approach is agreed, and the live site has updated through a day.
 
 ---
 
@@ -108,7 +184,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 **Status:** todo
 
-**Goal:** Facts about observed days that fell just short of a notable rank, such as "yesterday came within 0.2°C of the hottest October day on record".
+**Goal:** Facts about observed days that fell just short of a notable rank, such as "yesterday came within 0.2°C of the hottest October day since records began".
 
 - Scope: for each observed day and comparison, find the nearest rank or "since" boundary above its value, and how far away it is, using the Ranking section of [facts.md](facts.md).
   - The function exists: `boundariesBetween` in `thresholds.ts` gives the earlier values between two values, nearest first, and `justBeyond` the value 0.1 past one. The nearest boundary above a day's value is `boundariesBetween(values, value, Infinity, direction)[0]`.
@@ -172,10 +248,9 @@ The open tasks, in order of priority. Background and settled decisions are in [C
   - This week is often filled by short sinces such as "the coldest night since 20 October". These are true, but much alike from day to day.
   - Year-so-far ranks such as "the 9th wettest day of the year so far" or "the 7th biggest day-to-day drop in maximum temperature of the year so far" still get in at around 2.4.
   - Quiet days give Today nothing at all, as on 2026-10-30, whose only data is a minimum and rain.
-  - Coming week can be empty. On 2026-11-09, Observatory Hill and Olympic Park had nothing in it, because the week's forecast was ordinary. The nearest were calendar-date ranks, such as Observatory Hill's 10 November becoming its coldest on record if it drops to 10°C (forecast 12°C).
-  - Observatory Hill's year so far has 10 incomplete years in the 1800s, so its records carry "(with 10 years too incomplete to compare)", which is long for a headline.
+  - Observatory Hill's year so far leaves out 9 to 16 years between 1864 and 1948, each with a month or so missing, so its records carry "(not counting 16 years with gaps)". That is still long for a headline. Allowing a missing month in a year so far might be fairer.
   - A period so far shows every day until the period ends, so it can sit in This month for months.
-  - The site's subject can repeat the fact's text: "The year so far is the 3rd hottest start to the year", "October was the wettest October".
+  - The coming week's fallback (`forecastFloor`) can pick a conditional fact over a plainer forecast one, such as "A top of 18°C on Friday (forecast 20°C) would make it the coldest day since 3 November". Decide whether a fallback should prefer forecast facts.
 - Done when: the README is written, and the retuning is reviewed with the user and the snapshot tests updated.
 
 ---

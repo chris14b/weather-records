@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { scoreFact } from "../src/pipeline/scoring.ts";
+import { previousOccurrence, scoreFact } from "../src/pipeline/scoring.ts";
 import { dailyFact } from "./facts.ts";
 
 const score = (...fact: Parameters<typeof dailyFact>) =>
@@ -148,7 +148,41 @@ describe("scoreFact", () => {
     },
   );
 
+  test.each([
+    ["month", "2025-11-13", 0],
+    ["month", "2025-10-31", 1],
+    ["season", "2025-09-01", 0],
+    ["season", "2025-08-31", 1],
+  ] as const)(
+    "ignores a %s since that only reaches back to last year's (%s)",
+    (comparison, sinceDate, scores) => {
+      const scored = score({
+        comparison,
+        rank: 40,
+        since: { date: sinceDate, value: 41 },
+        comparedSince: 30,
+      });
+
+      expect(scored > 0).toBe(scores === 1);
+    },
+  );
+
   test("scores humidity lower than temperature", () => {
     expect(score({ measure: "maxRelHum" })).toBeLessThan(score());
   });
+});
+
+describe("previousOccurrence", () => {
+  test.each([
+    ["2026-11-09", "month", "2025-11-01"],
+    ["2026-11-09", "season", "2025-09-01"],
+    ["2026-12-05", "season", "2025-12-01"],
+    ["2027-02-10", "season", "2025-12-01"],
+    ["2026-03-01", "season", "2025-03-01"],
+  ] as const)(
+    "on %s, last year's %s began on %s",
+    (date, comparison, expected) => {
+      expect(previousOccurrence(date, comparison)).toBe(expected);
+    },
+  );
 });

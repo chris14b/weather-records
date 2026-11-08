@@ -99,8 +99,6 @@ export interface FactWhy {
   record: DayValue | null;
   /** The most recent earlier comparable day that matched or beat it. */
   since: DayValue | null;
-  /** The first later comparable day that beat it. */
-  beatenBy: DayValue | null;
   /** The best comparable days up to and including this one. */
   leaders: RankedDay[];
 }

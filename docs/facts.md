@@ -21,7 +21,7 @@ A series is one measure's single-day values for a location, in date order (`seri
 | `temp9am`, `relHum9am`, `temp3pm`, `relHum3pm` | saved readings (`data/recent/readings/`)        | when saving began           |
 | `maxTempChange`, `minTempChange`               | each day's value minus the day before's         | when records began          |
 
-- A series whose history goes back to when records began has `fullRecord` set. Only those may say "on record"; the others say "since 2009" and so on.
+- A series whose history goes back to when records began has `fullRecord` set. Only those may say "since records began in 1859"; the others say "since 2009" and so on.
 - Missing days are simply absent. Nothing is filled in, and nothing is counted through a gap.
 - A multi-day rain or temperature total is left out of the days, so the days it covers count as missing. It is kept apart, as the series' `multiDay`, for rain totals over periods (see Periods). A ZIP value with a blank period counts as a single day only on a series' first day or after a day with a value. Otherwise it probably is an accumulation, and is left out too.
 - A **change** is left out when either its day or the day before has no value, so a change is never taken across a gap. Only the maximum and minimum have changes. Changes in rain, range and humidity were judged not worth showing.
@@ -111,7 +111,7 @@ The rain amounts with a 50% chance are totalled over the forecast's first 7 days
 
 #### What it would take
 
-For every forecast fact, a **conditional** fact gives the most notable rank and since within reach, at the least value that gets them: "would be the hottest November day on record if it reaches 36.6°C".
+For every forecast fact, a **conditional** fact gives the most notable rank and since within reach, at the least value that gets them: "a top of 36.6°C would make it the hottest November day since records began in 1859".
 
 - **Within reach:** 2°C beyond the forecast temperature, either way, and for rain up to the total of the amounts with a 25% chance.
 - **Least value:** `boundariesBetween` in `thresholds.ts` gives the earlier values that the forecast doesn't beat but the limit does. A value 0.1 beyond the furthest of them gets the same rank and since as the limit itself. T12's near misses can use the same function to find the nearest one.
@@ -137,13 +137,13 @@ These keep ranks easy to set from scoring too high:
 - **Rank limit:** a rank scores 0 if `rank + ties` is above 10 (`lowestRank`), because "the 23rd hottest" isn't worth saying. A calendar date scores only at rank 1.
 - **Short records:** a rank is multiplied by the cube root of (years of record / 30), capped at 1 (`fullStrengthYears`). This doesn't apply to the year so far. Olympic Park's 15 years give 0.79.
 - **Missing days:** a rank is multiplied by the share of comparable days that have a value. The missing days might have held something better.
-- **Sinces that don't count:** there is no since score for `year`, because its since is always the same day as the `all` since. There is none for `calendarDate`, and none when a gap falls after the since day, since the gap might have held a day that matched it.
+- **Sinces that don't count:** there is no since score for `year`, because its since is always the same day as the `all` since. There is none for `calendarDate`, and none when a gap falls after the since day, since the gap might have held a day that matched it. A day's or run's since for `month` or `season` counts only if it reaches back before the same month or season last year (`previousOccurrence`): "the coldest November night since 13 November 2025" covers only about 20 November days, but sounds like a year.
 - **Comparison weight:** all 1, season 0.85, month 0.8, year 0.75, calendar date 0.6 (`comparisonWeights`). Narrow comparisons give many more chances to set a record, and are less interesting to read.
 - **Measure weight:** 1 for temperature and rain, down to 0.75 for 9am and 3pm humidity (`measureWeights`). Changes weigh less than their measures: 0.9 for the maximum and 0.85 for the minimum.
 
 ### Worked examples
 
-- **2013-01-18 at Observatory Hill**, 45.8°C: the highest of 55,916 days, with 349 missing. That gives log(55,916) × 1 for the record length × 0.994 for coverage, which is **10.86**. It leads with the rank: "the hottest day on record".
+- **2013-01-18 at Observatory Hill**, 45.8°C: the highest of 55,916 days, with 349 missing. That gives log(55,916) × 1 for the record length × 0.994 for coverage, which is **10.86**. It leads with the rank: "the hottest day since records began in 1859".
 - **2026-10-13 at Observatory Hill**, a 1.3°C range: only 148th smallest of all days, so the rank scores 0. But no day since 8 February matched it, about 247 comparable days. That gives log(247) × 0.9 for the range weight, which is **4.95**. It leads with the since: "the smallest temperature range since 8 February".
 - **2026-10-13 at Observatory Hill**, a 14.9°C drop in maximum (34.8°C to 19.9°C): only the equal 21st biggest October drop, so the rank scores 0. But no October day since 2017 matched it, about 259 comparable days. That gives log(259) × 0.8 for the month × 0.9 for the change in maximum, which is **4.00**. It leads with the since: "the biggest day-to-day drop in maximum temperature in October since 2017".
 
@@ -161,7 +161,7 @@ These keep ranks easy to set from scoring too high:
 
 A change isn't in its measure's family. A cold change often makes a day both "the coldest day since…" and "the biggest drop in maximum since…", but the two say different things: how cold it was, and how suddenly it got there.
 
-A run of days is a **spell**, and stands for what overlaps it. A day fact in the same family and direction inside a spell that scores at least as well is dropped, and so is a weaker overlapping run. So the February 2020 rain at Olympic Park shows as "the wettest 3 days on record" beside "the wettest day on record", instead of four wet days in a row. The spell must score enough for its section, or it drops nothing.
+A run of days is a **spell**, and stands for what overlaps it. A day fact in the same family and direction inside a spell that scores at least as well is dropped, and so is a weaker overlapping run. So the February 2020 rain at Olympic Park shows as "the wettest 3 days since records began in 2011" beside the wettest day, instead of four wet days in a row. The spell must score enough for its section, or it drops nothing.
 
 It then fills the sections, counting back from the latest day that has any fact (`sectionRules`). A day goes in the section its date falls in, and a run of days in the section its first day falls in, so the 3 days to today are in This week:
 
@@ -179,41 +179,49 @@ Forecast and conditional facts go in a fourth section, the **coming week**. Neit
 
 - **Forecast facts:** up to 2 a day and 7 in all, the first scoring at least 3.5 (a since of about a month) and the second at least 4.5.
 - **Conditional facts** have an allowance of their own (`conditionalRule`), since nearly every forecast has a notable value within reach, and nearby days have much the same one: up to 2, each scoring at least 4, and only the strongest per family and direction across the week. Each must also score at least log(2) more than the forecast fact for its day, family and direction (`conditionalGain`), so it is at least twice as rare as what the forecast already gets.
+- **Fallback:** the site moves facts about the latest day into Today, so if nothing is left for the days after it, the strongest forecast or conditional fact about them is shown if it scores at least 2 (`forecastFloor`), about a since of a week. An ordinary week still says something, such as "the coldest day since 3 November".
 
-Each list runs latest first, then by score. The coming week runs soonest first, with a day's forecast facts before its conditional ones.
+A fact that a later day beat (its `beatenBy`) is never shown, since it would only send the reader to that day's. A weaker fact about the same day that nothing beat can still show.
+
+Today, This week and This month run strongest first. The coming week runs soonest first, with a day's forecast facts before its conditional ones.
 
 ## 5. Wording
 
-`describeFact` writes what the day was, without naming the day: e.g. "the 2nd hottest October day on record". The site makes a sentence of it for when the page is viewed, in Sydney time (`sentence` in `src/site/naming.ts`): "Today is…", "Yesterday was…", a weekday within 6 days ("Tuesday was…", "Sunday would be…"), otherwise a date ("12 October was…").
+`describeFact` writes what the day was, without naming the day, its value or its status: e.g. "the 2nd hottest October day since records began in 1859". The site makes a sentence of it for when the page is viewed (see The sentence, below).
 
 - **Rank:** "the hottest", "the 2nd hottest", "the equal 3rd hottest".
 - **Comparison:**
   - "day", "spring day", "October day", or "6 November".
   - The year so far: "day of the year so far".
-  - The noun follows the measure: "night" for the minimum, "temperature range", "9am" and so on.
+  - The noun follows the measure: "temperature range", "9am" and so on.
+  - The minimum and rain have no noun, because the site names their day "last night" or "the 24 hours to 9am Friday", and "Last night was the coldest night" says night twice: "the coldest", "the wettest in October", "the coldest of the year so far", "the wettest for the date".
   - A change is "the biggest day-to-day rise in maximum temperature" or "drop in minimum temperature". Its comparison follows it: "in spring", "in October", "on 13 October".
 - **Scope:**
-  - A rank-led fact says "on record", or "since 2009" when the series doesn't go back to when records began.
-  - A since-led fact drops the rank and says "since 8 February", "since 20 December 2025", "since August 2024" or "since 2018", depending on how far back it reaches.
-- **Gaps:** a rank-led fact with under 95% coverage names its longest gap, e.g. "(no records from March 2018 to July 2020)".
-- **Beaten:** ", until Friday" within 6 days, otherwise ", until 3 November".
-- **Provisional:** these facts start with "provisionally".
-- **Forecast:** these start with "forecast to be": "forecast to be the hottest November day since 2019". The site adds "Tomorrow is".
-- **Conditional:** "would be", then the fact, then what it needs and the forecast, with their unit: "would be the coldest November night since 2006 if it drops to 9°C (forecast 11°C)". The other needs are "if it reaches 36.6°C", "if it gets no warmer than 17°C", "if it gets no colder than 24°C", and for the next 7 days "if they get 90.1 mm".
+  - A rank-led fact says "since records began in 1859", or "since 2009" when the series doesn't go back to when records began.
+  - A since-led fact drops the rank and says "since 8 February", "since 20 December 2025", "since August 2024" or "since 2018", depending on how far back it reaches. For a `month` comparison it is always the year: "in November since 2024", never "since November 2024".
+- **Gaps:** a rank-led fact with under 95% coverage names its longest gap, e.g. "(no records from March 2018 to July 2020)". A period says how many earlier ones it left out: "(not counting 16 years with gaps)". At Observatory Hill these are years between 1864 and 1948 with a month or so missing.
 - **Periods:**
-  - Rain and maximums: "the wettest October", "the 3rd hottest month", "the driest spring", "the hottest year", "the hottest start to October", "the wettest start to the year".
-  - A period's minimum needs saying: "the October with the warmest nights", "the start to spring with the 2nd coldest nights".
-  - Runs of days: "the wettest 3 days", "the wettest 7 days in spring", "the wettest 3 days in October".
+  - The site names the period, so one compared with its own kind has no noun: "the wettest" for an October among Octobers, a spring or a month so far, and "the wettest in spring" for 7 days among spring's. "October was the wettest October" would say it twice.
+  - Months among all months and years keep theirs: "the 3rd hottest month", "the hottest year", and for the year so far "so far the 3rd hottest year", since "start to the year" reads oddly by November.
+  - A period's minimum is its nights: "the warmest nights" (the site says "October had…"), or "the month with the coldest nights" among all months.
   - A since is a day for a run of days ("since 8 February"). For months among all months it is a month ("since March", "since March 2025") or a year. Everything else is compared once a year, so its since is a year.
-  - A period with under 95% coverage says how many earlier ones were too incomplete: "(with 10 years too incomplete to compare)".
-  - The site names the period from `period`, `from` and `date`: "October", "October 2025" in another year, "The 3 days to Tuesday", "November so far", "Spring", "The year so far", "2025".
+
+### The sentence
+
+`sentence` in `src/site/naming.ts` makes the sentence for when the page is viewed, in Sydney time. It has three parts, so the page can set the day apart.
+
+- **Subject:** "Today", "Yesterday", a weekday within 6 days, otherwise a date ("12 October"). A minimum is for the 24 hours to 9am, so it names the night that ends on its date by its evening: "Last night", "Tonight", "Thursday night", "The night of 2 November". A day's rain is "The 24 hours to 9am Friday". Periods are "October", "October 2025" in another year, "The 3 days to Tuesday", "November so far", "Spring", "2026" for the year so far, and "2025".
+- **Verb:** "is" or "was" by whether the day is over. A night, the rain to 9am and the 9am readings are over by the time the page shows them. Rain days and runs of days take "were". Measures that aren't a kind of day take "had": changes, ranges, humidity and the 9am and 3pm readings ("Thursday had the lowest peak humidity"). A period's nights take "had", "has had" or, for the year so far, "has so far had". Forecasts are "is forecast to be".
+- **Value**, with its unit from the measure: "with a top of 23.6°C", "with a low of 11.6°C", "with 49.6 mm", "up 6.7°C" for a change, "at 79%", "with an average top of 23.6°C" for a period. Observed values show one decimal, forecasts whole degrees as BOM gives them.
+- **Provisional:** shown exactly like a confirmed fact, with no words and the same dot ("Observed" in the legend). The live feed is treated as fact.
+- **Conditional:** built around what it needs: "A low of 10°C tonight (forecast 12°C) would make it the coldest November night since 2006", "A top of 36.6°C on Thursday (forecast 35°C) would make it…", "90.1 mm in the 7 days to Sunday (forecast 70 mm) would make them…".
 
 Each fact also has a `why` for the site:
 
 - the value, rank, ties and days compared, and for a conditional fact the forecast value as `forecast` (its `value` is what the day would need)
 - the record start, missing days and gaps
 - the previous record holder (the best earlier comparable day)
-- the since and `beatenBy` days
+- the since day
 - the 10 best comparable days or periods up to the fact's date, counting overlapping runs of days once
 
 ## Trying it out

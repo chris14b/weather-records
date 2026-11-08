@@ -88,44 +88,19 @@ describe("selectFacts", () => {
       {
         date: "2026-11-06",
         measure: "maxTemp",
-        text: "the hottest day on record",
+        text: "the hottest day since records began in 2016",
       },
       {
         date: "2026-11-06",
         measure: "rain",
-        text: "the wettest day on record",
+        text: "the wettest since records began in 2016",
       },
     ]);
   });
 
-  test("gives each of the 6 days before it up to two facts, latest first, needing more for the second", () => {
-    expect(summary(selected.thisWeek)).toEqual([
-      {
-        date: "2026-11-04",
-        measure: "maxTemp",
-        text: "the hottest day on record, until Friday",
-      },
-      {
-        date: "2026-11-04",
-        measure: "rain",
-        text: "the wettest day on record, until Friday",
-      },
-      {
-        date: "2026-11-03",
-        measure: "maxTemp",
-        text: "the hottest day on record, until Wednesday",
-      },
-    ]);
-  });
-
-  test("keeps only strong facts from 7 to 30 days before it", () => {
-    expect(summary(selected.thisMonth)).toEqual([
-      {
-        date: "2026-10-17",
-        measure: "maxTemp",
-        text: "the hottest day on record, until 3 November",
-      },
-    ]);
+  test("leaves out the facts that a later day beat", () => {
+    expect(selected.thisWeek).toEqual([]);
+    expect(selected.thisMonth).toEqual([]);
   });
 
   test("keeps the strongest of a day's facts about the same family of measures and direction", () => {
@@ -158,7 +133,6 @@ describe("selectFacts", () => {
       gaps: [],
       record: { date: "2026-11-04", value: 26 },
       since: null,
-      beatenBy: null,
     });
     expect(why?.leaders).toEqual([
       { date: "2026-11-06", value: 30, rank: 1 },
@@ -195,10 +169,13 @@ describe("selectFacts", () => {
     });
 
     expect(today.map(({ measure, text }) => ({ measure, text }))).toEqual([
-      { measure: "maxTemp", text: "the coldest day on record" },
+      {
+        measure: "maxTemp",
+        text: "the coldest day since records began in 2016",
+      },
       {
         measure: "maxTempChange",
-        text: "the biggest day-to-day drop in maximum temperature on record",
+        text: "the biggest day-to-day drop in maximum temperature since records began in 2016",
       },
     ]);
   });
@@ -223,13 +200,13 @@ describe("selectFacts", () => {
         from: "2026-11-04",
         date: "2026-11-04",
         period: { kind: "day" },
-        text: "the wettest day on record",
+        text: "the wettest since records began in 2016",
       },
       {
         from: "2026-11-02",
         date: "2026-11-04",
         period: { kind: "rolling", days: 3 },
-        text: "the wettest 3 days on record",
+        text: "the wettest since records began in 2016",
       },
     ]);
   });
@@ -248,14 +225,14 @@ describe("selectFacts", () => {
       thisMonth.map(({ from, date, text }) => ({ from, date, text })),
     ).toEqual([
       {
-        from: "2026-10-01",
-        date: "2026-10-31",
-        text: "the wettest month on record",
-      },
-      {
         from: "2026-10-10",
         date: "2026-10-10",
-        text: "the wettest day on record",
+        text: "the wettest since records began in 2016",
+      },
+      {
+        from: "2026-10-01",
+        date: "2026-10-31",
+        text: "the wettest month since records began in 2016",
       },
     ]);
   });
@@ -314,16 +291,42 @@ describe("selectFacts with a forecast", () => {
   );
 
   test("puts the forecast's facts in the coming week, soonest first, and what it would take after them", () => {
-    expect(summary(nearRecord.comingWeek)).toEqual([
+    expect(
+      nearRecord.comingWeek.map(({ date, status, text }) => ({
+        date,
+        status,
+        text,
+      })),
+    ).toEqual([
       {
         date: "2026-11-08",
-        measure: "maxTemp",
-        text: "forecast to be the 3rd hottest day on record",
+        status: "forecast",
+        text: "the 3rd hottest day since records began in 1990",
       },
       {
         date: "2026-11-08",
-        measure: "maxTemp",
-        text: "would be the hottest day on record if it reaches 36.6°C (forecast 35°C)",
+        status: "conditional",
+        text: "the hottest day since records began in 1990",
+      },
+    ]);
+  });
+
+  test("shows the best forecast fact when the coming days have nothing notable", () => {
+    const { comingWeek } = selectWithForecast({}, 20);
+
+    expect(
+      comingWeek.map(({ date, status, score, text }) => ({
+        date,
+        status,
+        score,
+        text,
+      })),
+    ).toEqual([
+      {
+        date: "2026-11-13",
+        status: "conditional",
+        score: 2.3,
+        text: "the coldest day since 3 November",
       },
     ]);
   });
@@ -333,7 +336,7 @@ describe("selectFacts with a forecast", () => {
       {
         date: latest,
         measure: "maxTemp",
-        text: "the 3rd hottest day on record",
+        text: "the 3rd hottest day since records began in 1990",
       },
     ]);
   });
@@ -380,10 +383,11 @@ describe("selectFacts on real data", () => {
     Object.fromEntries(
       (["today", "thisWeek", "thisMonth"] as const).map((section) => [
         section,
-        facts[section].map(({ from, date, score, text }) =>
+        facts[section].map(({ from, date, score, measure, text }) =>
           [
             from === date ? date : `${from}..${date}`,
             score.toFixed(2),
+            measure,
             text,
           ].join(" "),
         ),

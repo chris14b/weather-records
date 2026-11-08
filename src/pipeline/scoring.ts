@@ -88,10 +88,38 @@ function sinceScore({
   since,
   gaps,
   comparedSince,
+  date,
+  period,
 }: CandidateFact): number {
   if (since === null || comparison === "year" || comparison === "calendarDate")
     return 0;
   // A gap after the since day might hold a day that matched or beat this one.
   if (gaps.some(({ to }) => to > since.date)) return 0;
+  // "The coldest November night since 13 November 2025" sounds rarer than it is.
+  if (
+    (comparison === "month" || comparison === "season") &&
+    (period.kind === "day" || period.kind === "rolling") &&
+    since.date >= previousOccurrence(date, comparison)
+  ) {
+    return 0;
+  }
   return Math.log(comparedSince);
+}
+
+/** The first day of the same month or season a year before the one `date` is in. */
+export function previousOccurrence(
+  date: string,
+  comparison: "month" | "season",
+): string {
+  const year = Number(date.slice(0, 4));
+  const month = Number(date.slice(5, 7));
+  const start =
+    comparison === "month"
+      ? { year, month }
+      : month === 12
+        ? { year, month: 12 }
+        : month <= 2
+          ? { year: year - 1, month: 12 }
+          : { year, month: month - (month % 3) };
+  return `${String(start.year - 1)}-${String(start.month).padStart(2, "0")}-01`;
 }

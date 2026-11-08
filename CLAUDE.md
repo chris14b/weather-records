@@ -1,6 +1,6 @@
 # Sydney weather records
 
-A static website that shows obscure weather records for the current and recent weather in Sydney, for example "the warmest night of the year so far" or "forecast to be the wettest 7 days since 2022". It is built entirely by AI sessions, one task from [docs/plan.md](docs/plan.md) per session.
+A static website that shows obscure weather records for the current and recent weather in Sydney, for example "the warmest night of the year so far" or "the 7 days to Sunday are forecast to be the wettest 7 days since 2022". It is built entirely by AI sessions, one task from [docs/plan.md](docs/plan.md) per session.
 
 ## How to work in this repo
 
@@ -93,7 +93,7 @@ How facts are made, ranked, chosen and worded is explained in [docs/facts.md](do
 - **Comparisons:** against all records, this year, the same month in every year, the same calendar date, and the same season. Don't compare against the same weekday.
 - **Ranks:** a fact can give a rank, such as "the 2nd coldest" or "the equal 3rd wettest", not only "the coldest". Tied values share a rank.
 - **Scoring:** narrow comparisons and short records score lower, because they make records easy to set. Show a small number of the best facts, without near-duplicates.
-- **Recent days:** facts cover the last 31 days, not just the latest, for the home page's Today, This week and This month sections. Each day is judged against the data as it stood on that day, and a fact a later day has beaten says so.
+- **Recent days:** facts cover the last 31 days, not just the latest, for the home page's Today, This week and This month sections. Each day is judged against the data as it stood on that day, and a fact that a later day has beaten isn't shown.
 - **Dates:** every fact carries the date it refers to. The page decides whether to say "today" or "yesterday", based on when it is viewed.
-- **Wording:** distinguish confirmed, provisional and forecast facts.
+- **Wording:** distinguish observed and forecast facts. The live feed is treated as fact: the page shows a provisional fact exactly like a confirmed one, as "Observed". `facts.json` keeps the `provisional` status. Sentences give the value with its unit, name a minimum by its night ("last night") and a day's rain as "the 24 hours to 9am", say "since records began in 1859" rather than "on record", and don't repeat what the subject already says ("Last night was the coldest since…", "October was the wettest since…").
 - **Attribution:** the data is © Bureau of Meteorology, licensed under CC BY 4.0. The site must credit it.

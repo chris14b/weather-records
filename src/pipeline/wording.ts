@@ -38,13 +38,15 @@ const phrases: Record<FactMeasure, Record<Direction, Phrase>> = {
     highest: { superlative: "hottest", noun: "day" },
     lowest: { superlative: "coldest", noun: "day" },
   },
+  // The site names the night ("last night") and a day's rain ("the 24 hours to 9am
+  // Friday"), so they need no noun.
   minTemp: {
-    highest: { superlative: "warmest", noun: "night" },
-    lowest: { superlative: "coldest", noun: "night" },
+    highest: { superlative: "warmest", noun: "", periodAfter: true },
+    lowest: { superlative: "coldest", noun: "", periodAfter: true },
   },
   rain: {
-    highest: { superlative: "wettest", noun: "day" },
-    lowest: { superlative: "driest", noun: "day" },
+    highest: { superlative: "wettest", noun: "", periodAfter: true },
+    lowest: { superlative: "driest", noun: "", periodAfter: true },
   },
   range: {
     highest: { superlative: "biggest", noun: "temperature range" },
@@ -90,58 +92,20 @@ const periodSuperlatives: Partial<
   minTemp: { highest: "warmest", lowest: "coldest" },
 };
 
-// What a day or the days ahead would need for a conditional fact.
-const conditions: Partial<Record<FactMeasure, Record<Direction, string>>> = {
-  maxTemp: { highest: "if it reaches", lowest: "if it gets no warmer than" },
-  minTemp: { highest: "if it gets no colder than", lowest: "if it drops to" },
-  rain: { highest: "if they get", lowest: "if they get no more than" },
-};
-
-const units: Partial<Record<FactMeasure, string>> = {
-  maxTemp: "°C",
-  minTemp: "°C",
-  rain: " mm",
-};
-
 /**
- * What a fact's day or period was, without naming it: e.g. "the 2nd hottest October day on
- * record" or "the wettest 7 days since 2022".
+ * What a fact's day or period was, without naming it, its value, its status or what beat
+ * it: e.g. "the
+ * 2nd hottest October day since records began in 1859" or "the wettest 7 days since 2022".
  */
 export function describeFact(fact: CandidateFact, lead: Lead): string {
-  const { beatenBy, date, status } = fact;
   const ranked = lead === "rank" ? rankWords(fact) : "";
-  const text = [
+  return [
     fact.period.kind === "day"
       ? dayHead(fact, ranked)
       : periodHead(fact, fact.period, ranked),
     lead === "rank" ? rankScope(fact) : sinceScope(fact),
     lead === "rank" ? caveat(fact) : "",
-    beatenBy === null ? "" : `, until ${laterDay(beatenBy.date, date)}`,
   ].join("");
-  switch (status) {
-    case "confirmed":
-      return text;
-    case "provisional":
-      return `provisionally ${text}`;
-    case "forecast":
-      return `forecast to be ${text}`;
-    case "conditional":
-      return `would be ${text} ${condition(fact)}`;
-  }
-}
-
-function condition({
-  measure,
-  direction,
-  value,
-  forecast,
-}: CandidateFact): string {
-  const words = conditions[measure]?.[direction];
-  if (words === undefined || forecast === undefined) {
-    throw new Error(`A conditional fact about ${measure} needs its forecast`);
-  }
-  const unit = units[measure] ?? "";
-  return `${words} ${String(value)}${unit} (forecast ${String(forecast)}${unit})`;
 }
 
 /** 1st, 2nd, 3rd, 4th… */
@@ -159,10 +123,17 @@ function dayHead(
   ranked: string,
 ): string {
   const phrase = phrases[measure][direction];
-  return `the ${ranked}${phrase.superlative} ${subject(comparison, phrase, date)}`;
+  return [
+    `the ${ranked}${phrase.superlative}`,
+    subject(comparison, phrase, date),
+  ]
+    .filter((words) => words !== "")
+    .join(" ");
 }
 
-// A period's maximum is its days', so "the hottest October"; its minimum needs saying.
+// The site names the period, so a period compared with its own kind needs no noun:
+// "October was the wettest since 2019", "The 3 days to Friday were the wettest in October".
+// Its minimum needs saying: "had the warmest nights".
 function periodHead(
   { measure, direction, comparison, date }: CandidateFact,
   period: Exclude<Period, { kind: "day" }>,
@@ -172,29 +143,28 @@ function periodHead(
   if (superlative === undefined) {
     throw new Error(`There are no period facts about ${measure}`);
   }
-  const name = periodName(period, comparison, date);
-  return measure === "minTemp"
-    ? `the ${name} with the ${ranked}${superlative} nights`
-    : `the ${ranked}${superlative} ${name}`;
-}
-
-function periodName(
-  period: Exclude<Period, { kind: "day" }>,
-  comparison: Comparison,
-  date: string,
-): string {
-  const month = format(date, { month: "long" });
-  const season = comparisonKey(date, "season");
-  if (period.kind === "rolling") {
-    const days = `${String(period.days)} days`;
-    if (comparison === "season") return `${days} in ${season}`;
-    return comparison === "month" ? `${days} in ${month}` : days;
+  const head = `the ${ranked}${superlative}`;
+  const amongAllMonths = period.kind === "month" && comparison === "all";
+  if (measure === "minTemp") {
+    return amongAllMonths
+      ? `the month with the ${ranked}${superlative} nights`
+      : `${head} nights`;
   }
-  const name = { month, season, year: "year" }[period.kind];
-  if (period.toDate) {
-    return `start to ${period.kind === "year" ? "the year" : name}`;
+  switch (period.kind) {
+    case "rolling":
+      if (comparison === "season") {
+        return `${head} in ${comparisonKey(date, "season")}`;
+      }
+      return comparison === "month"
+        ? `${head} in ${format(date, { month: "long" })}`
+        : head;
+    case "year":
+      return period.toDate ? `so far ${head} year` : `${head} year`;
+    case "month":
+      return amongAllMonths ? `${head} month` : head;
+    case "season":
+      return head;
   }
-  return comparison === "all" ? period.kind : name;
 }
 
 function rankWords({ rank, ties }: CandidateFact): string {
@@ -210,19 +180,25 @@ function subject(
     case "all":
       return noun;
     case "year":
-      return `${noun} of the year so far`;
+      return [noun, "of the year so far"].filter((w) => w !== "").join(" ");
     case "season": {
       const season = comparisonKey(date, "season");
-      return periodAfter ? `${noun} in ${season}` : `${season} ${noun}`;
+      return periodAfter ? after(noun, `in ${season}`) : `${season} ${noun}`;
     }
     case "month": {
       const month = format(date, { month: "long" });
-      return periodAfter ? `${noun} in ${month}` : `${month} ${noun}`;
+      return periodAfter ? after(noun, `in ${month}`) : `${month} ${noun}`;
     }
     case "calendarDate":
-      if (periodAfter) return `${noun} on ${dayMonth(date)}`;
+      // The site names the day, so a night or a day's rain is "the coldest for the date".
+      if (noun === "") return "for the date";
+      if (periodAfter) return after(noun, `on ${dayMonth(date)}`);
       return noun === "day" ? dayMonth(date) : `${dayMonth(date)} ${noun}`;
   }
+}
+
+function after(noun: string, words: string): string {
+  return noun === "" ? words : `${noun} ${words}`;
 }
 
 function rankScope({
@@ -232,7 +208,7 @@ function rankScope({
   date,
 }: CandidateFact): string {
   if (comparison === "year") return "";
-  if (fullRecord) return " on record";
+  if (fullRecord) return ` since records began in ${recordStart.slice(0, 4)}`;
   const years = daysBetween(recordStart, date) / 365.25;
   return ` since ${recordStart.endsWith("-01-01") || years >= 3 ? recordStart.slice(0, 4) : monthYear(recordStart)}`;
 }
@@ -247,6 +223,8 @@ function sinceScope({
   switch (period.kind) {
     case "day":
     case "rolling":
+      // "The biggest rise in November since November 2024" says November twice.
+      if (comparison === "month") return ` since ${since.date.slice(0, 4)}`;
       return ` since ${earlierDay(since.date, date)}`;
     case "month":
       if (!period.toDate && comparison === "all")
@@ -259,7 +237,7 @@ function sinceScope({
 function caveat(fact: CandidateFact): string {
   if (coverage(fact) >= minimumCoverage) return "";
   if (fact.period.kind !== "day") {
-    return ` (with ${String(fact.missingDays)} ${missingUnit(fact)} too incomplete to compare)`;
+    return ` (not counting ${String(fact.missingDays)} ${missingUnit(fact)} with gaps)`;
   }
   const longest = fact.gaps.reduce<DateRange | undefined>(
     (best, gap) =>
@@ -298,14 +276,6 @@ function earlierMonth(earlier: string, date: string): string {
   return daysBetween(earlier, date) < 3 * 365
     ? monthYear(earlier)
     : earlier.slice(0, 4);
-}
-
-function laterDay(later: string, date: string): string {
-  return daysBetween(date, later) <= 6 ? weekday(later) : dayMonth(later);
-}
-
-function weekday(date: string): string {
-  return format(date, { weekday: "long" });
 }
 
 function dayMonth(date: string): string {

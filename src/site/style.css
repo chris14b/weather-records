@@ -178,19 +178,6 @@ h2 {
   font-weight: inherit;
 }
 
-.headline[data-status="provisional"]::after {
-  content: "Provisional";
-  display: block;
-  width: fit-content;
-  margin: 0.75rem auto 0;
-  padding: 0.1rem 0.6rem;
-  border: 1px dashed var(--text-soft);
-  border-radius: 999px;
-  font-family: var(--sans);
-  font-size: 0.75rem;
-  color: var(--text-soft);
-}
-
 .headline[data-status="forecast"] {
   font-style: italic;
 }
@@ -251,12 +238,6 @@ h2 {
   height: 0.6rem;
   border-radius: 50%;
   background: var(--text);
-}
-
-.marker[data-status="provisional"] {
-  background: rgb(255 255 255 / 0.35);
-  outline: 1px dashed var(--text);
-  outline-offset: 1px;
 }
 
 .marker[data-status="forecast"] {

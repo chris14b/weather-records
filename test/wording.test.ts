@@ -9,20 +9,29 @@ const words = (fact: Partial<CandidateFact>, lead: Lead = "rank") =>
 
 describe("describeFact", () => {
   test.each([
-    [{}, "the hottest day on record"],
-    [{ rank: 2 }, "the 2nd hottest day on record"],
-    [{ rank: 3, ties: 1 }, "the equal 3rd hottest day on record"],
-    [{ ties: 2 }, "the equal hottest day on record"],
+    [{}, "the hottest day since records began in 1900"],
+    [{ rank: 2 }, "the 2nd hottest day since records began in 1900"],
+    [
+      { rank: 3, ties: 1 },
+      "the equal 3rd hottest day since records began in 1900",
+    ],
+    [{ ties: 2 }, "the equal hottest day since records began in 1900"],
     [{ comparison: "year" as const }, "the hottest day of the year so far"],
-    [{ comparison: "season" as const }, "the hottest spring day on record"],
-    [{ comparison: "month" as const }, "the hottest November day on record"],
+    [
+      { comparison: "season" as const },
+      "the hottest spring day since records began in 1900",
+    ],
+    [
+      { comparison: "month" as const },
+      "the hottest November day since records began in 1900",
+    ],
     [
       { comparison: "calendarDate" as const },
-      "the hottest 6 November on record",
+      "the hottest 6 November since records began in 1900",
     ],
     [
       { comparison: "calendarDate" as const, measure: "minTemp" as const },
-      "the warmest 6 November night on record",
+      "the warmest for the date since records began in 1900",
     ],
   ])("words a rank: %o", (fact, expected) => {
     expect(words(fact)).toBe(expected);
@@ -30,9 +39,9 @@ describe("describeFact", () => {
 
   test.each([
     ["maxTemp", "lowest", "the coldest day"],
-    ["minTemp", "highest", "the warmest night"],
-    ["minTemp", "lowest", "the coldest night"],
-    ["rain", "highest", "the wettest day"],
+    ["minTemp", "highest", "the warmest"],
+    ["minTemp", "lowest", "the coldest"],
+    ["rain", "highest", "the wettest"],
     ["range", "lowest", "the smallest temperature range"],
     ["maxRelHum", "highest", "the highest peak humidity"],
     ["minRelHum", "highest", "the most humid day"],
@@ -42,7 +51,9 @@ describe("describeFact", () => {
     ["temp9am", "lowest", "the coldest 9am"],
     ["relHum3pm", "lowest", "the driest 3pm"],
   ] as const)("words %s %s as %s", (measure, direction, expected) => {
-    expect(words({ measure, direction })).toBe(`${expected} on record`);
+    expect(words({ measure, direction })).toBe(
+      `${expected} since records began in 1900`,
+    );
   });
 
   test.each([
@@ -50,13 +61,13 @@ describe("describeFact", () => {
       "maxTempChange",
       "lowest",
       {},
-      "the biggest day-to-day drop in maximum temperature on record",
+      "the biggest day-to-day drop in maximum temperature since records began in 1900",
     ],
     [
       "minTempChange",
       "highest",
       { rank: 2 },
-      "the 2nd biggest day-to-day rise in minimum temperature on record",
+      "the 2nd biggest day-to-day rise in minimum temperature since records began in 1900",
     ],
     [
       "minTempChange",
@@ -68,19 +79,31 @@ describe("describeFact", () => {
       "maxTempChange",
       "highest",
       { comparison: "season" },
-      "the biggest day-to-day rise in maximum temperature in spring on record",
+      "the biggest day-to-day rise in maximum temperature in spring since records began in 1900",
     ],
     [
       "maxTempChange",
       "lowest",
       { comparison: "month" },
-      "the biggest day-to-day drop in maximum temperature in November on record",
+      "the biggest day-to-day drop in maximum temperature in November since records began in 1900",
     ],
     [
       "maxTempChange",
       "highest",
       { comparison: "calendarDate" },
-      "the biggest day-to-day rise in maximum temperature on 6 November on record",
+      "the biggest day-to-day rise in maximum temperature on 6 November since records began in 1900",
+    ],
+    [
+      "rain",
+      "highest",
+      { comparison: "month" },
+      "the wettest in November since records began in 1900",
+    ],
+    [
+      "rain",
+      "highest",
+      { comparison: "year" },
+      "the wettest of the year so far",
     ],
   ] as const)(
     "words a change in %s, %s: %o",
@@ -105,12 +128,26 @@ describe("describeFact", () => {
     );
   });
 
+  test("names only the year of a since in the same month, not the month again", () => {
+    expect(
+      words(
+        {
+          measure: "minTemp",
+          direction: "lowest",
+          comparison: "month",
+          since: { date: "2024-11-03", value: 12 },
+        },
+        "since",
+      ),
+    ).toBe("the coldest in November since 2024");
+  });
+
   test.each([
     ["1900-01-01", "since 1900"],
     ["2011-09-01", "since 2011"],
     ["2026-03-14", "since March 2026"],
   ])(
-    "says since when a record started on %s, not on record",
+    "says since when a record started on %s, not since records began in 1900",
     (recordStart, expected) => {
       expect(words({ measure: "solar", fullRecord: false, recordStart })).toBe(
         `the sunniest day ${expected}`,
@@ -146,97 +183,22 @@ describe("describeFact", () => {
         },
         "since",
       ),
-    ).toBe("the wettest November day since 2018");
+    ).toBe("the wettest in November since 2018");
   });
 
-  test.each([
-    ["2026-11-08", "until Sunday"],
-    ["2026-11-12", "until Thursday"],
-    ["2026-11-13", "until 13 November"],
-  ])("says a later day on %s beat it", (date, expected) => {
-    expect(words({ comparison: "year", beatenBy: { date, value: 41 } })).toBe(
-      `the hottest day of the year so far, ${expected}`,
-    );
-  });
-
-  test("says a fact is provisional", () => {
-    expect(
-      words({
-        status: "provisional",
-        comparison: "year",
-        beatenBy: { date: "2026-11-08", value: 41 },
-      }),
-    ).toBe("provisionally the hottest day of the year so far, until Sunday");
-  });
-
-  test("says a fact is forecast", () => {
-    expect(
-      words(
-        {
-          status: "forecast",
-          comparison: "month",
-          since: { date: "2019-11-21", value: 41 },
-          comparedSince: 200,
-        },
-        "since",
-      ),
-    ).toBe("forecast to be the hottest November day since 2019");
-  });
-
-  test.each([
-    [
-      "maxTemp",
-      "highest",
-      36.6,
-      35,
-      "the hottest day on record if it reaches 36.6°C (forecast 35°C)",
-    ],
-    [
-      "maxTemp",
-      "lowest",
-      15,
-      17,
-      "the coldest day on record if it gets no warmer than 15°C (forecast 17°C)",
-    ],
-    [
-      "minTemp",
-      "highest",
-      24.1,
-      23,
-      "the warmest night on record if it gets no colder than 24.1°C (forecast 23°C)",
-    ],
-    [
-      "minTemp",
-      "lowest",
-      5.2,
-      7,
-      "the coldest night on record if it drops to 5.2°C (forecast 7°C)",
-    ],
-  ] as const)(
-    "says what a conditional %s %s fact needs, and the forecast",
-    (measure, direction, value, forecast, expected) => {
+  test.each(["provisional", "forecast", "conditional"] as const)(
+    "leaves the %s status and what beat it to the site",
+    (status) => {
       expect(
-        words({ status: "conditional", measure, direction, value, forecast }),
-      ).toBe(`would be ${expected}`);
+        words({
+          status,
+          comparison: "year",
+          forecast: 38,
+          beatenBy: { date: "2026-11-08", value: 41 },
+        }),
+      ).toBe("the hottest day of the year so far");
     },
   );
-
-  test("says what a conditional run of days needs", () => {
-    expect(
-      describeFact(
-        periodFact({
-          status: "conditional",
-          period: { kind: "rolling", days: 7 },
-          comparison: "all",
-          value: 90.1,
-          forecast: 70,
-        }),
-        "rank",
-      ),
-    ).toBe(
-      "would be the wettest 7 days on record if they get 90.1 mm (forecast 70 mm)",
-    );
-  });
 
   test("names the longest gap when too many comparable days are missing", () => {
     expect(
@@ -259,7 +221,7 @@ describe("describeFact", () => {
 
   test("counts the missing days when they form no gap", () => {
     expect(words({ compared: 900, missingDays: 100 })).toBe(
-      "the hottest day on record (with 100 days missing)",
+      "the hottest day since records began in 1900 (with 100 days missing)",
     );
   });
 
@@ -269,35 +231,27 @@ describe("describeFact", () => {
         missingDays: 300,
         gaps: [{ from: "1865-03-01", to: "1865-03-31" }],
       }),
-    ).toBe("the hottest day on record");
-  });
-});
-
-describe("ordinal", () => {
-  test.each([
-    [1, "1st"],
-    [2, "2nd"],
-    [3, "3rd"],
-    [4, "4th"],
-    [11, "11th"],
-    [12, "12th"],
-    [13, "13th"],
-    [21, "21st"],
-    [102, "102nd"],
-    [111, "111th"],
-  ])("%i is %s", (n, expected) => {
-    expect(ordinal(n)).toBe(expected);
+    ).toBe("the hottest day since records began in 1900");
   });
 
   test.each([
-    [{}, "the wettest October on record"],
-    [{ rank: 3 }, "the 3rd wettest October on record"],
-    [{ direction: "lowest" as const }, "the driest October on record"],
-    [{ comparison: "all" as const }, "the wettest month on record"],
-    [{ measure: "maxTemp" as const }, "the hottest October on record"],
+    [{}, "the wettest since records began in 1866"],
+    [{ rank: 3 }, "the 3rd wettest since records began in 1866"],
+    [
+      { direction: "lowest" as const },
+      "the driest since records began in 1866",
+    ],
+    [
+      { comparison: "all" as const },
+      "the wettest month since records began in 1866",
+    ],
+    [
+      { measure: "maxTemp" as const },
+      "the hottest since records began in 1866",
+    ],
     [
       { measure: "minTemp" as const, rank: 2, ties: 1 },
-      "the October with the equal 2nd warmest nights on record",
+      "the equal 2nd warmest nights since records began in 1866",
     ],
     [
       {
@@ -305,35 +259,35 @@ describe("ordinal", () => {
         direction: "lowest" as const,
         comparison: "all" as const,
       },
-      "the month with the coldest nights on record",
+      "the month with the coldest nights since records began in 1866",
     ],
     [
       {
         period: { kind: "season" as const, toDate: false },
         comparison: "season" as const,
       },
-      "the wettest spring on record",
+      "the wettest since records began in 1866",
     ],
     [
       {
         period: { kind: "year" as const, toDate: false },
         comparison: "all" as const,
       },
-      "the wettest year on record",
+      "the wettest year since records began in 1866",
     ],
     [
       {
         period: { kind: "month" as const, toDate: true },
         measure: "maxTemp" as const,
       },
-      "the hottest start to October on record",
+      "the hottest since records began in 1866",
     ],
     [
       {
         period: { kind: "season" as const, toDate: true },
         comparison: "season" as const,
       },
-      "the wettest start to spring on record",
+      "the wettest since records began in 1866",
     ],
     [
       {
@@ -341,32 +295,41 @@ describe("ordinal", () => {
         comparison: "all" as const,
         measure: "minTemp" as const,
       },
-      "the start to the year with the warmest nights on record",
+      "the warmest nights since records began in 1866",
+    ],
+    [
+      {
+        period: { kind: "year" as const, toDate: true },
+        comparison: "all" as const,
+        measure: "maxTemp" as const,
+        rank: 3,
+      },
+      "so far the 3rd hottest year since records began in 1866",
     ],
     [
       {
         period: { kind: "rolling" as const, days: 3 },
         comparison: "all" as const,
       },
-      "the wettest 3 days on record",
+      "the wettest since records began in 1866",
     ],
     [
       {
         period: { kind: "rolling" as const, days: 7 },
         comparison: "season" as const,
       },
-      "the wettest 7 days in spring on record",
+      "the wettest in spring since records began in 1866",
     ],
     [
       { period: { kind: "rolling" as const, days: 7 }, rank: 2 },
-      "the 2nd wettest 7 days in October on record",
+      "the 2nd wettest in October since records began in 1866",
     ],
   ])("words a period: %o", (fact, expected) => {
     expect(describeFact(periodFact(fact), "rank")).toBe(expected);
   });
 
   test.each([
-    [{}, "2018-10-31", "the wettest October since 2018"],
+    [{}, "2018-10-31", "the wettest since 2018"],
     [
       { comparison: "all" as const },
       "2026-03-31",
@@ -388,7 +351,7 @@ describe("ordinal", () => {
         comparison: "all" as const,
       },
       "2026-02-08",
-      "the wettest 3 days since 8 February",
+      "the wettest since 8 February",
     ],
   ])("words a period's since: %o on %s", (fact, date, expected) => {
     expect(
@@ -399,24 +362,26 @@ describe("ordinal", () => {
     ).toBe(expected);
   });
 
-  test("says how many earlier periods were too incomplete to compare", () => {
+  test("says how many earlier periods have gaps", () => {
     expect(describeFact(periodFact({ missingDays: 20 }), "rank")).toBe(
-      "the wettest October on record (with 20 years too incomplete to compare)",
+      "the wettest since records began in 1866 (not counting 20 years with gaps)",
     );
   });
+});
 
-  test("says when a later run of days beat it", () => {
-    expect(
-      describeFact(
-        periodFact({
-          period: { kind: "rolling", days: 3 },
-          comparison: "all",
-          date: "2026-11-03",
-          from: "2026-11-01",
-          beatenBy: { date: "2026-11-05", value: 500 },
-        }),
-        "rank",
-      ),
-    ).toBe("the wettest 3 days on record, until Thursday");
+describe("ordinal", () => {
+  test.each([
+    [1, "1st"],
+    [2, "2nd"],
+    [3, "3rd"],
+    [4, "4th"],
+    [11, "11th"],
+    [12, "12th"],
+    [13, "13th"],
+    [21, "21st"],
+    [102, "102nd"],
+    [111, "111th"],
+  ])("%i is %s", (n, expected) => {
+    expect(ordinal(n)).toBe(expected);
   });
 });

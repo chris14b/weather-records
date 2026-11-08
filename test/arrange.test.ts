@@ -25,7 +25,6 @@ const fact = (changes: Partial<Fact>): Fact => ({
     gaps: [],
     record: null,
     since: null,
-    beatenBy: null,
     leaders: [],
   },
   ...changes,

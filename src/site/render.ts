@@ -19,14 +19,20 @@ function element<K extends keyof HTMLElementTagNameMap>(
   return node;
 }
 
-const statusLabels: Record<ValueStatus, string> = {
-  confirmed: "Confirmed",
-  provisional: "Provisional",
+/** How the page shows a fact: the live feed counts as observed, like the daily files. */
+type ShownStatus = Exclude<ValueStatus, "provisional">;
+
+function shown(status: ValueStatus): ShownStatus {
+  return status === "provisional" ? "confirmed" : status;
+}
+
+const statusLabels: Record<ShownStatus, string> = {
+  confirmed: "Observed",
   forecast: "Forecast",
   conditional: "If it gets there",
 };
 
-function marker(status: ValueStatus): HTMLElement {
+function marker(status: ShownStatus): HTMLElement {
   return element("span", {
     class: "marker",
     "data-status": status,
@@ -35,13 +41,14 @@ function marker(status: ValueStatus): HTMLElement {
 }
 
 function phrase(fact: Fact, today: string): Children {
-  const { subject, predicate } = sentence(fact, today);
-  return [element("strong", {}, [subject]), ` ${predicate}.`];
+  const { before, subject, after } = sentence(fact, today);
+  return [before, element("strong", {}, [subject]), `${after}.`];
 }
 
 function factItem(fact: Fact, today: string): HTMLElement {
-  return element("li", { class: "fact", "data-status": fact.status }, [
-    marker(fact.status),
+  const status = shown(fact.status);
+  return element("li", { class: "fact", "data-status": status }, [
+    marker(status),
     element("p", {}, phrase(fact, today)),
   ]);
 }
@@ -74,7 +81,7 @@ function headline(fact: Fact | undefined, today: string): HTMLElement {
   }
   const node = element(
     "p",
-    { class: "headline", "data-status": fact.status },
+    { class: "headline", "data-status": shown(fact.status) },
     phrase(fact, today),
   );
   const size = headlineSize(fact.score);
@@ -107,12 +114,7 @@ function locationToggle(
 }
 
 function legend(): HTMLElement {
-  const statuses: ValueStatus[] = [
-    "confirmed",
-    "provisional",
-    "forecast",
-    "conditional",
-  ];
+  const statuses: ShownStatus[] = ["confirmed", "forecast", "conditional"];
   return element(
     "ul",
     { class: "legend", "aria-label": "Kinds of fact" },
