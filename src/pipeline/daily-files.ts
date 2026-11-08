@@ -1,5 +1,5 @@
 import type { DailyFolder, Station } from "../shared/locations.ts";
-import { addDays, monthsBetween } from "./dates.ts";
+import { addDays, isValidDate, monthsBetween } from "./dates.ts";
 import type { Ftp } from "./ftp.ts";
 
 /** One day's values from a recent source. Null means missing. */
@@ -73,7 +73,8 @@ export async function downloadDailyFile(
 
 /**
  * Parses a monthly daily file. Its rows must run day by day from the 1st, so a missing
- * row is an error rather than a missing day.
+ * row is an error rather than a missing day. Leading rows that run up to the last day of
+ * the month before are left out.
  */
 export function parseDailyFile(
   bytes: Uint8Array,
@@ -107,7 +108,11 @@ export function parseDailyFile(
     }
   }
 
+  const monthStart = `${file.month}-01`;
+  const lastDayBefore = addDays(monthStart, -1);
+  const monthBefore = lastDayBefore.slice(0, 7);
   const days: DailyFileDay[] = [];
+  let previousDate: string | undefined;
   const firstRow = headerLine + columnHeaders.length;
   for (let index = firstRow; ; index++) {
     const line = lines[index];
@@ -118,6 +123,9 @@ export function parseDailyFile(
     if (cells[0] === "Totals:") {
       if (index !== lines.length - 1) {
         throw lineError(index + 1, "unexpected line after Totals");
+      }
+      if (previousDate !== undefined && previousDate < lastDayBefore) {
+        throw lineError(index, `expected ${lastDayBefore}, found Totals`);
       }
       return days;
     }
@@ -146,11 +154,27 @@ export function parseDailyFile(
         `station ${station ?? ""} does not match ${stationName}`,
       );
     }
-    const expectedDate = addDays(`${file.month}-01`, days.length);
     const isoDate = date.split("/").reverse().join("-");
-    if (isoDate !== expectedDate) {
-      throw lineError(index, `expected ${expectedDate}, found ${date}`);
+    if (!isValidDate(isoDate)) {
+      throw lineError(index, `invalid date ${date}`);
     }
+    if (previousDate === undefined) {
+      if (isoDate !== monthStart && !isoDate.startsWith(monthBefore)) {
+        throw lineError(
+          index,
+          `expected ${monthStart} or a day of the month before, found ${date}`,
+        );
+      }
+    } else {
+      const expectedDate = addDays(previousDate, 1);
+      if (isoDate !== expectedDate) {
+        throw lineError(index, `expected ${expectedDate}, found ${date}`);
+      }
+    }
+    if (isoDate.slice(0, 7) > file.month) {
+      throw lineError(index, `${date} is after ${monthName(file.month)}`);
+    }
+    previousDate = isoDate;
     const value = (cell: string): number | null => {
       const text = cell.trim();
       if (text === "") return null;
@@ -159,7 +183,7 @@ export function parseDailyFile(
       }
       return Number(text);
     };
-    days.push({
+    const day = {
       date: isoDate,
       rain: value(rain),
       maxTemp: value(maxTemp),
@@ -167,7 +191,8 @@ export function parseDailyFile(
       maxRelHum: value(maxRelHum),
       minRelHum: value(minRelHum),
       solar: value(solar),
-    });
+    };
+    if (isoDate >= monthStart) days.push(day);
   }
 }
 

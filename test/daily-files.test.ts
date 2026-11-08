@@ -7,7 +7,12 @@ import {
   folderMonths,
   parseDailyFile,
 } from "../src/pipeline/daily-files.ts";
-import { dailyFile, daysFrom, humidityAndSolarFrom } from "./daily-file.ts";
+import {
+  dailyFile,
+  daysFrom,
+  humidityAndSolarFrom,
+  repeatedDays,
+} from "./daily-file.ts";
 
 function stationByNumber(number: string) {
   const station = locations
@@ -22,19 +27,22 @@ const observatoryHill = {
   month: "2026-10",
 };
 
-async function readFixture(): Promise<string> {
+async function readFixture(month = "202610"): Promise<string> {
   const bytes = await readFile(
     join(
       import.meta.dirname,
       "fixtures",
-      "sydney_(observatory_hill)-202610.csv",
+      `sydney_(observatory_hill)-${month}.csv`,
     ),
   );
   return bytes.toString("latin1");
 }
 
-function parseText(text: string) {
-  return parseDailyFile(Buffer.from(text, "latin1"), observatoryHill);
+function parseText(text: string, month = observatoryHill.month) {
+  return parseDailyFile(Buffer.from(text, "latin1"), {
+    station: observatoryHill.station,
+    month,
+  });
 }
 
 describe("dailyFilePath", () => {
@@ -183,6 +191,94 @@ describe("parseDailyFile with a real file", () => {
     const text = (await readFixture()).replace(/^Totals:.*$/m, "");
 
     expect(() => parseText(text)).toThrow("ends without a Totals line");
+  });
+
+  test("fails on a date that doesn't exist", async () => {
+    const text = (await readFixture()).replace("02/10/2026", "32/10/2026");
+
+    expect(() => parseText(text)).toThrow("line 15: invalid date 32/10/2026");
+  });
+});
+
+describe("parseDailyFile with a file that starts in the month before", () => {
+  const november = "2026-11";
+  const readNovember = () => readFixture("202611");
+  const rowPattern = (date: string) =>
+    new RegExp(`^SYDNEY \\(OBSERVATORY HILL\\),${date}.*\\n`, "gm");
+
+  test("leaves out the rows from the month before", async () => {
+    const days = parseText(await readNovember(), november);
+
+    expect(days.map((d) => d.date)).toEqual([
+      "2026-11-01",
+      "2026-11-02",
+      "2026-11-03",
+      "2026-11-04",
+      "2026-11-05",
+    ]);
+    expect(days[0]).toEqual({
+      date: "2026-11-01",
+      rain: 0,
+      maxTemp: 24.5,
+      minTemp: 19.3,
+      maxRelHum: 84,
+      minRelHum: 61,
+      solar: 23.66,
+    });
+  });
+
+  test("gives no days when every row is from the month before", async () => {
+    const text = (await readNovember()).replace(
+      rowPattern("\\d\\d/11/2026"),
+      "",
+    );
+
+    expect(parseText(text, november)).toEqual([]);
+  });
+
+  test("fails when the rows from the month before stop short of its last day", async () => {
+    const text = (await readNovember()).replace(rowPattern("31/10/2026"), "");
+
+    expect(() => parseText(text, november)).toThrow(
+      "line 15: expected 2026-10-31, found 01/11/2026",
+    );
+  });
+
+  test("fails when only rows from the month before stop short of its last day", async () => {
+    const text = (await readNovember())
+      .replace(rowPattern("31/10/2026"), "")
+      .replace(rowPattern("\\d\\d/11/2026"), "");
+
+    expect(() => parseText(text, november)).toThrow(
+      "line 15: expected 2026-10-31, found Totals",
+    );
+  });
+
+  test("fails on a row from the month before among the month's own rows", async () => {
+    const text = (await readNovember()).replace("03/11/2026", "31/10/2026");
+
+    expect(() => parseText(text, november)).toThrow(
+      "line 18: expected 2026-11-03, found 31/10/2026",
+    );
+  });
+
+  test("fails when the first row is from an earlier month", async () => {
+    const text = (await readNovember()).replace("30/10/2026", "30/09/2026");
+
+    expect(() => parseText(text, november)).toThrow(
+      "line 14: expected 2026-11-01 or a day of the month before, found 30/09/2026",
+    );
+  });
+
+  test("fails on a row from the month after", () => {
+    const file = dailyFile(
+      "SYDNEY (OBSERVATORY HILL)",
+      repeatedDays("2026-10-01", 32, [0, 20, 10]),
+    );
+
+    expect(() => parseDailyFile(file, observatoryHill)).toThrow(
+      "line 45: 01/11/2026 is after October 2026",
+    );
   });
 });
 
