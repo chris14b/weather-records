@@ -16,6 +16,7 @@ exports[`selectFacts on real data > chooses the facts at sydney-airport for the 
     "2026-10-23 1.95 the wettest day since 16 October",
   ],
   "today": [
+    "2026-10-29 5.03 the sunniest day since 4 February",
     "2026-10-29 2.64 the coldest night since 15 October",
   ],
 }

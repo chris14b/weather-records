@@ -7,7 +7,11 @@ import { selectFacts } from "../src/pipeline/selection.ts";
 import type { ForecastDay } from "../src/pipeline/forecast.ts";
 import { changeSeries, type Series } from "../src/pipeline/series.ts";
 import type { Fact, FactMeasure, LocationFacts } from "../src/shared/facts.ts";
-import { locations, stationOffsets } from "../src/shared/locations.ts";
+import {
+  type Location,
+  locations,
+  stationOffsets,
+} from "../src/shared/locations.ts";
 
 const latest = "2026-11-06";
 
@@ -361,6 +365,17 @@ describe("selectFacts with a forecast", () => {
 });
 
 describe("selectFacts on real data", () => {
+  /** Each run adds data that can beat these days, so the snapshots stop at a fixed day. */
+  const dataEnd = "2026-11-08";
+  const savedSeriesTo = async (location: Location) =>
+    (await readSavedSeries(location)).map((series) => ({
+      ...series,
+      days: series.days.filter(({ date }) => date <= dataEnd),
+      ...(series.multiDay && {
+        multiDay: series.multiDay.filter(({ date }) => date <= dataEnd),
+      }),
+    }));
+
   const sections = (facts: LocationFacts) =>
     Object.fromEntries(
       (["today", "thisWeek", "thisMonth"] as const).map((section) => [
@@ -384,7 +399,7 @@ describe("selectFacts on real data", () => {
   ])("chooses the facts at %s for the 31 days to %s", async (id, windowEnd) => {
     const location = locations.find((l) => l.id === id);
     if (location === undefined) throw new Error(`No location ${id}`);
-    const locationSeries = await readSavedSeries(location);
+    const locationSeries = await savedSeriesTo(location);
 
     const facts = selectFacts({
       locationId: id,

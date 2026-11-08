@@ -1,0 +1,3449 @@
+{
+  "generatedAt": "2026-11-08T22:10:40.178Z",
+  "locations": [
+    {
+      "locationId": "sydney-observatory-hill",
+      "today": [
+        {
+          "date": "2026-11-09",
+          "from": "2026-11-09",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "minTemp",
+          "direction": "lowest",
+          "comparison": "all",
+          "status": "provisional",
+          "lead": "since",
+          "score": 3.18,
+          "text": "provisionally the coldest night since 15 October",
+          "why": {
+            "value": 11.6,
+            "rank": 20729,
+            "ties": 439,
+            "compared": 60675,
+            "recordStart": "1859-01-01",
+            "fullRecord": true,
+            "missingDays": 634,
+            "gaps": [
+              {
+                "from": "1864-07-01",
+                "to": "1864-08-01"
+              },
+              {
+                "from": "1865-07-01",
+                "to": "1865-08-01"
+              },
+              {
+                "from": "1867-08-01",
+                "to": "1867-09-01"
+              },
+              {
+                "from": "1869-04-01",
+                "to": "1869-05-01"
+              },
+              {
+                "from": "1870-04-01",
+                "to": "1870-05-01"
+              },
+              {
+                "from": "1883-05-01",
+                "to": "1883-06-01"
+              },
+              {
+                "from": "1884-05-01",
+                "to": "1884-06-01"
+              },
+              {
+                "from": "1903-11-01",
+                "to": "1903-12-01"
+              },
+              {
+                "from": "1905-11-01",
+                "to": "1905-12-01"
+              },
+              {
+                "from": "1907-08-01",
+                "to": "1907-09-01"
+              },
+              {
+                "from": "1915-07-01",
+                "to": "1915-08-01"
+              },
+              {
+                "from": "1935-12-01",
+                "to": "1936-01-01"
+              },
+              {
+                "from": "1944-06-01",
+                "to": "1944-07-01"
+              }
+            ],
+            "record": {
+              "date": "1932-06-22",
+              "value": 2.1
+            },
+            "since": {
+              "date": "2026-10-15",
+              "value": 10.6
+            },
+            "beatenBy": null,
+            "leaders": [
+              {
+                "date": "1932-06-22",
+                "value": 2.1,
+                "rank": 1
+              },
+              {
+                "date": "1861-07-08",
+                "value": 2.2,
+                "rank": 2
+              },
+              {
+                "date": "1890-07-12",
+                "value": 2.2,
+                "rank": 2
+              },
+              {
+                "date": "1932-06-23",
+                "value": 2.2,
+                "rank": 2
+              },
+              {
+                "date": "1862-07-02",
+                "value": 2.7,
+                "rank": 5
+              },
+              {
+                "date": "1862-07-26",
+                "value": 2.7,
+                "rank": 5
+              },
+              {
+                "date": "1862-08-05",
+                "value": 2.7,
+                "rank": 5
+              },
+              {
+                "date": "1872-08-03",
+                "value": 2.7,
+                "rank": 5
+              },
+              {
+                "date": "1874-07-17",
+                "value": 2.7,
+                "rank": 5
+              },
+              {
+                "date": "1895-07-09",
+                "value": 2.7,
+                "rank": 5
+              }
+            ]
+          }
+        }
+      ],
+      "thisWeek": [
+        {
+          "date": "2026-11-07",
+          "from": "2026-11-07",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "maxTempChange",
+          "direction": "highest",
+          "comparison": "month",
+          "status": "confirmed",
+          "lead": "since",
+          "score": 2.99,
+          "text": "the biggest day-to-day rise in maximum temperature in November since November 2024",
+          "why": {
+            "value": 6.7,
+            "rank": 256,
+            "ties": 6,
+            "compared": 4980,
+            "recordStart": "1859-01-02",
+            "fullRecord": true,
+            "missingDays": 37,
+            "gaps": [],
+            "record": {
+              "date": "1946-11-06",
+              "value": 19
+            },
+            "since": {
+              "date": "2024-11-03",
+              "value": 7.5
+            },
+            "beatenBy": null,
+            "leaders": [
+              {
+                "date": "1946-11-06",
+                "value": 19,
+                "rank": 1
+              },
+              {
+                "date": "1953-11-17",
+                "value": 15.8,
+                "rank": 2
+              },
+              {
+                "date": "1941-11-30",
+                "value": 15.5,
+                "rank": 3
+              },
+              {
+                "date": "1957-11-24",
+                "value": 15.5,
+                "rank": 3
+              },
+              {
+                "date": "1980-11-27",
+                "value": 14,
+                "rank": 5
+              },
+              {
+                "date": "1901-11-15",
+                "value": 13.9,
+                "rank": 6
+              },
+              {
+                "date": "1944-11-13",
+                "value": 13.9,
+                "rank": 6
+              },
+              {
+                "date": "2020-11-28",
+                "value": 13.7,
+                "rank": 8
+              },
+              {
+                "date": "1951-11-06",
+                "value": 13.5,
+                "rank": 9
+              },
+              {
+                "date": "1865-11-01",
+                "value": 13.4,
+                "rank": 10
+              }
+            ]
+          }
+        },
+        {
+          "date": "2026-11-06",
+          "from": "2026-11-06",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "minTemp",
+          "direction": "lowest",
+          "comparison": "month",
+          "status": "confirmed",
+          "lead": "since",
+          "score": 2.51,
+          "text": "the coldest November night since 13 November 2025, until Monday",
+          "why": {
+            "value": 14.3,
+            "rank": 1322,
+            "ties": 66,
+            "compared": 4931,
+            "recordStart": "1859-01-01",
+            "fullRecord": true,
+            "missingDays": 85,
+            "gaps": [
+              {
+                "from": "1903-11-01",
+                "to": "1903-12-01"
+              },
+              {
+                "from": "1905-11-01",
+                "to": "1905-12-01"
+              }
+            ],
+            "record": {
+              "date": "1864-11-27",
+              "value": 7.9
+            },
+            "since": {
+              "date": "2025-11-13",
+              "value": 12.7
+            },
+            "beatenBy": {
+              "date": "2026-11-09",
+              "value": 11.6
+            },
+            "leaders": [
+              {
+                "date": "1864-11-27",
+                "value": 7.9,
+                "rank": 1
+              },
+              {
+                "date": "2006-11-16",
+                "value": 8.3,
+                "rank": 2
+              },
+              {
+                "date": "1859-11-07",
+                "value": 8.5,
+                "rank": 3
+              },
+              {
+                "date": "1861-11-04",
+                "value": 8.5,
+                "rank": 3
+              },
+              {
+                "date": "1860-11-13",
+                "value": 8.7,
+                "rank": 5
+              },
+              {
+                "date": "1934-11-17",
+                "value": 8.7,
+                "rank": 5
+              },
+              {
+                "date": "1913-11-05",
+                "value": 8.9,
+                "rank": 7
+              },
+              {
+                "date": "1931-11-21",
+                "value": 8.9,
+                "rank": 7
+              },
+              {
+                "date": "1906-11-06",
+                "value": 9,
+                "rank": 9
+              },
+              {
+                "date": "1861-11-16",
+                "value": 9.1,
+                "rank": 10
+              }
+            ]
+          }
+        },
+        {
+          "date": "2026-11-05",
+          "from": "2026-11-05",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "maxTemp",
+          "direction": "lowest",
+          "comparison": "all",
+          "status": "confirmed",
+          "lead": "since",
+          "score": 2.2,
+          "text": "the coldest day since 27 October, until Friday",
+          "why": {
+            "value": 23.6,
+            "rank": 39182,
+            "ties": 392,
+            "compared": 60948,
+            "recordStart": "1859-01-01",
+            "fullRecord": true,
+            "missingDays": 357,
+            "gaps": [
+              {
+                "from": "1865-06-01",
+                "to": "1865-07-01"
+              },
+              {
+                "from": "1868-08-01",
+                "to": "1868-09-01"
+              },
+              {
+                "from": "1869-08-01",
+                "to": "1869-09-01"
+              },
+              {
+                "from": "1905-06-01",
+                "to": "1905-07-01"
+              }
+            ],
+            "record": {
+              "date": "1868-07-19",
+              "value": 7.7
+            },
+            "since": {
+              "date": "2026-10-27",
+              "value": 22.9
+            },
+            "beatenBy": {
+              "date": "2026-11-06",
+              "value": 23.2
+            },
+            "leaders": [
+              {
+                "date": "1868-07-19",
+                "value": 7.7,
+                "rank": 1
+              },
+              {
+                "date": "1872-08-09",
+                "value": 9.1,
+                "rank": 2
+              },
+              {
+                "date": "1962-08-21",
+                "value": 9.3,
+                "rank": 3
+              },
+              {
+                "date": "1861-07-09",
+                "value": 9.4,
+                "rank": 4
+              },
+              {
+                "date": "1869-09-08",
+                "value": 9.5,
+                "rank": 5
+              },
+              {
+                "date": "1896-07-30",
+                "value": 9.6,
+                "rank": 6
+              },
+              {
+                "date": "1984-07-03",
+                "value": 9.6,
+                "rank": 6
+              },
+              {
+                "date": "1899-06-13",
+                "value": 9.7,
+                "rank": 8
+              },
+              {
+                "date": "1868-07-18",
+                "value": 9.9,
+                "rank": 9
+              },
+              {
+                "date": "1983-07-20",
+                "value": 9.9,
+                "rank": 9
+              }
+            ]
+          }
+        },
+        {
+          "date": "2026-11-04",
+          "from": "2026-11-04",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "rain",
+          "direction": "highest",
+          "comparison": "month",
+          "status": "confirmed",
+          "lead": "since",
+          "score": 4.3,
+          "text": "the wettest November day since 2018",
+          "why": {
+            "value": 49.6,
+            "rank": 34,
+            "ties": 1,
+            "compared": 5040,
+            "recordStart": "1858-07-01",
+            "fullRecord": true,
+            "missingDays": 4,
+            "gaps": [],
+            "record": {
+              "date": "1984-11-09",
+              "value": 234.6
+            },
+            "since": {
+              "date": "2018-11-28",
+              "value": 105.6
+            },
+            "beatenBy": null,
+            "leaders": [
+              {
+                "date": "1984-11-09",
+                "value": 234.6,
+                "rank": 1
+              },
+              {
+                "date": "1955-11-27",
+                "value": 133.1,
+                "rank": 2
+              },
+              {
+                "date": "1969-11-14",
+                "value": 129,
+                "rank": 3
+              },
+              {
+                "date": "1961-11-18",
+                "value": 123.2,
+                "rank": 4
+              },
+              {
+                "date": "1966-11-09",
+                "value": 120.4,
+                "rank": 5
+              },
+              {
+                "date": "1961-11-19",
+                "value": 118.1,
+                "rank": 6
+              },
+              {
+                "date": "1900-11-19",
+                "value": 107.4,
+                "rank": 7
+              },
+              {
+                "date": "2018-11-28",
+                "value": 105.6,
+                "rank": 8
+              },
+              {
+                "date": "1865-11-26",
+                "value": 105.4,
+                "rank": 9
+              },
+              {
+                "date": "1961-11-21",
+                "value": 99.8,
+                "rank": 10
+              }
+            ]
+          }
+        },
+        {
+          "date": "2026-11-03",
+          "from": "2026-11-03",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "minTemp",
+          "direction": "highest",
+          "comparison": "all",
+          "status": "confirmed",
+          "lead": "since",
+          "score": 3.76,
+          "text": "the warmest night since 21 September",
+          "why": {
+            "value": 19.5,
+            "rank": 6346,
+            "ties": 256,
+            "compared": 60670,
+            "recordStart": "1859-01-01",
+            "fullRecord": true,
+            "missingDays": 633,
+            "gaps": [
+              {
+                "from": "1864-07-01",
+                "to": "1864-08-01"
+              },
+              {
+                "from": "1865-07-01",
+                "to": "1865-08-01"
+              },
+              {
+                "from": "1867-08-01",
+                "to": "1867-09-01"
+              },
+              {
+                "from": "1869-04-01",
+                "to": "1869-05-01"
+              },
+              {
+                "from": "1870-04-01",
+                "to": "1870-05-01"
+              },
+              {
+                "from": "1883-05-01",
+                "to": "1883-06-01"
+              },
+              {
+                "from": "1884-05-01",
+                "to": "1884-06-01"
+              },
+              {
+                "from": "1903-11-01",
+                "to": "1903-12-01"
+              },
+              {
+                "from": "1905-11-01",
+                "to": "1905-12-01"
+              },
+              {
+                "from": "1907-08-01",
+                "to": "1907-09-01"
+              },
+              {
+                "from": "1915-07-01",
+                "to": "1915-08-01"
+              },
+              {
+                "from": "1935-12-01",
+                "to": "1936-01-01"
+              },
+              {
+                "from": "1944-06-01",
+                "to": "1944-07-01"
+              }
+            ],
+            "record": {
+              "date": "2011-02-06",
+              "value": 27.6
+            },
+            "since": {
+              "date": "2026-09-21",
+              "value": 20
+            },
+            "beatenBy": null,
+            "leaders": [
+              {
+                "date": "2011-02-06",
+                "value": 27.6,
+                "rank": 1
+              },
+              {
+                "date": "2016-12-14",
+                "value": 27.1,
+                "rank": 2
+              },
+              {
+                "date": "1973-02-06",
+                "value": 26.6,
+                "rank": 3
+              },
+              {
+                "date": "1868-12-25",
+                "value": 26.3,
+                "rank": 4
+              },
+              {
+                "date": "1994-01-08",
+                "value": 26.2,
+                "rank": 5
+              },
+              {
+                "date": "2017-02-06",
+                "value": 26.2,
+                "rank": 5
+              },
+              {
+                "date": "1960-01-26",
+                "value": 26.1,
+                "rank": 7
+              },
+              {
+                "date": "1997-02-10",
+                "value": 26.1,
+                "rank": 7
+              },
+              {
+                "date": "2011-02-02",
+                "value": 26.1,
+                "rank": 7
+              },
+              {
+                "date": "2010-02-23",
+                "value": 26,
+                "rank": 10
+              }
+            ]
+          }
+        }
+      ],
+      "thisMonth": [
+        {
+          "date": "2026-11-09",
+          "from": "2026-01-01",
+          "period": {
+            "kind": "year",
+            "toDate": true
+          },
+          "measure": "minTemp",
+          "direction": "highest",
+          "comparison": "all",
+          "status": "provisional",
+          "lead": "rank",
+          "score": 4.55,
+          "text": "provisionally the start to the year with the warmest nights on record (with 16 years too incomplete to compare)",
+          "why": {
+            "value": 15,
+            "rank": 1,
+            "ties": 0,
+            "compared": 152,
+            "recordStart": "1859-01-01",
+            "fullRecord": true,
+            "missingDays": 16,
+            "gaps": [
+              {
+                "from": "1864-01-01",
+                "to": "1864-11-09"
+              },
+              {
+                "from": "1865-01-01",
+                "to": "1865-11-09"
+              },
+              {
+                "from": "1867-01-01",
+                "to": "1867-11-09"
+              },
+              {
+                "from": "1869-01-01",
+                "to": "1869-11-09"
+              },
+              {
+                "from": "1870-01-01",
+                "to": "1870-11-09"
+              },
+              {
+                "from": "1873-01-01",
+                "to": "1873-11-09"
+              },
+              {
+                "from": "1883-01-01",
+                "to": "1883-11-09"
+              },
+              {
+                "from": "1884-01-01",
+                "to": "1884-11-09"
+              },
+              {
+                "from": "1903-01-01",
+                "to": "1903-11-09"
+              },
+              {
+                "from": "1905-01-01",
+                "to": "1905-11-09"
+              },
+              {
+                "from": "1907-01-01",
+                "to": "1907-11-09"
+              },
+              {
+                "from": "1915-01-01",
+                "to": "1915-11-09"
+              },
+              {
+                "from": "1932-01-01",
+                "to": "1932-11-09"
+              },
+              {
+                "from": "1934-01-01",
+                "to": "1934-11-09"
+              },
+              {
+                "from": "1944-01-01",
+                "to": "1944-11-09"
+              },
+              {
+                "from": "1948-01-01",
+                "to": "1948-11-09"
+              }
+            ],
+            "record": {
+              "date": "2016-11-09",
+              "value": 14.8
+            },
+            "since": null,
+            "beatenBy": null,
+            "leaders": [
+              {
+                "date": "2026-11-09",
+                "value": 15,
+                "rank": 1
+              },
+              {
+                "date": "2016-11-09",
+                "value": 14.8,
+                "rank": 2
+              },
+              {
+                "date": "2025-11-09",
+                "value": 14.8,
+                "rank": 2
+              },
+              {
+                "date": "1988-11-09",
+                "value": 14.6,
+                "rank": 4
+              },
+              {
+                "date": "2007-11-09",
+                "value": 14.6,
+                "rank": 4
+              },
+              {
+                "date": "2013-11-09",
+                "value": 14.6,
+                "rank": 4
+              },
+              {
+                "date": "2017-11-09",
+                "value": 14.6,
+                "rank": 4
+              },
+              {
+                "date": "2024-11-09",
+                "value": 14.6,
+                "rank": 4
+              },
+              {
+                "date": "1998-11-09",
+                "value": 14.5,
+                "rank": 9
+              },
+              {
+                "date": "2009-11-09",
+                "value": 14.5,
+                "rank": 9
+              }
+            ]
+          }
+        },
+        {
+          "date": "2026-11-07",
+          "from": "2026-01-01",
+          "period": {
+            "kind": "year",
+            "toDate": true
+          },
+          "measure": "maxTemp",
+          "direction": "highest",
+          "comparison": "all",
+          "status": "confirmed",
+          "lead": "rank",
+          "score": 3.76,
+          "text": "the 3rd hottest start to the year on record (with 9 years too incomplete to compare)",
+          "why": {
+            "value": 23.6,
+            "rank": 3,
+            "ties": 0,
+            "compared": 159,
+            "recordStart": "1859-01-01",
+            "fullRecord": true,
+            "missingDays": 9,
+            "gaps": [
+              {
+                "from": "1865-01-01",
+                "to": "1865-11-07"
+              },
+              {
+                "from": "1868-01-01",
+                "to": "1868-11-07"
+              },
+              {
+                "from": "1869-01-01",
+                "to": "1869-11-07"
+              },
+              {
+                "from": "1873-01-01",
+                "to": "1873-11-07"
+              },
+              {
+                "from": "1905-01-01",
+                "to": "1905-11-07"
+              },
+              {
+                "from": "1932-01-01",
+                "to": "1932-11-07"
+              },
+              {
+                "from": "1934-01-01",
+                "to": "1934-11-07"
+              },
+              {
+                "from": "1948-01-01",
+                "to": "1948-11-07"
+              },
+              {
+                "from": "1996-01-01",
+                "to": "1996-11-07"
+              }
+            ],
+            "record": {
+              "date": "2019-11-07",
+              "value": 23.5
+            },
+            "since": {
+              "date": "2019-11-07",
+              "value": 23.5
+            },
+            "beatenBy": null,
+            "leaders": [
+              {
+                "date": "2026-11-07",
+                "value": 23.6,
+                "rank": 1
+              },
+              {
+                "date": "2019-11-07",
+                "value": 23.5,
+                "rank": 2
+              },
+              {
+                "date": "2013-11-07",
+                "value": 23.4,
+                "rank": 3
+              },
+              {
+                "date": "2016-11-07",
+                "value": 23.2,
+                "rank": 4
+              },
+              {
+                "date": "2017-11-07",
+                "value": 23.2,
+                "rank": 4
+              },
+              {
+                "date": "2023-11-07",
+                "value": 23.2,
+                "rank": 4
+              },
+              {
+                "date": "2024-11-07",
+                "value": 23.2,
+                "rank": 4
+              },
+              {
+                "date": "2025-11-07",
+                "value": 23.2,
+                "rank": 4
+              },
+              {
+                "date": "2004-11-07",
+                "value": 23,
+                "rank": 9
+              },
+              {
+                "date": "2014-11-07",
+                "value": 23,
+                "rank": 9
+              }
+            ]
+          }
+        },
+        {
+          "date": "2026-10-29",
+          "from": "2026-10-29",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "solar",
+          "direction": "highest",
+          "comparison": "all",
+          "status": "confirmed",
+          "lead": "since",
+          "score": 5.03,
+          "text": "the sunniest day since 5 February",
+          "why": {
+            "value": 27.54,
+            "rank": 611,
+            "ties": 0,
+            "compared": 5602,
+            "recordStart": "2009-01-01",
+            "fullRecord": false,
+            "missingDays": 909,
+            "gaps": [
+              {
+                "from": "2009-11-16",
+                "to": "2009-11-27"
+              },
+              {
+                "from": "2018-03-25",
+                "to": "2020-07-31"
+              }
+            ],
+            "record": {
+              "date": "2013-12-03",
+              "value": 38.06
+            },
+            "since": {
+              "date": "2026-02-05",
+              "value": 28.01
+            },
+            "beatenBy": null,
+            "leaders": [
+              {
+                "date": "2013-12-03",
+                "value": 38.06,
+                "rank": 1
+              },
+              {
+                "date": "2013-12-29",
+                "value": 37.48,
+                "rank": 2
+              },
+              {
+                "date": "2013-12-06",
+                "value": 37.25,
+                "rank": 3
+              },
+              {
+                "date": "2013-12-19",
+                "value": 37.23,
+                "rank": 4
+              },
+              {
+                "date": "2013-12-13",
+                "value": 37.08,
+                "rank": 5
+              },
+              {
+                "date": "2013-12-08",
+                "value": 36.87,
+                "rank": 6
+              },
+              {
+                "date": "2013-12-30",
+                "value": 36.64,
+                "rank": 7
+              },
+              {
+                "date": "2013-12-31",
+                "value": 36.56,
+                "rank": 8
+              },
+              {
+                "date": "2013-12-11",
+                "value": 36.33,
+                "rank": 9
+              },
+              {
+                "date": "2013-11-27",
+                "value": 36.23,
+                "rank": 10
+              }
+            ]
+          }
+        },
+        {
+          "date": "2026-10-14",
+          "from": "2026-10-14",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "rain",
+          "direction": "highest",
+          "comparison": "all",
+          "status": "confirmed",
+          "lead": "since",
+          "score": 5.43,
+          "text": "the wettest day since 27 February",
+          "why": {
+            "value": 83.4,
+            "rank": 220,
+            "ties": 0,
+            "compared": 61446,
+            "recordStart": "1858-07-01",
+            "fullRecord": true,
+            "missingDays": 21,
+            "gaps": [],
+            "record": {
+              "date": "1986-08-06",
+              "value": 327.6
+            },
+            "since": {
+              "date": "2026-02-27",
+              "value": 85.8
+            },
+            "beatenBy": null,
+            "leaders": [
+              {
+                "date": "1986-08-06",
+                "value": 327.6,
+                "rank": 1
+              },
+              {
+                "date": "1942-03-28",
+                "value": 280.7,
+                "rank": 2
+              },
+              {
+                "date": "1990-02-03",
+                "value": 243.6,
+                "rank": 3
+              },
+              {
+                "date": "1984-11-09",
+                "value": 234.6,
+                "rank": 4
+              },
+              {
+                "date": "1873-02-25",
+                "value": 226.1,
+                "rank": 5
+              },
+              {
+                "date": "1889-05-28",
+                "value": 212.3,
+                "rank": 6
+              },
+              {
+                "date": "1975-03-11",
+                "value": 198.2,
+                "rank": 7
+              },
+              {
+                "date": "1931-07-07",
+                "value": 198.1,
+                "rank": 8
+              },
+              {
+                "date": "1956-02-10",
+                "value": 192,
+                "rank": 9
+              },
+              {
+                "date": "1878-02-06",
+                "value": 191.3,
+                "rank": 10
+              }
+            ]
+          }
+        },
+        {
+          "date": "2026-10-12",
+          "from": "2026-10-12",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "maxTemp",
+          "direction": "highest",
+          "comparison": "all",
+          "status": "confirmed",
+          "lead": "since",
+          "score": 5.46,
+          "text": "the hottest day since 18 February",
+          "why": {
+            "value": 34.8,
+            "rank": 567,
+            "ties": 14,
+            "compared": 60924,
+            "recordStart": "1859-01-01",
+            "fullRecord": true,
+            "missingDays": 357,
+            "gaps": [
+              {
+                "from": "1865-06-01",
+                "to": "1865-07-01"
+              },
+              {
+                "from": "1868-08-01",
+                "to": "1868-09-01"
+              },
+              {
+                "from": "1869-08-01",
+                "to": "1869-09-01"
+              },
+              {
+                "from": "1905-06-01",
+                "to": "1905-07-01"
+              }
+            ],
+            "record": {
+              "date": "2013-01-18",
+              "value": 45.8
+            },
+            "since": {
+              "date": "2026-02-18",
+              "value": 36.6
+            },
+            "beatenBy": null,
+            "leaders": [
+              {
+                "date": "2013-01-18",
+                "value": 45.8,
+                "rank": 1
+              },
+              {
+                "date": "1939-01-14",
+                "value": 45.3,
+                "rank": 2
+              },
+              {
+                "date": "2006-01-01",
+                "value": 44.2,
+                "rank": 3
+              },
+              {
+                "date": "2018-01-07",
+                "value": 43.4,
+                "rank": 4
+              },
+              {
+                "date": "1896-01-13",
+                "value": 42.5,
+                "rank": 5
+              },
+              {
+                "date": "1960-01-27",
+                "value": 42.4,
+                "rank": 6
+              },
+              {
+                "date": "2013-01-08",
+                "value": 42.3,
+                "rank": 7
+              },
+              {
+                "date": "1957-12-20",
+                "value": 42.2,
+                "rank": 8
+              },
+              {
+                "date": "2025-12-19",
+                "value": 42.2,
+                "rank": 8
+              },
+              {
+                "date": "2026-01-10",
+                "value": 42.2,
+                "rank": 8
+              }
+            ]
+          }
+        }
+      ],
+      "comingWeek": []
+    },
+    {
+      "locationId": "sydney-airport",
+      "today": [
+        {
+          "date": "2026-11-09",
+          "from": "2026-11-09",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "minTemp",
+          "direction": "lowest",
+          "comparison": "all",
+          "status": "provisional",
+          "lead": "since",
+          "score": 3.18,
+          "text": "provisionally the coldest night since 15 October",
+          "why": {
+            "value": 11.6,
+            "rank": 11509,
+            "ties": 192,
+            "compared": 31871,
+            "recordStart": "1939-04-01",
+            "fullRecord": true,
+            "missingDays": 129,
+            "gaps": [
+              {
+                "from": "1945-09-13",
+                "to": "1945-10-19"
+              }
+            ],
+            "record": {
+              "date": "1943-07-23",
+              "value": -0.1
+            },
+            "since": {
+              "date": "2026-10-15",
+              "value": 10.8
+            },
+            "beatenBy": null,
+            "leaders": [
+              {
+                "date": "1943-07-23",
+                "value": -0.1,
+                "rank": 1
+              },
+              {
+                "date": "1943-07-22",
+                "value": 0,
+                "rank": 2
+              },
+              {
+                "date": "1968-07-26",
+                "value": 0.1,
+                "rank": 3
+              },
+              {
+                "date": "1943-07-12",
+                "value": 0.6,
+                "rank": 4
+              },
+              {
+                "date": "1970-07-16",
+                "value": 0.6,
+                "rank": 4
+              },
+              {
+                "date": "1971-07-29",
+                "value": 0.8,
+                "rank": 6
+              },
+              {
+                "date": "1986-07-27",
+                "value": 0.8,
+                "rank": 6
+              },
+              {
+                "date": "1961-06-21",
+                "value": 1,
+                "rank": 8
+              },
+              {
+                "date": "1966-07-17",
+                "value": 1.1,
+                "rank": 9
+              },
+              {
+                "date": "1960-08-09",
+                "value": 1.2,
+                "rank": 10
+              }
+            ]
+          }
+        }
+      ],
+      "thisWeek": [
+        {
+          "date": "2026-11-07",
+          "from": "2026-11-07",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "maxTempChange",
+          "direction": "highest",
+          "comparison": "month",
+          "status": "confirmed",
+          "lead": "since",
+          "score": 2.99,
+          "text": "the biggest day-to-day rise in maximum temperature in November since November 2024",
+          "why": {
+            "value": 7.4,
+            "rank": 130,
+            "ties": 6,
+            "compared": 2611,
+            "recordStart": "1939-04-02",
+            "fullRecord": true,
+            "missingDays": 6,
+            "gaps": [],
+            "record": {
+              "date": "1946-11-06",
+              "value": 16.9
+            },
+            "since": {
+              "date": "2024-11-03",
+              "value": 8
+            },
+            "beatenBy": null,
+            "leaders": [
+              {
+                "date": "1946-11-06",
+                "value": 16.9,
+                "rank": 1
+              },
+              {
+                "date": "1941-11-30",
+                "value": 15.6,
+                "rank": 2
+              },
+              {
+                "date": "1951-11-15",
+                "value": 15.4,
+                "rank": 3
+              },
+              {
+                "date": "1957-11-24",
+                "value": 15,
+                "rank": 4
+              },
+              {
+                "date": "2009-11-22",
+                "value": 15,
+                "rank": 4
+              },
+              {
+                "date": "1956-11-16",
+                "value": 14.9,
+                "rank": 6
+              },
+              {
+                "date": "1980-11-27",
+                "value": 14.8,
+                "rank": 7
+              },
+              {
+                "date": "1951-11-06",
+                "value": 14.4,
+                "rank": 8
+              },
+              {
+                "date": "1995-11-27",
+                "value": 14.4,
+                "rank": 8
+              },
+              {
+                "date": "2009-11-03",
+                "value": 14.3,
+                "rank": 10
+              }
+            ]
+          }
+        },
+        {
+          "date": "2026-11-06",
+          "from": "2026-11-06",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "minTemp",
+          "direction": "lowest",
+          "comparison": "month",
+          "status": "confirmed",
+          "lead": "since",
+          "score": 2.51,
+          "text": "the coldest November night since 13 November 2025, until Monday",
+          "why": {
+            "value": 14.5,
+            "rank": 818,
+            "ties": 30,
+            "compared": 2605,
+            "recordStart": "1939-04-01",
+            "fullRecord": true,
+            "missingDays": 11,
+            "gaps": [],
+            "record": {
+              "date": "1949-11-15",
+              "value": 5.9
+            },
+            "since": {
+              "date": "2025-11-13",
+              "value": 12.9
+            },
+            "beatenBy": {
+              "date": "2026-11-09",
+              "value": 11.6
+            },
+            "leaders": [
+              {
+                "date": "1949-11-15",
+                "value": 5.9,
+                "rank": 1
+              },
+              {
+                "date": "1939-11-09",
+                "value": 7.2,
+                "rank": 2
+              },
+              {
+                "date": "1939-11-07",
+                "value": 7.3,
+                "rank": 3
+              },
+              {
+                "date": "1986-11-20",
+                "value": 7.6,
+                "rank": 4
+              },
+              {
+                "date": "1964-11-01",
+                "value": 7.8,
+                "rank": 5
+              },
+              {
+                "date": "1965-11-12",
+                "value": 7.8,
+                "rank": 5
+              },
+              {
+                "date": "1966-11-05",
+                "value": 7.8,
+                "rank": 5
+              },
+              {
+                "date": "1960-11-04",
+                "value": 7.9,
+                "rank": 8
+              },
+              {
+                "date": "1965-11-13",
+                "value": 8,
+                "rank": 9
+              },
+              {
+                "date": "1940-11-06",
+                "value": 8.3,
+                "rank": 10
+              }
+            ]
+          }
+        },
+        {
+          "date": "2026-11-05",
+          "from": "2026-11-05",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "maxTemp",
+          "direction": "lowest",
+          "comparison": "all",
+          "status": "confirmed",
+          "lead": "since",
+          "score": 2.2,
+          "text": "the coldest day since 27 October",
+          "why": {
+            "value": 22.7,
+            "rank": 17533,
+            "ties": 248,
+            "compared": 31944,
+            "recordStart": "1939-04-01",
+            "fullRecord": true,
+            "missingDays": 52,
+            "gaps": [],
+            "record": {
+              "date": "1962-08-21",
+              "value": 9.1
+            },
+            "since": {
+              "date": "2026-10-27",
+              "value": 22.6
+            },
+            "beatenBy": null,
+            "leaders": [
+              {
+                "date": "1962-08-21",
+                "value": 9.1,
+                "rank": 1
+              },
+              {
+                "date": "1984-07-03",
+                "value": 9.7,
+                "rank": 2
+              },
+              {
+                "date": "1948-07-17",
+                "value": 10.1,
+                "rank": 3
+              },
+              {
+                "date": "1956-07-11",
+                "value": 10.1,
+                "rank": 3
+              },
+              {
+                "date": "1983-07-20",
+                "value": 10.7,
+                "rank": 5
+              },
+              {
+                "date": "1987-07-22",
+                "value": 10.9,
+                "rank": 6
+              },
+              {
+                "date": "1989-07-23",
+                "value": 11,
+                "rank": 7
+              },
+              {
+                "date": "1990-07-27",
+                "value": 11,
+                "rank": 7
+              },
+              {
+                "date": "1991-07-10",
+                "value": 11.1,
+                "rank": 9
+              },
+              {
+                "date": "1954-07-19",
+                "value": 11.2,
+                "rank": 10
+              }
+            ]
+          }
+        },
+        {
+          "date": "2026-11-04",
+          "from": "2026-11-04",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "rain",
+          "direction": "highest",
+          "comparison": "all",
+          "status": "confirmed",
+          "lead": "since",
+          "score": 2.94,
+          "text": "the wettest day since 16 October",
+          "why": {
+            "value": 22.4,
+            "rank": 1236,
+            "ties": 23,
+            "compared": 35348,
+            "recordStart": "1929-09-01",
+            "fullRecord": true,
+            "missingDays": 146,
+            "gaps": [
+              {
+                "from": "1944-11-01",
+                "to": "1944-11-30"
+              },
+              {
+                "from": "1951-07-01",
+                "to": "1951-07-31"
+              },
+              {
+                "from": "1953-06-01",
+                "to": "1953-07-01"
+              }
+            ],
+            "record": {
+              "date": "1990-02-03",
+              "value": 216.2
+            },
+            "since": {
+              "date": "2026-10-16",
+              "value": 30.2
+            },
+            "beatenBy": null,
+            "leaders": [
+              {
+                "date": "1990-02-03",
+                "value": 216.2,
+                "rank": 1
+              },
+              {
+                "date": "1956-02-10",
+                "value": 207.8,
+                "rank": 2
+              },
+              {
+                "date": "1986-08-06",
+                "value": 207,
+                "rank": 3
+              },
+              {
+                "date": "1975-03-11",
+                "value": 202,
+                "rank": 4
+              },
+              {
+                "date": "1963-12-13",
+                "value": 182.1,
+                "rank": 5
+              },
+              {
+                "date": "1990-02-04",
+                "value": 177.8,
+                "rank": 6
+              },
+              {
+                "date": "1988-04-30",
+                "value": 174,
+                "rank": 7
+              },
+              {
+                "date": "1955-05-01",
+                "value": 165.9,
+                "rank": 8
+              },
+              {
+                "date": "2020-02-10",
+                "value": 161,
+                "rank": 9
+              },
+              {
+                "date": "1973-01-08",
+                "value": 157,
+                "rank": 10
+              }
+            ]
+          }
+        },
+        {
+          "date": "2026-11-03",
+          "from": "2026-11-03",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "solar",
+          "direction": "lowest",
+          "comparison": "all",
+          "status": "confirmed",
+          "lead": "since",
+          "score": 2.65,
+          "text": "the gloomiest day since 15 October",
+          "why": {
+            "value": 16.92,
+            "rank": 3629,
+            "ties": 1,
+            "compared": 6467,
+            "recordStart": "2009-01-01",
+            "fullRecord": false,
+            "missingDays": 49,
+            "gaps": [
+              {
+                "from": "2009-11-16",
+                "to": "2009-11-27"
+              }
+            ],
+            "record": {
+              "date": "2021-03-18",
+              "value": 1.29
+            },
+            "since": {
+              "date": "2026-10-15",
+              "value": 12.01
+            },
+            "beatenBy": null,
+            "leaders": [
+              {
+                "date": "2021-03-18",
+                "value": 1.29,
+                "rank": 1
+              },
+              {
+                "date": "2020-02-09",
+                "value": 1.32,
+                "rank": 2
+              },
+              {
+                "date": "2021-03-14",
+                "value": 1.46,
+                "rank": 3
+              },
+              {
+                "date": "2016-12-15",
+                "value": 1.51,
+                "rank": 4
+              },
+              {
+                "date": "2020-03-14",
+                "value": 1.63,
+                "rank": 5
+              },
+              {
+                "date": "2021-03-20",
+                "value": 1.65,
+                "rank": 6
+              },
+              {
+                "date": "2018-02-25",
+                "value": 1.66,
+                "rank": 7
+              },
+              {
+                "date": "2022-02-22",
+                "value": 1.72,
+                "rank": 8
+              },
+              {
+                "date": "2010-09-15",
+                "value": 1.79,
+                "rank": 9
+              },
+              {
+                "date": "2022-07-02",
+                "value": 2.08,
+                "rank": 10
+              }
+            ]
+          }
+        }
+      ],
+      "thisMonth": [
+        {
+          "date": "2026-11-09",
+          "from": "2026-01-01",
+          "period": {
+            "kind": "year",
+            "toDate": true
+          },
+          "measure": "minTemp",
+          "direction": "highest",
+          "comparison": "all",
+          "status": "provisional",
+          "lead": "rank",
+          "score": 4.28,
+          "text": "provisionally the start to the year with the warmest nights on record",
+          "why": {
+            "value": 15.2,
+            "rank": 1,
+            "ties": 0,
+            "compared": 84,
+            "recordStart": "1939-04-01",
+            "fullRecord": true,
+            "missingDays": 3,
+            "gaps": [
+              {
+                "from": "1941-01-01",
+                "to": "1941-11-09"
+              },
+              {
+                "from": "1945-01-01",
+                "to": "1945-11-09"
+              },
+              {
+                "from": "1979-01-01",
+                "to": "1979-11-09"
+              }
+            ],
+            "record": {
+              "date": "2016-11-09",
+              "value": 14.7
+            },
+            "since": null,
+            "beatenBy": null,
+            "leaders": [
+              {
+                "date": "2026-11-09",
+                "value": 15.2,
+                "rank": 1
+              },
+              {
+                "date": "2016-11-09",
+                "value": 14.7,
+                "rank": 2
+              },
+              {
+                "date": "2025-11-09",
+                "value": 14.7,
+                "rank": 2
+              },
+              {
+                "date": "2024-11-09",
+                "value": 14.6,
+                "rank": 4
+              },
+              {
+                "date": "2013-11-09",
+                "value": 14.5,
+                "rank": 5
+              },
+              {
+                "date": "2014-11-09",
+                "value": 14.5,
+                "rank": 5
+              },
+              {
+                "date": "1998-11-09",
+                "value": 14.4,
+                "rank": 7
+              },
+              {
+                "date": "2007-11-09",
+                "value": 14.4,
+                "rank": 7
+              },
+              {
+                "date": "2015-11-09",
+                "value": 14.4,
+                "rank": 7
+              },
+              {
+                "date": "2019-11-09",
+                "value": 14.4,
+                "rank": 7
+              }
+            ]
+          }
+        },
+        {
+          "date": "2026-10-29",
+          "from": "2026-10-29",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "solar",
+          "direction": "highest",
+          "comparison": "all",
+          "status": "confirmed",
+          "lead": "since",
+          "score": 5.03,
+          "text": "the sunniest day since 4 February",
+          "why": {
+            "value": 27.51,
+            "rank": 696,
+            "ties": 1,
+            "compared": 6462,
+            "recordStart": "2009-01-01",
+            "fullRecord": false,
+            "missingDays": 49,
+            "gaps": [
+              {
+                "from": "2009-11-16",
+                "to": "2009-11-27"
+              }
+            ],
+            "record": {
+              "date": "2013-12-29",
+              "value": 37.85
+            },
+            "since": {
+              "date": "2026-02-04",
+              "value": 29.05
+            },
+            "beatenBy": null,
+            "leaders": [
+              {
+                "date": "2013-12-29",
+                "value": 37.85,
+                "rank": 1
+              },
+              {
+                "date": "2013-12-03",
+                "value": 37.27,
+                "rank": 2
+              },
+              {
+                "date": "2013-12-19",
+                "value": 37.2,
+                "rank": 3
+              },
+              {
+                "date": "2013-12-07",
+                "value": 36.31,
+                "rank": 4
+              },
+              {
+                "date": "2013-12-13",
+                "value": 36.27,
+                "rank": 5
+              },
+              {
+                "date": "2013-12-08",
+                "value": 36.03,
+                "rank": 6
+              },
+              {
+                "date": "2013-12-31",
+                "value": 35.98,
+                "rank": 7
+              },
+              {
+                "date": "2013-12-11",
+                "value": 35.38,
+                "rank": 8
+              },
+              {
+                "date": "2013-12-28",
+                "value": 35.12,
+                "rank": 9
+              },
+              {
+                "date": "2013-11-27",
+                "value": 35.07,
+                "rank": 10
+              }
+            ]
+          }
+        },
+        {
+          "date": "2026-10-25",
+          "from": "2026-10-25",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "minTemp",
+          "direction": "highest",
+          "comparison": "all",
+          "status": "confirmed",
+          "lead": "since",
+          "score": 5.29,
+          "text": "the warmest night since 10 April",
+          "why": {
+            "value": 19.9,
+            "rank": 3066,
+            "ties": 176,
+            "compared": 31857,
+            "recordStart": "1939-04-01",
+            "fullRecord": true,
+            "missingDays": 128,
+            "gaps": [
+              {
+                "from": "1945-09-13",
+                "to": "1945-10-19"
+              }
+            ],
+            "record": {
+              "date": "2016-12-14",
+              "value": 27.5
+            },
+            "since": {
+              "date": "2026-04-10",
+              "value": 20
+            },
+            "beatenBy": null,
+            "leaders": [
+              {
+                "date": "2016-12-14",
+                "value": 27.5,
+                "rank": 1
+              },
+              {
+                "date": "2011-02-06",
+                "value": 26.4,
+                "rank": 2
+              },
+              {
+                "date": "2017-01-18",
+                "value": 26.1,
+                "rank": 3
+              },
+              {
+                "date": "2010-01-23",
+                "value": 25.8,
+                "rank": 4
+              },
+              {
+                "date": "1978-01-15",
+                "value": 25.7,
+                "rank": 5
+              },
+              {
+                "date": "1981-10-03",
+                "value": 25.5,
+                "rank": 6
+              },
+              {
+                "date": "1990-12-08",
+                "value": 25.3,
+                "rank": 7
+              },
+              {
+                "date": "1996-11-14",
+                "value": 25.3,
+                "rank": 7
+              },
+              {
+                "date": "2011-02-02",
+                "value": 25.1,
+                "rank": 9
+              },
+              {
+                "date": "2017-12-20",
+                "value": 25.1,
+                "rank": 9
+              }
+            ]
+          }
+        },
+        {
+          "date": "2026-10-14",
+          "from": "2026-10-14",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "rain",
+          "direction": "highest",
+          "comparison": "all",
+          "status": "confirmed",
+          "lead": "since",
+          "score": 5.57,
+          "text": "the wettest day since 18 January",
+          "why": {
+            "value": 70,
+            "rank": 155,
+            "ties": 0,
+            "compared": 35327,
+            "recordStart": "1929-09-01",
+            "fullRecord": true,
+            "missingDays": 146,
+            "gaps": [
+              {
+                "from": "1944-11-01",
+                "to": "1944-11-30"
+              },
+              {
+                "from": "1951-07-01",
+                "to": "1951-07-31"
+              },
+              {
+                "from": "1953-06-01",
+                "to": "1953-07-01"
+              }
+            ],
+            "record": {
+              "date": "1990-02-03",
+              "value": 216.2
+            },
+            "since": {
+              "date": "2026-01-18",
+              "value": 75.8
+            },
+            "beatenBy": null,
+            "leaders": [
+              {
+                "date": "1990-02-03",
+                "value": 216.2,
+                "rank": 1
+              },
+              {
+                "date": "1956-02-10",
+                "value": 207.8,
+                "rank": 2
+              },
+              {
+                "date": "1986-08-06",
+                "value": 207,
+                "rank": 3
+              },
+              {
+                "date": "1975-03-11",
+                "value": 202,
+                "rank": 4
+              },
+              {
+                "date": "1963-12-13",
+                "value": 182.1,
+                "rank": 5
+              },
+              {
+                "date": "1990-02-04",
+                "value": 177.8,
+                "rank": 6
+              },
+              {
+                "date": "1988-04-30",
+                "value": 174,
+                "rank": 7
+              },
+              {
+                "date": "1955-05-01",
+                "value": 165.9,
+                "rank": 8
+              },
+              {
+                "date": "2020-02-10",
+                "value": 161,
+                "rank": 9
+              },
+              {
+                "date": "1973-01-08",
+                "value": 157,
+                "rank": 10
+              }
+            ]
+          }
+        },
+        {
+          "date": "2026-10-12",
+          "from": "2026-10-12",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "maxTemp",
+          "direction": "highest",
+          "comparison": "all",
+          "status": "confirmed",
+          "lead": "since",
+          "score": 5.45,
+          "text": "the hottest day since 22 February",
+          "why": {
+            "value": 35.6,
+            "rank": 406,
+            "ties": 14,
+            "compared": 31920,
+            "recordStart": "1939-04-01",
+            "fullRecord": true,
+            "missingDays": 52,
+            "gaps": [],
+            "record": {
+              "date": "2013-01-18",
+              "value": 46.4
+            },
+            "since": {
+              "date": "2026-02-22",
+              "value": 35.9
+            },
+            "beatenBy": null,
+            "leaders": [
+              {
+                "date": "2013-01-18",
+                "value": 46.4,
+                "rank": 1
+              },
+              {
+                "date": "2006-01-01",
+                "value": 45.2,
+                "rank": 2
+              },
+              {
+                "date": "2018-01-07",
+                "value": 43.7,
+                "rank": 3
+              },
+              {
+                "date": "2020-01-23",
+                "value": 43.7,
+                "rank": 3
+              },
+              {
+                "date": "2023-12-09",
+                "value": 43.5,
+                "rank": 5
+              },
+              {
+                "date": "1982-11-25",
+                "value": 43.4,
+                "rank": 6
+              },
+              {
+                "date": "2020-01-04",
+                "value": 43.3,
+                "rank": 7
+              },
+              {
+                "date": "1994-12-21",
+                "value": 43.2,
+                "rank": 8
+              },
+              {
+                "date": "1953-12-21",
+                "value": 43.1,
+                "rank": 9
+              },
+              {
+                "date": "1960-01-27",
+                "value": 43,
+                "rank": 10
+              }
+            ]
+          }
+        }
+      ],
+      "comingWeek": [
+        {
+          "date": "2026-11-09",
+          "from": "2026-11-09",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "maxTemp",
+          "direction": "lowest",
+          "comparison": "month",
+          "status": "forecast",
+          "lead": "since",
+          "score": 3.75,
+          "text": "forecast to be the coldest November day since 2022",
+          "why": {
+            "value": 20,
+            "rank": 399,
+            "ties": 27,
+            "compared": 2614,
+            "recordStart": "1939-04-01",
+            "fullRecord": true,
+            "missingDays": 5,
+            "gaps": [],
+            "record": {
+              "date": "1988-11-16",
+              "value": 13.1
+            },
+            "since": {
+              "date": "2022-11-18",
+              "value": 19.9
+            },
+            "beatenBy": null,
+            "leaders": [
+              {
+                "date": "1988-11-16",
+                "value": 13.1,
+                "rank": 1
+              },
+              {
+                "date": "1996-11-05",
+                "value": 15.6,
+                "rank": 2
+              },
+              {
+                "date": "1998-11-01",
+                "value": 16,
+                "rank": 3
+              },
+              {
+                "date": "2006-11-16",
+                "value": 16,
+                "rank": 3
+              },
+              {
+                "date": "1971-11-15",
+                "value": 16.1,
+                "rank": 5
+              },
+              {
+                "date": "1941-11-07",
+                "value": 16.2,
+                "rank": 6
+              },
+              {
+                "date": "1942-11-06",
+                "value": 16.2,
+                "rank": 6
+              },
+              {
+                "date": "1955-11-26",
+                "value": 16.2,
+                "rank": 6
+              },
+              {
+                "date": "2020-11-05",
+                "value": 16.2,
+                "rank": 6
+              },
+              {
+                "date": "1941-11-08",
+                "value": 16.3,
+                "rank": 10
+              }
+            ]
+          }
+        },
+        {
+          "date": "2026-11-10",
+          "from": "2026-11-10",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "minTemp",
+          "direction": "lowest",
+          "comparison": "month",
+          "status": "conditional",
+          "lead": "since",
+          "score": 5.1,
+          "text": "would be the coldest November night since 2006 if it drops to 10°C (forecast 12°C)",
+          "why": {
+            "value": 10,
+            "rank": 70,
+            "ties": 8,
+            "compared": 2608,
+            "recordStart": "1939-04-01",
+            "fullRecord": true,
+            "missingDays": 12,
+            "gaps": [],
+            "record": {
+              "date": "1949-11-15",
+              "value": 5.9
+            },
+            "forecast": 12,
+            "since": {
+              "date": "2006-11-16",
+              "value": 8.3
+            },
+            "beatenBy": null,
+            "leaders": [
+              {
+                "date": "1949-11-15",
+                "value": 5.9,
+                "rank": 1
+              },
+              {
+                "date": "1939-11-09",
+                "value": 7.2,
+                "rank": 2
+              },
+              {
+                "date": "1939-11-07",
+                "value": 7.3,
+                "rank": 3
+              },
+              {
+                "date": "1986-11-20",
+                "value": 7.6,
+                "rank": 4
+              },
+              {
+                "date": "1964-11-01",
+                "value": 7.8,
+                "rank": 5
+              },
+              {
+                "date": "1965-11-12",
+                "value": 7.8,
+                "rank": 5
+              },
+              {
+                "date": "1966-11-05",
+                "value": 7.8,
+                "rank": 5
+              },
+              {
+                "date": "1960-11-04",
+                "value": 7.9,
+                "rank": 8
+              },
+              {
+                "date": "1965-11-13",
+                "value": 8,
+                "rank": 9
+              },
+              {
+                "date": "1940-11-06",
+                "value": 8.3,
+                "rank": 10
+              }
+            ]
+          }
+        },
+        {
+          "date": "2026-11-15",
+          "from": "2026-11-15",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "minTemp",
+          "direction": "highest",
+          "comparison": "all",
+          "status": "conditional",
+          "lead": "since",
+          "score": 5.38,
+          "text": "would be the warmest night since 10 April if it gets no colder than 20°C (forecast 18°C)",
+          "why": {
+            "value": 20,
+            "rank": 2845,
+            "ties": 221,
+            "compared": 31877,
+            "recordStart": "1939-04-01",
+            "fullRecord": true,
+            "missingDays": 129,
+            "gaps": [
+              {
+                "from": "1945-09-13",
+                "to": "1945-10-19"
+              }
+            ],
+            "record": {
+              "date": "2016-12-14",
+              "value": 27.5
+            },
+            "forecast": 18,
+            "since": {
+              "date": "2026-04-10",
+              "value": 20
+            },
+            "beatenBy": null,
+            "leaders": [
+              {
+                "date": "2016-12-14",
+                "value": 27.5,
+                "rank": 1
+              },
+              {
+                "date": "2011-02-06",
+                "value": 26.4,
+                "rank": 2
+              },
+              {
+                "date": "2017-01-18",
+                "value": 26.1,
+                "rank": 3
+              },
+              {
+                "date": "2010-01-23",
+                "value": 25.8,
+                "rank": 4
+              },
+              {
+                "date": "1978-01-15",
+                "value": 25.7,
+                "rank": 5
+              },
+              {
+                "date": "1981-10-03",
+                "value": 25.5,
+                "rank": 6
+              },
+              {
+                "date": "1990-12-08",
+                "value": 25.3,
+                "rank": 7
+              },
+              {
+                "date": "1996-11-14",
+                "value": 25.3,
+                "rank": 7
+              },
+              {
+                "date": "2011-02-02",
+                "value": 25.1,
+                "rank": 9
+              },
+              {
+                "date": "2017-12-20",
+                "value": 25.1,
+                "rank": 9
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "locationId": "sydney-olympic-park",
+      "today": [
+        {
+          "date": "2026-11-09",
+          "from": "2026-11-09",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "minTemp",
+          "direction": "lowest",
+          "comparison": "month",
+          "status": "provisional",
+          "lead": "since",
+          "score": 2.4,
+          "text": "provisionally the coldest November night since 18 November 2025",
+          "why": {
+            "value": 11.9,
+            "rank": 55,
+            "ties": 1,
+            "compared": 457,
+            "recordStart": "2011-09-02",
+            "fullRecord": true,
+            "missingDays": 2,
+            "gaps": [],
+            "record": {
+              "date": "2025-11-12",
+              "value": 7.7
+            },
+            "since": {
+              "date": "2025-11-18",
+              "value": 11
+            },
+            "beatenBy": null,
+            "leaders": [
+              {
+                "date": "2025-11-12",
+                "value": 7.7,
+                "rank": 1
+              },
+              {
+                "date": "2022-11-03",
+                "value": 8.4,
+                "rank": 2
+              },
+              {
+                "date": "2022-11-17",
+                "value": 8.4,
+                "rank": 2
+              },
+              {
+                "date": "2013-11-06",
+                "value": 8.9,
+                "rank": 4
+              },
+              {
+                "date": "2019-11-06",
+                "value": 9.3,
+                "rank": 5
+              },
+              {
+                "date": "2022-11-23",
+                "value": 9.4,
+                "rank": 6
+              },
+              {
+                "date": "2016-11-02",
+                "value": 9.5,
+                "rank": 7
+              },
+              {
+                "date": "2016-11-01",
+                "value": 9.7,
+                "rank": 8
+              },
+              {
+                "date": "2017-11-09",
+                "value": 9.7,
+                "rank": 8
+              },
+              {
+                "date": "2018-11-09",
+                "value": 9.7,
+                "rank": 8
+              }
+            ]
+          }
+        }
+      ],
+      "thisWeek": [
+        {
+          "date": "2026-11-07",
+          "from": "2026-11-07",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "maxTempChange",
+          "direction": "highest",
+          "comparison": "all",
+          "status": "confirmed",
+          "lead": "since",
+          "score": 2.93,
+          "text": "the biggest day-to-day rise in maximum temperature since 12 October",
+          "why": {
+            "value": 6,
+            "rank": 260,
+            "ties": 9,
+            "compared": 5525,
+            "recordStart": "2011-09-02",
+            "fullRecord": true,
+            "missingDays": 21,
+            "gaps": [],
+            "record": {
+              "date": "2014-11-14",
+              "value": 14.9
+            },
+            "since": {
+              "date": "2026-10-12",
+              "value": 8.3
+            },
+            "beatenBy": null,
+            "leaders": [
+              {
+                "date": "2014-11-14",
+                "value": 14.9,
+                "rank": 1
+              },
+              {
+                "date": "2020-01-04",
+                "value": 14.8,
+                "rank": 2
+              },
+              {
+                "date": "2013-01-18",
+                "value": 14.2,
+                "rank": 3
+              },
+              {
+                "date": "2025-10-22",
+                "value": 14,
+                "rank": 4
+              },
+              {
+                "date": "2013-01-08",
+                "value": 12.9,
+                "rank": 5
+              },
+              {
+                "date": "2023-10-03",
+                "value": 12.7,
+                "rank": 6
+              },
+              {
+                "date": "2017-01-30",
+                "value": 12.4,
+                "rank": 7
+              },
+              {
+                "date": "2011-11-14",
+                "value": 12.1,
+                "rank": 8
+              },
+              {
+                "date": "2019-12-19",
+                "value": 12.1,
+                "rank": 8
+              },
+              {
+                "date": "2013-12-20",
+                "value": 11.8,
+                "rank": 10
+              }
+            ]
+          }
+        },
+        {
+          "date": "2026-11-06",
+          "from": "2026-11-06",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "minTemp",
+          "direction": "lowest",
+          "comparison": "month",
+          "status": "confirmed",
+          "lead": "since",
+          "score": 2.27,
+          "text": "the coldest November night since 19 November 2025, until Monday",
+          "why": {
+            "value": 13.2,
+            "rank": 92,
+            "ties": 6,
+            "compared": 455,
+            "recordStart": "2011-09-02",
+            "fullRecord": true,
+            "missingDays": 1,
+            "gaps": [],
+            "record": {
+              "date": "2025-11-12",
+              "value": 7.7
+            },
+            "since": {
+              "date": "2025-11-19",
+              "value": 13.2
+            },
+            "beatenBy": {
+              "date": "2026-11-09",
+              "value": 11.9
+            },
+            "leaders": [
+              {
+                "date": "2025-11-12",
+                "value": 7.7,
+                "rank": 1
+              },
+              {
+                "date": "2022-11-03",
+                "value": 8.4,
+                "rank": 2
+              },
+              {
+                "date": "2022-11-17",
+                "value": 8.4,
+                "rank": 2
+              },
+              {
+                "date": "2013-11-06",
+                "value": 8.9,
+                "rank": 4
+              },
+              {
+                "date": "2019-11-06",
+                "value": 9.3,
+                "rank": 5
+              },
+              {
+                "date": "2022-11-23",
+                "value": 9.4,
+                "rank": 6
+              },
+              {
+                "date": "2016-11-02",
+                "value": 9.5,
+                "rank": 7
+              },
+              {
+                "date": "2016-11-01",
+                "value": 9.7,
+                "rank": 8
+              },
+              {
+                "date": "2017-11-09",
+                "value": 9.7,
+                "rank": 8
+              },
+              {
+                "date": "2018-11-09",
+                "value": 9.7,
+                "rank": 8
+              }
+            ]
+          }
+        },
+        {
+          "date": "2026-11-05",
+          "from": "2026-11-05",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "minTemp",
+          "direction": "lowest",
+          "comparison": "month",
+          "status": "confirmed",
+          "lead": "since",
+          "score": 2.22,
+          "text": "the coldest November night since 19 November 2025, until Friday",
+          "why": {
+            "value": 15.3,
+            "rank": 195,
+            "ties": 6,
+            "compared": 454,
+            "recordStart": "2011-09-02",
+            "fullRecord": true,
+            "missingDays": 1,
+            "gaps": [],
+            "record": {
+              "date": "2025-11-12",
+              "value": 7.7
+            },
+            "since": {
+              "date": "2025-11-19",
+              "value": 13.2
+            },
+            "beatenBy": {
+              "date": "2026-11-06",
+              "value": 13.2
+            },
+            "leaders": [
+              {
+                "date": "2025-11-12",
+                "value": 7.7,
+                "rank": 1
+              },
+              {
+                "date": "2022-11-03",
+                "value": 8.4,
+                "rank": 2
+              },
+              {
+                "date": "2022-11-17",
+                "value": 8.4,
+                "rank": 2
+              },
+              {
+                "date": "2013-11-06",
+                "value": 8.9,
+                "rank": 4
+              },
+              {
+                "date": "2019-11-06",
+                "value": 9.3,
+                "rank": 5
+              },
+              {
+                "date": "2022-11-23",
+                "value": 9.4,
+                "rank": 6
+              },
+              {
+                "date": "2016-11-02",
+                "value": 9.5,
+                "rank": 7
+              },
+              {
+                "date": "2016-11-01",
+                "value": 9.7,
+                "rank": 8
+              },
+              {
+                "date": "2017-11-09",
+                "value": 9.7,
+                "rank": 8
+              },
+              {
+                "date": "2018-11-09",
+                "value": 9.7,
+                "rank": 8
+              }
+            ]
+          }
+        },
+        {
+          "date": "2026-11-04",
+          "from": "2026-11-04",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "rain",
+          "direction": "highest",
+          "comparison": "month",
+          "status": "confirmed",
+          "lead": "since",
+          "score": 3.72,
+          "text": "the wettest November day since 2022",
+          "why": {
+            "value": 27.8,
+            "rank": 9,
+            "ties": 0,
+            "compared": 447,
+            "recordStart": "2011-09-01",
+            "fullRecord": true,
+            "missingDays": 7,
+            "gaps": [],
+            "record": {
+              "date": "2018-11-28",
+              "value": 69.6
+            },
+            "since": {
+              "date": "2022-11-14",
+              "value": 29
+            },
+            "beatenBy": null,
+            "leaders": [
+              {
+                "date": "2018-11-28",
+                "value": 69.6,
+                "rank": 1
+              },
+              {
+                "date": "2011-11-23",
+                "value": 41.2,
+                "rank": 2
+              },
+              {
+                "date": "2013-11-12",
+                "value": 31.6,
+                "rank": 3
+              },
+              {
+                "date": "2021-11-26",
+                "value": 30.2,
+                "rank": 4
+              },
+              {
+                "date": "2011-11-26",
+                "value": 29.8,
+                "rank": 5
+              },
+              {
+                "date": "2022-11-14",
+                "value": 29,
+                "rank": 6
+              },
+              {
+                "date": "2013-11-19",
+                "value": 28.4,
+                "rank": 7
+              },
+              {
+                "date": "2015-11-14",
+                "value": 28.2,
+                "rank": 8
+              },
+              {
+                "date": "2026-11-04",
+                "value": 27.8,
+                "rank": 9
+              },
+              {
+                "date": "2024-11-30",
+                "value": 27.6,
+                "rank": 10
+              }
+            ]
+          }
+        },
+        {
+          "date": "2026-11-03",
+          "from": "2026-11-03",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "minTemp",
+          "direction": "highest",
+          "comparison": "all",
+          "status": "confirmed",
+          "lead": "since",
+          "score": 5.41,
+          "text": "the warmest night since 21 March",
+          "why": {
+            "value": 19.5,
+            "rank": 656,
+            "ties": 34,
+            "compared": 5534,
+            "recordStart": "2011-09-02",
+            "fullRecord": true,
+            "missingDays": 8,
+            "gaps": [],
+            "record": {
+              "date": "2017-01-18",
+              "value": 25.7
+            },
+            "since": {
+              "date": "2026-03-21",
+              "value": 19.7
+            },
+            "beatenBy": null,
+            "leaders": [
+              {
+                "date": "2017-01-18",
+                "value": 25.7,
+                "rank": 1
+              },
+              {
+                "date": "2017-02-05",
+                "value": 25.4,
+                "rank": 2
+              },
+              {
+                "date": "2020-02-02",
+                "value": 25.4,
+                "rank": 2
+              },
+              {
+                "date": "2020-11-29",
+                "value": 24.9,
+                "rank": 4
+              },
+              {
+                "date": "2018-01-28",
+                "value": 24.8,
+                "rank": 5
+              },
+              {
+                "date": "2024-02-05",
+                "value": 24.7,
+                "rank": 6
+              },
+              {
+                "date": "2017-01-24",
+                "value": 24.6,
+                "rank": 7
+              },
+              {
+                "date": "2016-12-31",
+                "value": 24.4,
+                "rank": 8
+              },
+              {
+                "date": "2017-02-12",
+                "value": 24.4,
+                "rank": 8
+              },
+              {
+                "date": "2017-01-14",
+                "value": 24.3,
+                "rank": 10
+              }
+            ]
+          }
+        }
+      ],
+      "thisMonth": [
+        {
+          "date": "2026-11-01",
+          "from": "2026-11-01",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "minTemp",
+          "direction": "highest",
+          "comparison": "all",
+          "status": "confirmed",
+          "lead": "since",
+          "score": 5.39,
+          "text": "the warmest night since 24 March, until Tuesday",
+          "why": {
+            "value": 18.7,
+            "rank": 926,
+            "ties": 42,
+            "compared": 5532,
+            "recordStart": "2011-09-02",
+            "fullRecord": true,
+            "missingDays": 8,
+            "gaps": [],
+            "record": {
+              "date": "2017-01-18",
+              "value": 25.7
+            },
+            "since": {
+              "date": "2026-03-24",
+              "value": 19
+            },
+            "beatenBy": {
+              "date": "2026-11-03",
+              "value": 19.5
+            },
+            "leaders": [
+              {
+                "date": "2017-01-18",
+                "value": 25.7,
+                "rank": 1
+              },
+              {
+                "date": "2017-02-05",
+                "value": 25.4,
+                "rank": 2
+              },
+              {
+                "date": "2020-02-02",
+                "value": 25.4,
+                "rank": 2
+              },
+              {
+                "date": "2020-11-29",
+                "value": 24.9,
+                "rank": 4
+              },
+              {
+                "date": "2018-01-28",
+                "value": 24.8,
+                "rank": 5
+              },
+              {
+                "date": "2024-02-05",
+                "value": 24.7,
+                "rank": 6
+              },
+              {
+                "date": "2017-01-24",
+                "value": 24.6,
+                "rank": 7
+              },
+              {
+                "date": "2016-12-31",
+                "value": 24.4,
+                "rank": 8
+              },
+              {
+                "date": "2017-02-12",
+                "value": 24.4,
+                "rank": 8
+              },
+              {
+                "date": "2017-01-14",
+                "value": 24.3,
+                "rank": 10
+              }
+            ]
+          }
+        },
+        {
+          "date": "2026-10-29",
+          "from": "2026-10-29",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "solar",
+          "direction": "highest",
+          "comparison": "all",
+          "status": "confirmed",
+          "lead": "since",
+          "score": 5.03,
+          "text": "the sunniest day since 5 February",
+          "why": {
+            "value": 27.62,
+            "rank": 532,
+            "ties": 2,
+            "compared": 5520,
+            "recordStart": "2011-08-31",
+            "fullRecord": false,
+            "missingDays": 19,
+            "gaps": [],
+            "record": {
+              "date": "2013-12-29",
+              "value": 37.93
+            },
+            "since": {
+              "date": "2026-02-05",
+              "value": 27.84
+            },
+            "beatenBy": null,
+            "leaders": [
+              {
+                "date": "2013-12-29",
+                "value": 37.93,
+                "rank": 1
+              },
+              {
+                "date": "2013-12-03",
+                "value": 37.76,
+                "rank": 2
+              },
+              {
+                "date": "2013-12-06",
+                "value": 37.4,
+                "rank": 3
+              },
+              {
+                "date": "2013-12-19",
+                "value": 37.33,
+                "rank": 4
+              },
+              {
+                "date": "2013-12-08",
+                "value": 36.79,
+                "rank": 5
+              },
+              {
+                "date": "2013-12-13",
+                "value": 36.67,
+                "rank": 6
+              },
+              {
+                "date": "2013-12-30",
+                "value": 36.58,
+                "rank": 7
+              },
+              {
+                "date": "2013-12-31",
+                "value": 36.24,
+                "rank": 8
+              },
+              {
+                "date": "2013-12-11",
+                "value": 36.17,
+                "rank": 9
+              },
+              {
+                "date": "2013-11-27",
+                "value": 35.96,
+                "rank": 10
+              }
+            ]
+          }
+        },
+        {
+          "date": "2026-10-14",
+          "from": "2026-10-14",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "rain",
+          "direction": "highest",
+          "comparison": "all",
+          "status": "confirmed",
+          "lead": "since",
+          "score": 5.42,
+          "text": "the wettest day since 27 February",
+          "why": {
+            "value": 54.2,
+            "rank": 45,
+            "ties": 0,
+            "compared": 5472,
+            "recordStart": "2011-09-01",
+            "fullRecord": true,
+            "missingDays": 51,
+            "gaps": [
+              {
+                "from": "2017-02-18",
+                "to": "2017-02-28"
+              },
+              {
+                "from": "2019-01-01",
+                "to": "2019-01-12"
+              }
+            ],
+            "record": {
+              "date": "2020-02-10",
+              "value": 191
+            },
+            "since": {
+              "date": "2026-02-27",
+              "value": 72
+            },
+            "beatenBy": null,
+            "leaders": [
+              {
+                "date": "2020-02-10",
+                "value": 191,
+                "rank": 1
+              },
+              {
+                "date": "2015-04-21",
+                "value": 137.2,
+                "rank": 2
+              },
+              {
+                "date": "2016-06-05",
+                "value": 119.4,
+                "rank": 3
+              },
+              {
+                "date": "2016-06-06",
+                "value": 118.4,
+                "rank": 4
+              },
+              {
+                "date": "2025-05-23",
+                "value": 118,
+                "rank": 5
+              },
+              {
+                "date": "2021-03-21",
+                "value": 114.4,
+                "rank": 6
+              },
+              {
+                "date": "2020-02-09",
+                "value": 106.6,
+                "rank": 7
+              },
+              {
+                "date": "2013-01-29",
+                "value": 105.2,
+                "rank": 8
+              },
+              {
+                "date": "2012-03-08",
+                "value": 103.4,
+                "rank": 9
+              },
+              {
+                "date": "2017-06-08",
+                "value": 101.6,
+                "rank": 10
+              }
+            ]
+          }
+        },
+        {
+          "date": "2026-10-13",
+          "from": "2026-10-13",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "minTemp",
+          "direction": "highest",
+          "comparison": "all",
+          "status": "confirmed",
+          "lead": "since",
+          "score": 5.3,
+          "text": "the warmest night since 24 March, until 1 November",
+          "why": {
+            "value": 18.6,
+            "rank": 968,
+            "ties": 32,
+            "compared": 5513,
+            "recordStart": "2011-09-02",
+            "fullRecord": true,
+            "missingDays": 8,
+            "gaps": [],
+            "record": {
+              "date": "2017-01-18",
+              "value": 25.7
+            },
+            "since": {
+              "date": "2026-03-24",
+              "value": 19
+            },
+            "beatenBy": {
+              "date": "2026-11-01",
+              "value": 18.7
+            },
+            "leaders": [
+              {
+                "date": "2017-01-18",
+                "value": 25.7,
+                "rank": 1
+              },
+              {
+                "date": "2017-02-05",
+                "value": 25.4,
+                "rank": 2
+              },
+              {
+                "date": "2020-02-02",
+                "value": 25.4,
+                "rank": 2
+              },
+              {
+                "date": "2020-11-29",
+                "value": 24.9,
+                "rank": 4
+              },
+              {
+                "date": "2018-01-28",
+                "value": 24.8,
+                "rank": 5
+              },
+              {
+                "date": "2024-02-05",
+                "value": 24.7,
+                "rank": 6
+              },
+              {
+                "date": "2017-01-24",
+                "value": 24.6,
+                "rank": 7
+              },
+              {
+                "date": "2016-12-31",
+                "value": 24.4,
+                "rank": 8
+              },
+              {
+                "date": "2017-02-12",
+                "value": 24.4,
+                "rank": 8
+              },
+              {
+                "date": "2017-01-14",
+                "value": 24.3,
+                "rank": 10
+              }
+            ]
+          }
+        },
+        {
+          "date": "2026-10-12",
+          "from": "2026-10-12",
+          "period": {
+            "kind": "day"
+          },
+          "measure": "maxTemp",
+          "direction": "highest",
+          "comparison": "all",
+          "status": "confirmed",
+          "lead": "since",
+          "score": 5.43,
+          "text": "the hottest day since 22 February",
+          "why": {
+            "value": 35.2,
+            "rank": 152,
+            "ties": 6,
+            "compared": 5510,
+            "recordStart": "2011-09-01",
+            "fullRecord": true,
+            "missingDays": 11,
+            "gaps": [],
+            "record": {
+              "date": "2020-01-04",
+              "value": 47.1
+            },
+            "since": {
+              "date": "2026-02-22",
+              "value": 35.6
+            },
+            "beatenBy": null,
+            "leaders": [
+              {
+                "date": "2020-01-04",
+                "value": 47.1,
+                "rank": 1
+              },
+              {
+                "date": "2013-01-18",
+                "value": 44.8,
+                "rank": 2
+              },
+              {
+                "date": "2018-01-07",
+                "value": 44.5,
+                "rank": 3
+              },
+              {
+                "date": "2019-12-31",
+                "value": 44.4,
+                "rank": 4
+              },
+              {
+                "date": "2017-02-10",
+                "value": 43.9,
+                "rank": 5
+              },
+              {
+                "date": "2025-12-19",
+                "value": 42.7,
+                "rank": 6
+              },
+              {
+                "date": "2026-01-10",
+                "value": 42.6,
+                "rank": 7
+              },
+              {
+                "date": "2023-12-09",
+                "value": 42.5,
+                "rank": 8
+              },
+              {
+                "date": "2017-02-05",
+                "value": 42.3,
+                "rank": 9
+              },
+              {
+                "date": "2017-01-30",
+                "value": 42.1,
+                "rank": 10
+              }
+            ]
+          }
+        }
+      ],
+      "comingWeek": []
+    }
+  ]
+}

@@ -6,17 +6,18 @@ This explains how the pipeline gets each location's daily data from BOM, what it
 
 All in `src/pipeline/`, except the config and the `facts.json` types in `src/shared/`.
 
-| Area                   | Modules                                                                                                                                                                          |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Locations and stations | `src/shared/locations.ts` (`locations`, `currentStation`, `stationOffsets`), `stations.ts` (`loadLocationHistory`, `joinStations`)                                               |
-| History ZIPs           | `history.ts` (`loadHistory`)                                                                                                                                                     |
-| FTP                    | `ftp.ts` (`connectToBom`, `withDownloadCache`)                                                                                                                                   |
-| FTP daily files        | `daily-files.ts` (parser, `downloadDailyFile`, `folderMonths`), `recent.ts` (`updateDailyFiles`), `ftp-history.ts` (`updateFtpHistory`)                                          |
-| Live feeds             | `observations.ts` (IDN60920), `readings.ts` (IDN60910), `forecast.ts` (IDN11060), `snapshots.ts` (`downloadLiveFeeds`, `updateSnapshot`), `xml.ts`                               |
-| Layering and series    | `layering.ts` (`layerRecent`), `series.ts` (`locationSeries` and one function per kind of series), `saved-series.ts` (`readSavedSeries`, which builds the series from disk only) |
-| Facts                  | `candidates.ts`, `daily-facts.ts`, `period-facts.ts`, `forecast-facts.ts`, `thresholds.ts`, `scoring.ts`, `selection.ts`, `wording.ts`                                           |
-| Shared helpers         | `saved-table.ts` (the saved CSV files), `dates.ts` (`sydneyDate`, `sydneyHour` and date arithmetic), `errors.ts` (`inContext`)                                                   |
-| Commands               | `build-data.ts` (`npm run build:data`), `backfill-ftp-history.ts`, and the `smoke-*.ts` scripts                                                                                  |
+| Area                   | Modules                                                                                                                                                                                                                                              |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Locations and stations | `src/shared/locations.ts` (`locations`, `currentStation`, `stationOffsets`), `stations.ts` (`loadLocationHistory`, `joinStations`)                                                                                                                   |
+| History ZIPs           | `history.ts` (`loadHistory`)                                                                                                                                                                                                                         |
+| FTP                    | `ftp.ts` (`connectToBom`, `withDownloadCache`)                                                                                                                                                                                                       |
+| FTP daily files        | `daily-files.ts` (parser, `downloadDailyFile`, `folderMonths`), `recent.ts` (`updateDailyFiles`), `ftp-history.ts` (`updateFtpHistory`)                                                                                                              |
+| Live feeds             | `observations.ts` (IDN60920), `readings.ts` (IDN60910), `forecast.ts` (IDN11060), `snapshots.ts` (`downloadLiveFeeds`, `updateSnapshot`), `xml.ts`                                                                                                   |
+| Layering and series    | `layering.ts` (`layerRecent`), `series.ts` (`locationSeries` and one function per kind of series), `saved-series.ts` (`dataDirs`, `loadHistories`, `historyEnd`, `seriesFromSources`, and `readSavedSeries`, which builds the series from disk only) |
+| Facts                  | `candidates.ts`, `daily-facts.ts`, `period-facts.ts`, `forecast-facts.ts`, `thresholds.ts`, `scoring.ts`, `selection.ts`, `wording.ts`                                                                                                               |
+| Shared helpers         | `saved-table.ts` (the saved CSV files), `dates.ts` (`sydneyDate`, `sydneyHour` and date arithmetic), `errors.ts` (`inContext`)                                                                                                                       |
+| The build              | `facts-file.ts` (`buildFactsFile`, `writeFactsFile`, `factsPath`)                                                                                                                                                                                    |
+| Commands               | `build-data.ts` (`npm run build:data`), `backfill-ftp-history.ts`, and the `smoke-*.ts` scripts                                                                                                                                                      |
 
 Every error from a file names the file and the line or element (`inContext`).
 
@@ -110,9 +111,20 @@ Every error from a file names the file and the line or element (`inContext`).
 
 The gap check fails when the first recent date after the history's end isn't the next day. Recent days with all-blank values still count as coverage.
 
+## The build
+
+`npm run build:data` runs `buildFactsFile` with a connection to BOM and the time now, then `writeFactsFile`. It takes about 15 s.
+
+- It downloads the live feeds once, then takes the locations one at a time over the same connection, wrapped in `withDownloadCache`. For each, it loads the ZIP history (`loadHistories`, `historyEnd`), runs `updateDailyFiles`, `updateFtpHistory` and `updateSnapshot` with today in Sydney, builds the series with `seriesFromSources`, and generates and selects the facts with the window ending today and the forecast from `forecastStart(now)`.
+- Every check in the steps above throws, so a bad file stops the run before `facts.json` is written. `writeFactsFile` writes to `facts.json.partial` and renames it, so a failed write leaves the last file in place. The data files a failed run has already updated are fine to keep: each holds only checked values that BOM still offers.
+- A second run gives the same data files and the same facts. Only `generatedAt` changes, so `facts.json` changes on every run.
+- `facts.json` is indented, for readable diffs. It was about 90 kB on 2026-11-09.
+- The first run, on 2026-11-09, left 2026-11-08 with no rain, maximum or minimum: the daily files ran to 11-07, and there was no snapshot from the day before. The next daily file fills it.
+
 ## Tests and trying things out
 
 - Fixtures in `test/fixtures/` are real files, kept byte for byte (they're in `.prettierignore`): the October and November 2026 Observatory Hill daily files, and IDN60920, IDN11060 and IDN60910.94768 from 2:30pm on 2026-10-30, trimmed to the Sydney stations and areas plus Canberra.
 - Helpers build made-up files in the real formats: `test/daily-file.ts` (`dailyFile`, and `FakeFtp` for the FTP tests) and `test/live-feeds.ts` (`readingsJson`, and the `.tgz` around it). The history tests build fixture ZIPs in a temp directory from inline CSV text.
-- Some tests read `data/raw/` and `data/ftp-history/` directly, including the selection snapshot tests, so refreshing the ZIPs can change them. Review the change before updating them with `npx vitest run -u`.
+- Some tests read `data/raw/` and `data/ftp-history/` directly, including the selection snapshot tests, so refreshing the ZIPs can change them. Review the change before updating them with `npx vitest run -u`. The selection snapshots also read `data/recent/`, but cut every series at a fixed `dataEnd` (2026-11-08), so the data each run adds can't change them.
+- `test/facts-file.test.ts` runs the whole build for Observatory Hill against `FakeFtp` serving the fixtures, as at 2:30pm on 2026-10-30, with the real ZIPs and a copy of `data/ftp-history/`.
 - `npm run smoke:daily-files [location-id]` fetches and prints the current month's daily file. `npm run smoke:live` downloads the three live feeds and prints what each location would save, without saving anything. The facts scripts are listed in [facts.md](facts.md).

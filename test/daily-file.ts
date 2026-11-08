@@ -118,6 +118,14 @@ export class FakeFtp implements Ftp {
     );
   }
 
+  serveFile(path: string, bytes: Uint8Array): void {
+    this.files.set(path, bytes);
+  }
+
+  remove(path: string): void {
+    this.files.delete(path);
+  }
+
   download(path: string): Promise<Uint8Array | undefined> {
     const name = path.split("/").at(-1) ?? "";
     this.requested.push(name);

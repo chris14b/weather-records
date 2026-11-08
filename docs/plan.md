@@ -18,31 +18,9 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 ---
 
-## T15: The `build:data` command
-
-**Status:** todo
-
-**Goal:** One command that runs the whole pipeline.
-
-- Scope: `npm run build:data` (`src/pipeline/build-data.ts`, now a placeholder that throws) loads the history, fetches from FTP, saves the snapshot, layers the data, generates and scores the facts, and writes `facts.json` with a generated-at timestamp. For each location, the pieces fit together like this:
-  - `loadLocationHistory` for rain, max and min. The history end is the earliest of the three last ZIP dates.
-  - One FTP connection, wrapped in `withDownloadCache` so the current month downloads once. `updateDailyFiles` with `dir: "data/recent/daily"` and the history end, and `updateFtpHistory` with `dir: "data/ftp-history"`.
-  - `downloadLiveFeeds(ftp)` once for all locations, then `updateSnapshot` with `snapshotDir: "data/recent/snapshots"`, `readingsDir: "data/recent/readings"` and `today` (today in Sydney, from `sydneyDate`).
-  - `layerRecent` with the FTP daily files, then `snapshot.observations`, as its layers.
-  - `locationSeries` with the layered rain, max and min, `updateFtpHistory`'s result and the snapshot's readings.
-  - `forecast = { days: parseForecast(feeds.forecast, location.forecastArea).days, from: forecastStart(now) }`.
-  - `generateCandidates({ locationId, series, windowEnd: today, offsets: stationOffsets(location), forecast })`, then `selectFacts({ locationId, facts, series, forecast })`, into one `LocationFacts` per location in the `FactsFile`.
-- Scope: decide where `facts.json` goes. The site (T16) reads it, so Vite must serve it in development and copy it into the build, e.g. `src/site/public/facts.json`. It is committed with the data, so the deploy (T25) needs no data step. Record the choice in CLAUDE.md.
-- Scope: failing loudly on any validation problem, and running a second time harmlessly.
-- Done when: it runs end to end on this machine, its output is reviewed, and the data files and `facts.json` it writes are committed.
-
----
-
 ## T16: First page of the site
 
 **Status:** todo
-
-**Depends on:** T15
 
 **Goal:** A static page that presents the facts for one location, designed for desktop first.
 
@@ -58,6 +36,11 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 - Scope: confirmed, provisional, forecast and conditional facts look different from each other, as well as reading differently.
 - Scope: the note about the 2020 Observatory Hill station change, and the credit: © Bureau of Meteorology, licensed under CC BY 4.0.
 - Done when: it runs locally with `npm run dev` against the real `facts.json`, and has been checked in the browser at desktop width.
+
+**Notes:**
+
+- `facts.json` is in `src/site/public/`, so the page fetches it from `${import.meta.env.BASE_URL}facts.json`, which keeps working once T25 sets `base`. Regenerate it with `npm run build:data`.
+- A section can be empty. On 2026-11-09, Observatory Hill and Olympic Park had nothing in Coming week. Making empty sections look right is T27, but T16 must not break on one.
 
 ---
 
@@ -113,13 +96,14 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 **Status:** todo
 
-**Depends on:** T15, T25
+**Depends on:** T25
 
 **Goal:** The site updates itself every morning and evening.
 
 - Scope: a workflow on the four schedules in CLAUDE.md (morning, evening and a backup for each) plus a manual trigger. It runs the tests and `build:data`, commits `data/recent/`, `data/ftp-history/` and `facts.json` when they change, and deploys with T25's workflow.
 - Scope: two runs must never overlap (a `concurrency` group).
 - Scope: check that FTP works from GitHub's servers.
+- Scope: `facts.json` changes on every run, because of its `generatedAt`, so every run makes a commit. A second run otherwise writes the same files.
 - Scope: check the evening timing. Without daylight saving, the evening run is at 9:15pm, so it saves the maximum only if the 9pm observation is already published. If not, the 11:15pm backup should save it.
 - Done when: a manual run deploys successfully, the live site shows the current facts, and a scheduled run has done the same.
 
@@ -165,6 +149,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
   - This week is often filled by short sinces such as "the coldest night since 20 October". These are true, but much alike from day to day.
   - Year-so-far ranks such as "the 9th wettest day of the year so far" or "the 7th biggest day-to-day drop in maximum temperature of the year so far" still get in at around 2.4.
   - Quiet days give Today nothing at all, as on 2026-10-30, whose only data is a minimum and rain.
+  - Coming week can be empty. On 2026-11-09, Observatory Hill and Olympic Park had nothing in it, because the week's forecast was ordinary. The nearest were calendar-date ranks, such as Observatory Hill's 10 November becoming its coldest on record if it drops to 10°C (forecast 12°C).
   - Observatory Hill's year so far has 10 incomplete years in the 1800s, so its records carry "(with 10 years too incomplete to compare)", which is long for a headline.
   - A period so far shows every day until the period ends, so it can sit in This month for months.
 - Done when: the README is written, and the retuning is reviewed with the user and the snapshot tests updated.

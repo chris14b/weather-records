@@ -37,6 +37,7 @@ A static website that shows obscure weather records for the current and recent w
 - Every run does the same work, and its facts reflect the time it ran. Running twice in a row must be harmless.
 - Missed runs must never leave a permanent gap. We don't keep our own archive: store only data that BOM still offers, and no longer than BOM keeps it. Then anything missed can be fetched again, automatically where the feed allows, otherwise by hand (the ZIPs and the Daily Weather Observations).
 - Each run downloads the BOM FTP feeds, updates `data/recent/`, regenerates `facts.json`, commits the data and deploys the site.
+- `npm run build:data` writes `facts.json` to `src/site/public/`, Vite's public directory, so `npm run dev` serves it and the site build copies it into `dist/`. It is committed with the data, so the deploy needs no data step.
 - There is no server, and nothing updates on demand.
 
 ## Locations
