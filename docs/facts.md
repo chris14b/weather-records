@@ -184,7 +184,7 @@ Each list runs latest first, then by score. The coming week runs soonest first, 
 
 ## 5. Wording
 
-`describeFact` writes what the day was, without naming the day: e.g. "the 2nd hottest October day on record". The site adds "Today" or "Last Tuesday", depending on when the page is viewed.
+`describeFact` writes what the day was, without naming the day: e.g. "the 2nd hottest October day on record". The site makes a sentence of it for when the page is viewed, in Sydney time (`sentence` in `src/site/naming.ts`): "Today is…", "Yesterday was…", a weekday within 6 days ("Tuesday was…", "Sunday would be…"), otherwise a date ("12 October was…").
 
 - **Rank:** "the hottest", "the 2nd hottest", "the equal 3rd hottest".
 - **Comparison:**
@@ -206,7 +206,7 @@ Each list runs latest first, then by score. The coming week runs soonest first, 
   - Runs of days: "the wettest 3 days", "the wettest 7 days in spring", "the wettest 3 days in October".
   - A since is a day for a run of days ("since 8 February"). For months among all months it is a month ("since March", "since March 2025") or a year. Everything else is compared once a year, so its since is a year.
   - A period with under 95% coverage says how many earlier ones were too incomplete: "(with 10 years too incomplete to compare)".
-  - The site names the period from `period`, `from` and `date`: "October", "The 3 days to Tuesday", "November so far".
+  - The site names the period from `period`, `from` and `date`: "October", "October 2025" in another year, "The 3 days to Tuesday", "November so far", "Spring", "The year so far", "2025".
 
 Each fact also has a `why` for the site:
 

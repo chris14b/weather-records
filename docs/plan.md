@@ -5,7 +5,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 ## How to use this plan
 
 - Each task has a permanent ID, such as `T15`. An ID is never reused or renumbered, and never has a letter after it (no `T5b`). A new task, including one split off another, takes the next ID, and goes where its priority puts it. Its place in the list, not its ID, sets its priority.
-- **Next ID:** T28
+- **Next ID:** T32
 - **Depends on** lists the tasks that must be finished first. A task that is no longer in this plan is finished. Keep every task below the tasks it depends on.
 - The next task is the first one that isn't deferred or blocked and whose dependencies are all finished.
 - Statuses: `todo`, `in progress`, `blocked` (say on what), `deferred` (skip until the user says otherwise). An open task can have **Notes** for whatever a later session needs.
@@ -15,32 +15,6 @@ The open tasks, in order of priority. Background and settled decisions are in [C
   - decisions go into [CLAUDE.md](../CLAUDE.md)
   - history, such as what was tried and dropped, goes in the commit message. Git keeps the old plan (`git log -p --follow -- docs/plan.md`).
 - Refer to tasks by ID, and never to a finished one.
-
----
-
-## T16: First page of the site
-
-**Status:** todo
-
-**Goal:** A static page that presents the facts for one location, designed for desktop first.
-
-- Scope: a Vite site in `src/site/` that reads `facts.json`, using the types in `src/shared/facts.ts`. Keep dependencies few. If a framework is worth using, record the choice in CLAUDE.md's Stack section.
-- Scope: a layout designed for a desktop browser. It must not break on a phone, but the phone pass is T27.
-- Scope: a location picker for the three locations. The choice is remembered on the device. Defaulting to the nearest location is T27.
-- Scope: a home page with four sections for the chosen location:
-  - **Today:** the latest day's facts.
-  - **This week:** a timeline of the past 6 days, e.g. "Last Tuesday: the hottest day since July".
-  - **This month:** the standout facts from earlier in the month, and the calendar periods.
-  - **Coming week:** the forecast and conditional facts (`comingWeek`). Decide where these go on the page. In the morning run, "if today reaches…" may belong in Today.
-- Scope: names worked out in the browser from each fact's dates and the time of viewing, in Sydney time. A fact's `text` never names its own day (the Wording section of [facts.md](facts.md)), so the site puts "Today", "Last Tuesday" or "Tomorrow is" in front. Periods are named from `period`, `from` and `date`: "October", "The 3 days to Tuesday", "November so far".
-- Scope: confirmed, provisional, forecast and conditional facts look different from each other, as well as reading differently.
-- Scope: the note about the 2020 Observatory Hill station change, and the credit: © Bureau of Meteorology, licensed under CC BY 4.0.
-- Done when: it runs locally with `npm run dev` against the real `facts.json`, and has been checked in the browser at desktop width.
-
-**Notes:**
-
-- `facts.json` is in `src/site/public/`, so the page fetches it from `${import.meta.env.BASE_URL}facts.json`, which keeps working once T25 sets `base`. Regenerate it with `npm run build:data`.
-- A section can be empty. On 2026-11-09, Observatory Hill and Olympic Park had nothing in Coming week. Making empty sections look right is T27, but T16 must not break on one.
 
 ---
 
@@ -73,6 +47,10 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 - Scope: a small chart of the why's `leaders` (the 10 best comparable days or periods), with the fact itself marked. Decide between hand-written SVG and a charting library, keeping the page light.
 - Done when: tests cover the formatting, and the cards have been checked in the browser for a day fact, a period fact, a forecast fact and a conditional fact.
 
+**Notes:**
+
+- Each fact is an `li.fact` built by `factItem` in `src/site/render.ts`, and the big fact by `headline`. Open the why without pushing the panels around much, e.g. as a popover over the glass.
+
 ---
 
 ## T27: Finishing the site
@@ -89,6 +67,23 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 - Scope: dark mode, and accessibility, including the charts.
 - Scope: a pass at phone widths. Desktop stays the main design, but the page must be easy to read and use on a phone.
 - Done when: it has been checked in the browser at desktop and phone widths, in light and dark mode.
+
+**Notes:**
+
+- The page is already white text on dark glass over the sky, so decide what dark mode should change, if anything, beyond a darker sky.
+- On a phone, the location toggle wraps onto two lines, and the headline's size is capped by the viewport width (`headline` in `src/site/render.ts`).
+- Empty sections already show a line such as "Nothing notable in the forecast.", and an empty Today shows "Nothing notable yet today." If `facts.json` fails to load, the page shows one line of text.
+
+---
+
+## T31: Favicon
+
+**Status:** todo
+
+**Goal:** The site has its own icon in the browser tab and on a phone's home screen.
+
+- Scope: a simple SVG favicon in `src/site/public/`, in keeping with the page's sky and glass, that reads at 16 px. Add a PNG `apple-touch-icon` from it, and link both from `index.html` with paths that keep working under T25's `base`.
+- Done when: the icon shows in the browser tab with `npm run dev`, and the site build includes it.
 
 ---
 
@@ -136,6 +131,34 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 ---
 
+## T28: This year
+
+**Status:** todo
+
+**Goal:** A This year section with the standout months and seasons of the past 12 months, such as "February was the hottest February since 2012".
+
+- Background: the pipeline already ranks complete months, seasons and years, and the current ones so far (the Periods section of [facts.md](facts.md)). It drops a complete period once it ended more than 31 days ago, and shows the rest in This month under `calendarRule`.
+- Scope: a `thisYear` section in `LocationFacts` for the complete months and seasons that ended in the last 12 months, and the year so far. Decide whether calendar periods leave This month for it, or This month keeps the latest complete month.
+- Scope: selection rules of its own in `selection.ts`, within the Selection section of [facts.md](facts.md), so a strong month stays for the year but doesn't crowd the section.
+- Scope: a This year panel on the page, after This month, with its periods named as the site names the others.
+- Done when: tests and the selection snapshots cover the section, and it has been checked in the browser.
+
+---
+
+## T30: Weather sky
+
+**Status:** todo
+
+**Goal:** The page's background shows the day's weather as well as the time of day.
+
+- Background: the page's sky is a gradient for the time of day, chosen in the browser by the hour in Sydney (`skyPhase` in `src/site/sky.ts`). `facts.json` updates only twice a day, so the sky must show today's forecast, never the current weather, which would often be wrong.
+- Scope: pass each day's forecast icon code and précis from IDN11060 through `facts.json`, for each location's forecast area. Check the codes BOM uses and map them to a few kinds of sky (clear, cloudy, showers, rain, storm, fog, windy).
+- Scope: an animated background for each kind, kept light: CSS or a small canvas, no large images. It pauses when the tab is hidden or the browser asks for reduced motion, and the glass panels stay easy to read over every kind.
+- Scope: once T14 has the sunrise and sunset calculation, use it for the time of day instead of fixed hours.
+- Done when: every kind of sky has been checked in the browser by day and night, and with reduced motion.
+
+---
+
 ## T18: README and retuning
 
 **Status:** todo
@@ -152,6 +175,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
   - Coming week can be empty. On 2026-11-09, Observatory Hill and Olympic Park had nothing in it, because the week's forecast was ordinary. The nearest were calendar-date ranks, such as Observatory Hill's 10 November becoming its coldest on record if it drops to 10°C (forecast 12°C).
   - Observatory Hill's year so far has 10 incomplete years in the 1800s, so its records carry "(with 10 years too incomplete to compare)", which is long for a headline.
   - A period so far shows every day until the period ends, so it can sit in This month for months.
+  - The site's subject can repeat the fact's text: "The year so far is the 3rd hottest start to the year", "October was the wettest October".
 - Done when: the README is written, and the retuning is reviewed with the user and the snapshot tests updated.
 
 ---
@@ -239,6 +263,19 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 - Scope: update the data sources section of CLAUDE.md.
 - Out of scope, so ask the user first: saving each day's maximum gust from the live feed. Its records would only begin on the day saving starts.
 - Done when: tests cover the parsing, the backfill, and the rule that Observatory Hill's zeros count as missing.
+
+---
+
+## T29: Daily values and a timeline strip
+
+**Status:** deferred (the user may want it after T16)
+
+**Goal:** A strip of the past month's days and the coming week under the big fact, each day shaded by its temperature, with facts pinned to their days.
+
+- Background: `facts.json` has only facts, so the page knows nothing about days without one. A design with the strip as the whole page was put to the user on 2026-11-09, with one where the background is a stripe per day coloured by its maximum. The user chose the glass panels, and may want the strip, or the stripes, later.
+- Scope: each location's daily maximum, minimum and rain in `facts.json` for the 31 days of the sections, with each value's status, and the forecast for the coming week. Keep the file small.
+- Scope: the strip, with today marked and forecast days set apart. Selecting a day shows its facts.
+- Done when: it has been checked in the browser, including days with missing values.
 
 ---
 
