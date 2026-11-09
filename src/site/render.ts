@@ -36,6 +36,7 @@ function shown(fact: Fact): ShownStatus {
 
 const statusLabels: Record<ShownStatus, string> = {
   confirmed: "Observed",
+  partial: "So far",
   forecast: "Forecast",
   conditional: "If it gets there",
   daylight: "Daylight",
@@ -54,13 +55,18 @@ const standoutLabels: Record<Standout, string> = {
   exceptional: "Exceptional",
 };
 
-// Read out but not shown: the dot's glow shows it.
-function spokenStandout(level: Standout | undefined): Children {
-  if (level === undefined) return [];
+// Read out but not shown: the dot's glow shows it, and its shape that a value is still
+// running, which the sentence doesn't say.
+function spoken(fact: Fact, level: Standout | undefined): Children {
+  const words = [
+    ...(level === undefined ? [] : [standoutLabels[level]]),
+    ...(fact.kind === "record" && fact.status === "partial"
+      ? [statusLabels.partial]
+      : []),
+  ];
+  if (words.length === 0) return [];
   return [
-    element("span", { class: "visually-hidden" }, [
-      `${standoutLabels[level]}: `,
-    ]),
+    element("span", { class: "visually-hidden" }, [`${words.join(", ")}: `]),
   ];
 }
 
@@ -74,7 +80,7 @@ function phrase(
       ? daylightSentence(fact, today)
       : sentence(fact, today);
   return [
-    ...spokenStandout(level),
+    ...spoken(fact, level),
     before,
     element("strong", {}, [subject]),
     `${after}.`,
@@ -126,11 +132,28 @@ function headline(page: Page, today: string): HTMLElement {
       "Nothing notable yet today.",
     ]);
   }
-  const node = element(
-    "p",
-    { class: "headline", "data-status": shown(fact) },
-    phrase(fact, today, page.standouts.get(fact)),
-  );
+  const status = shown(fact);
+  const level = page.standouts.get(fact);
+  // The headline has no dot, so a value still running says so beneath it, with the glow
+  // its dot would have in a list.
+  const markAttributes: Record<string, string> = {
+    class: "headline-status",
+    "aria-hidden": "true",
+  };
+  if (level !== undefined) markAttributes["data-standout"] = level;
+  const mark =
+    status === "partial"
+      ? [
+          element("span", markAttributes, [
+            marker(status),
+            statusLabels[status],
+          ]),
+        ]
+      : [];
+  const node = element("p", { class: "headline", "data-status": status }, [
+    ...phrase(fact, today, level),
+    ...mark,
+  ]);
   const size = headlineSize(fact.score);
   node.style.fontSize = `min(${String(size)}rem, ${String(size * 3.2)}vw)`;
   return node;
@@ -163,6 +186,7 @@ function locationToggle(
 function legend(): HTMLElement {
   const statuses: ShownStatus[] = [
     "confirmed",
+    "partial",
     "forecast",
     "conditional",
     "daylight",

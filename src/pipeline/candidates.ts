@@ -10,7 +10,9 @@ import type {
 import type { StationOffset } from "../shared/locations.ts";
 import { generateDailyFacts } from "./daily-facts.ts";
 import { generateForecastFacts, type ForecastInput } from "./forecast-facts.ts";
+import type { RunningValue } from "./observations.ts";
 import { generatePeriodFacts } from "./period-facts.ts";
+import { generateRunningFacts, withoutOvertaken } from "./running-facts.ts";
 import type { Series } from "./series.ts";
 
 /**
@@ -54,6 +56,8 @@ export interface CandidateFact {
   beatenBy: DayValue | null;
   /** For a conditional fact, the forecast value; `value` is what the day would need to reach. */
   forecast?: number;
+  /** For a partial fact, when its value was read, as an ISO instant. */
+  observedAt?: string;
 }
 
 export interface CandidatesRequest {
@@ -65,18 +69,27 @@ export interface CandidatesRequest {
   /** How much higher than the first station each later one reads, from `stationOffsets`. */
   offsets?: readonly StationOffset[];
   forecast?: ForecastInput;
+  /** The live values still building up, which `series` leaves out. */
+  running?: readonly RunningValue[];
 }
 
-/** Every candidate fact about the days and periods in the window, and the forecast's. */
+/**
+ * Every candidate fact about the days and periods in the window, the values still running,
+ * and the forecast's, apart from what the running values have already settled.
+ */
 export function generateCandidates(
   request: CandidatesRequest,
 ): CandidateFact[] {
-  const { forecast } = request;
-  return [
-    ...generateDailyFacts(request),
-    ...generatePeriodFacts(request),
-    ...(forecast === undefined
-      ? []
-      : generateForecastFacts({ ...request, forecast })),
-  ];
+  const { forecast, running = [] } = request;
+  return withoutOvertaken(
+    [
+      ...generateDailyFacts(request),
+      ...generatePeriodFacts(request),
+      ...generateRunningFacts({ ...request, running }),
+      ...(forecast === undefined
+        ? []
+        : generateForecastFacts({ ...request, forecast })),
+    ],
+    running,
+  );
 }

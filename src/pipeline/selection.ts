@@ -143,7 +143,7 @@ export function selectFacts({
 }: SelectionRequest): PageFacts {
   const latest = facts.reduce(
     (last, fact) =>
-      fact.date > last && fact.date <= date && !isForecastStatus(fact.status)
+      fact.date > last && fact.date <= date && isSettled(fact.status)
         ? fact.date
         : last,
     "",
@@ -273,6 +273,10 @@ function withFallback(
     : [...picked, best];
 }
 
+function isSettled(status: ValueStatus): boolean {
+  return status === "confirmed" || status === "provisional";
+}
+
 /** Observed, forecast and conditional facts about a day say different things, so each keeps its own. */
 function origin(status: ValueStatus): string {
   return isForecastStatus(status) ? status : "observed";
@@ -314,6 +318,7 @@ function candidateSection(
   latest: string,
 ): Section | undefined {
   if (isForecastStatus(fact.status)) return forecastSection(fact, date);
+  if (fact.status === "partial") return partialSection(fact, date);
   if (isCalendar(fact.period)) return "pastMonth";
   if (fact.from === latest && observationDay(fact.from, fact.measure) >= date) {
     return "today";
@@ -332,6 +337,16 @@ function forecastSection(
   return observationDay(fact.date, fact.measure) <= addDays(date, 1)
     ? "today"
     : "comingWeek";
+}
+
+// A value still running is the latest of its measure, so it is Today's until its 9am has
+// passed, when a later run has settled it.
+function partialSection(
+  fact: CandidateFact,
+  date: string,
+): Section | undefined {
+  const day = observationDay(fact.date, fact.measure);
+  return day >= date && day <= addDays(date, 1) ? "today" : undefined;
 }
 
 function daylightSection(day: string, date: string): Section | undefined {
@@ -435,6 +450,7 @@ function present(
     direction: fact.direction,
     comparison: fact.comparison,
     status: fact.status,
+    ...(fact.observedAt === undefined ? {} : { observedAt: fact.observedAt }),
     lead,
     score: Math.round(score * 100) / 100,
     text: describeFact(fact, lead),
@@ -473,13 +489,14 @@ function explain(
       ? forecastSeries(observed, forecast)
       : observed;
   const found = source === undefined ? [] : comparables(source, fact);
-  // A forecast or conditional value is only in the fact itself.
-  const own = isForecast
-    ? [
-        ...found.filter((spell) => spell.date !== date),
-        { from, date, value: fact.value },
-      ]
-    : found;
+  // A forecast, conditional or partial value is only in the fact itself.
+  const own =
+    isForecast || fact.status === "partial"
+      ? [
+          ...found.filter((spell) => spell.date !== date),
+          { from, date, value: fact.value },
+        ]
+      : found;
   const ranked = own.toSorted((a, b) =>
     a.value === b.value
       ? a.date.localeCompare(b.date)

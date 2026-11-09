@@ -225,6 +225,40 @@ describe("sentence", () => {
       "[Last night] was the coldest since 15\u00a0October, with a low of 11.6\u00a0°C",
     ],
     [
+      fact({ status: "partial", why: { value: 31.2 } }),
+      "[Today] is the hottest day since records began in 1859, with a top of 31.2\u00a0°C",
+    ],
+    [
+      fact({
+        measure: "minTemp",
+        direction: "lowest",
+        status: "partial",
+        text: "the coldest since 15\u00a0October",
+        why: { value: 9.8 },
+      }),
+      "[Sunday night] is the coldest since 15\u00a0October, with a low of 9.8\u00a0°C",
+    ],
+    [
+      fact({
+        date: "2026-11-10",
+        measure: "minTemp",
+        direction: "lowest",
+        status: "partial",
+        text: "the coldest since 15\u00a0October",
+        why: { value: 9.8 },
+      }),
+      "[Tonight] is the coldest since 15\u00a0October, with a low of 9.8\u00a0°C",
+    ],
+    [
+      fact({
+        measure: "rain",
+        status: "partial",
+        text: "the wettest since 16\u00a0October",
+        why: { value: 22.4 },
+      }),
+      "[The 24 hours to 9\u00a0am today] are the wettest since 16\u00a0October, with 22.4\u00a0mm",
+    ],
+    [
       fact({
         date: "2026-11-06",
         measure: "minTemp",

@@ -47,11 +47,12 @@ export type Period =
 
 /**
  * Provisional values come from the live feed and may change when the daily files confirm
- * them. Forecast values come from BOM's forecast. A conditional fact holds only if the day
- * reaches its value, which is beyond the forecast.
+ * them. Partial values are still building up in the live feed, so the day's value can only
+ * go further the way its fact says. Forecast values come from BOM's forecast. A conditional
+ * fact holds only if the day reaches its value, which is beyond the forecast.
  */
 export type ValueStatus =
-  "confirmed" | "provisional" | "forecast" | "conditional";
+  "confirmed" | "provisional" | "partial" | "forecast" | "conditional";
 
 export function isForecastStatus(status: ValueStatus): boolean {
   return status === "forecast" || status === "conditional";
@@ -115,6 +116,8 @@ export interface RecordFact {
   direction: Direction;
   comparison: Comparison;
   status: ValueStatus;
+  /** For a partial fact, when its value was read, as an ISO instant. */
+  observedAt?: string;
   lead: Lead;
   /** Higher is more unusual: about the log of how many comparable days pass for each fact like it. */
   score: number;

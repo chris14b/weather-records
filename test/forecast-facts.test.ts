@@ -86,11 +86,11 @@ const maxTemps = (values: Readonly<Record<string, number>> = {}) =>
 describe("forecastStart", () => {
   test.each([
     ["8:30am, with daylight saving", "2026-11-05T21:30:00Z", "2026-11-06"],
-    ["3:59pm, with daylight saving", "2026-11-06T04:59:00Z", "2026-11-06"],
-    ["4pm, with daylight saving", "2026-11-06T05:00:00Z", "2026-11-07"],
+    ["8:59pm, with daylight saving", "2026-11-06T09:59:00Z", "2026-11-06"],
+    ["9pm, with daylight saving", "2026-11-06T10:00:00Z", "2026-11-07"],
     ["10:30pm, with daylight saving", "2026-11-06T11:30:00Z", "2026-11-07"],
-    ["3:59pm, without daylight saving", "2026-06-06T05:59:00Z", "2026-06-06"],
-    ["4pm, without daylight saving", "2026-06-06T06:00:00Z", "2026-06-07"],
+    ["8:59pm, without daylight saving", "2026-06-06T10:59:00Z", "2026-06-06"],
+    ["9pm, without daylight saving", "2026-06-06T11:00:00Z", "2026-06-07"],
   ])("at %s (%s) is %s", (_, now, expected) => {
     expect(forecastStart(new Date(now))).toBe(expected);
   });

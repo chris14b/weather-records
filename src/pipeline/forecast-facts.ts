@@ -3,7 +3,7 @@ import type { CandidateFact } from "./candidates.ts";
 import { comparisonKey, generateDailyFacts, rank } from "./daily-facts.ts";
 import { addDays, daysBetween, sydneyDate, sydneyHour } from "./dates.ts";
 import type { ForecastDay } from "./forecast.ts";
-import { maxSavedFromHour } from "./observations.ts";
+import { maxWindowClosesHour } from "./observations.ts";
 import { rollingComparisons, runRanker } from "./period-facts.ts";
 import type { Series, SeriesDay } from "./series.ts";
 import { boundariesBetween, justBeyond } from "./thresholds.ts";
@@ -34,11 +34,12 @@ const noRangeChance = 25;
 
 /**
  * The first day of the forecast to give temperature facts about: today until the live
- * maximum is saved, then tomorrow.
+ * maximum's window closes at 9pm, then tomorrow. Before then, today's running maximum
+ * settles only how hot the day is, so the forecast still says how cold it might be.
  */
 export function forecastStart(now: Date): string {
   const today = sydneyDate(now);
-  return sydneyHour(now) < maxSavedFromHour ? today : addDays(today, 1);
+  return sydneyHour(now) < maxWindowClosesHour ? today : addDays(today, 1);
 }
 
 /**

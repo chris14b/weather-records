@@ -1,6 +1,9 @@
 import { describe, expect, test } from "vitest";
 import { locations, type Location } from "../src/shared/locations.ts";
-import { parseObservations } from "../src/pipeline/observations.ts";
+import {
+  parseObservations,
+  parseRunningValues,
+} from "../src/pipeline/observations.ts";
 import { fixture, observationsAt } from "./live-feeds.ts";
 
 const [observatoryHill, airport, olympicPark] = locations as [
@@ -148,5 +151,71 @@ describe("parseObservations", () => {
     },
   ])("fails when $problem", ({ edit, error }) => {
     expect(() => parse(edit(fixture("IDN60920.xml")))).toThrow(error);
+  });
+});
+
+describe("parseRunningValues", () => {
+  const running = (xml: string, location = observatoryHill) =>
+    parseRunningValues(Buffer.from(xml), location);
+
+  test("at 2:30pm, gives the maximum so far and the rain since 9am, credited to tomorrow", () => {
+    expect(running(fixture("IDN60920.xml"))).toEqual([
+      {
+        measure: "maxTemp",
+        date: "2026-10-30",
+        value: 23.9,
+        observedAt: "2026-10-30T03:30:00.000Z",
+      },
+      {
+        measure: "rain",
+        date: "2026-10-31",
+        value: 0,
+        observedAt: "2026-10-30T03:30:00.000Z",
+      },
+    ]);
+  });
+
+  test("before 9am, gives the minimum so far", () => {
+    expect(running(observationsAt("2026-10-29T21:30:00+00:00"))).toContainEqual(
+      {
+        measure: "minTemp",
+        date: "2026-10-30",
+        value: 16.8,
+        observedAt: "2026-10-29T21:30:00.000Z",
+      },
+    );
+  });
+
+  test("leaves out the maximum once its window closes at 9pm", () => {
+    expect(
+      running(observationsAt("2026-10-30T10:00:00+00:00")).map(
+        ({ measure }) => measure,
+      ),
+    ).toEqual(["rain"]);
+  });
+
+  test("credits the rain since 9am yesterday to today", () => {
+    const xml = fixture("IDN60920.xml").replace(
+      'start-time-local="2026-10-30T09:00:00+11:00" end-time-local="2026-10-30T14:33:00+11:00" duration="333" start-time-utc="2026-10-29T22:00:00+00:00" end-time-utc="2026-10-30T03:33:00+00:00" units="mm" type="rainfall">0.0<',
+      'start-time-local="2026-10-29T09:00:00+11:00" end-time-local="2026-10-30T08:33:00+11:00" duration="1413" start-time-utc="2026-10-28T22:00:00+00:00" end-time-utc="2026-10-29T21:33:00+00:00" units="mm" type="rainfall">4.2<',
+    );
+
+    expect(running(xml)).toContainEqual({
+      measure: "rain",
+      date: "2026-10-30",
+      value: 4.2,
+      observedAt: "2026-10-30T03:30:00.000Z",
+    });
+  });
+
+  test("fails when the rain since 9am doesn't start at 9am", () => {
+    const xml = fixture("IDN60920.xml").replace(
+      'start-time-local="2026-10-30T09:00:00+11:00" end-time-local="2026-10-30T14:33:00+11:00"',
+      'start-time-local="2026-10-30T12:00:00+11:00" end-time-local="2026-10-30T14:33:00+11:00"',
+    );
+
+    expect(() => running(xml)).toThrow(
+      "rainfall: expected a window from 09:00 for up to a day, found 2026-10-30T12:00:00+11:00 to 2026-10-30T14:33:00+11:00",
+    );
   });
 });

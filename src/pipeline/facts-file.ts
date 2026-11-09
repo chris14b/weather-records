@@ -21,6 +21,8 @@ import {
   loadHistories,
   seriesFromSources,
 } from "./saved-series.ts";
+import { parseRunningValues } from "./observations.ts";
+import { withoutRunning } from "./running-facts.ts";
 import { selectFacts } from "./selection.ts";
 import {
   downloadLiveFeeds,
@@ -99,10 +101,11 @@ async function buildLocationFacts({
     today,
   });
 
+  const running = parseRunningValues(feeds.observations, location);
   const series = seriesFromSources({
     histories,
     daily,
-    snapshot: snapshot.observations,
+    snapshot: withoutRunning(snapshot.observations, running),
     ftpHistory,
     readings: snapshot.readings,
   });
@@ -114,6 +117,7 @@ async function buildLocationFacts({
     windowEnd: today,
     offsets: stationOffsets(location),
     forecast,
+    running,
   });
   return {
     locationId: location.id,

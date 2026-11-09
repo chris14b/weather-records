@@ -31,6 +31,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 **Notes:**
 
 - Each fact is an `li.fact` built by `factItem` in `src/site/render.ts`, and the big fact by `headline`. Open the why without pushing the panels around much, e.g. as a popover over the glass.
+- A running fact (`status: "partial"`) has `observedAt`, the time its value was read, which the why can show ("31.2 °C by 2:30pm"), since the sentence doesn't.
 - A daylight fact (`kind: "daylight"`) has no `why`. Decide whether it needs one, e.g. its sunrise and sunset or the days around it, or no card at all.
 
 ---
@@ -72,24 +73,6 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 ---
 
-## T40: Rain since 9am in Today
-
-**Status:** todo
-
-**Goal:** On a wet day, Today says how the rain so far compares, such as "12.4 mm has fallen since 9am, already the wettest since 4 November".
-
-- Background, from 2026-11-09: BOM's forecast gives each day's rain from midnight to midnight, and doesn't say how much is left, so the rain so far can't be added to the rest of the day's forecast without counting some twice. The rain since 9am is a floor for the 24 hours to 9am tomorrow, so a fact about it is always true. IDN60920 already has it, but the pipeline doesn't read it yet.
-- Scope: read the rain since 9am for each station in the live snapshot, keeping to the rules for live data in CLAUDE.md. It is never saved as a day's value, since the 9am total replaces it the next morning.
-- Scope: rank it against the observed rain days as the 24 hours to 9am tomorrow so far. The runs from 10:30am to 10:30pm each read it. At 6:30am and 8:30am it covers nearly the 24 hours to 9am that the 10:30am run brings as observed, so decide whether those runs show it.
-- Scope: wording that says it is a floor and when it was read, and how it sits beside the forecast for the same 24 hours ("The 24 hours to 9am Tuesday are forecast to be…") without repeating it.
-- Done when: tests cover the ranking and wording, and it has been checked in the browser on a wet afternoon's `facts.json`.
-
-**Notes:**
-
-- T36 does the same for the running maximum, so share the "so far" wording with it, whichever is done first.
-
----
-
 ## T38: Check the update runs
 
 **Status:** todo
@@ -107,24 +90,6 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 - The run times and their reasons are in CLAUDE.md. BOM's forecast schedule there comes from search results quoting its announcement (its site refuses automated requests), and matched the feed on 2026-11-09. The latest observations appeared about 5 minutes after the half-hour then.
 - GitHub's docs say a run in an hour skipped by daylight saving moves to the next valid time. No run is between 2am and 3am, so it shouldn't matter.
-
----
-
-## T36: Facts through the day
-
-**Status:** todo
-
-**Goal:** Today follows the day as it happens: the latest temperature, and facts such as "Today is so far the hottest day since February" as soon as the running maximum gets there.
-
-- Background, from 2026-11-09: the site now updates every 2 hours from 6:30am to 10:30pm Sydney time (the user chose 2-hourly over half-hourly), and the running maximum is saved from 4pm (`maxSavedFromHour`). So the 4:30pm run already says "Today is the hottest day since…". Before 4pm, the running maximum isn't used at all, and the runs give only "if today reaches…" forecast facts.
-- Scope: facts from the running maximum before 4pm, ranked like a day's maximum but never saved, since a later run would overwrite it anyway and a value from the morning isn't the day's. It is a floor: the day has reached at least that.
-- Scope: wording for a fact while the day isn't over: "Today is so far the hottest day since February". Decide whether the 4pm-to-9pm maximum keeps the plain wording, and how a "so far" fact sits beside the "if today reaches…" fact for the same day without repeating it.
-- Scope: the weather sky still never claims more than the data shows.
-- Done when: tests cover the ranking and wording, and it has been checked in the browser on `facts.json` from a morning and an afternoon run.
-
-**Notes:**
-
-- IDN60920's `maximum_air_temperature` element is the running maximum since 6am, with its own `time-utc`. `parseObservations` reads it in `settledValue`; a "so far" value needs it before `savedFrom`.
 
 ---
 

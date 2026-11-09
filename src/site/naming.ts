@@ -131,8 +131,8 @@ export type Phrased = Named &
 /**
  * A night named by the evening it starts, mid-sentence: "last night", "tonight", "Thursday
  * night", "the night of 2 November". A minimum is for the 24 hours to 9 am, so the night
- * that ends on `date`. A forecast for last night is for the night still under way, after
- * midnight, so it is named by its weekday.
+ * that ends on `date`. A forecast or a running value for last night is for the night still
+ * under way, after midnight, so it is named by its weekday.
  */
 export function nightName(
   date: string,
@@ -162,7 +162,8 @@ export function periodName(
         return nightName(
           date,
           today,
-          status !== undefined && isForecastStatus(status),
+          status !== undefined &&
+            (isForecastStatus(status) || status === "partial"),
         );
       }
       if (measure === "rain") {
@@ -210,10 +211,11 @@ function verb(fact: Phrased, today: string): string {
   if (fact.status === "forecast") {
     return `${plural ? "are" : "is"} forecast to be`;
   }
+  // A value still running isn't over until its 9am, even a night's.
   const ongoing =
     "toDate" in fact.period
       ? fact.period.toDate
-      : overByMorning.has(fact.measure)
+      : overByMorning.has(fact.measure) && fact.status !== "partial"
         ? fact.date > today
         : fact.date >= today;
   if (isHad(fact)) return ongoing ? "has" : "had";
