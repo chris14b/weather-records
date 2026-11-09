@@ -29,7 +29,7 @@ const comparisonWeights: Record<Comparison, number> = {
   season: 0.85,
   month: 0.8,
   year: 0.75,
-  calendarDate: 0.6,
+  calendarDate: 0.8,
 };
 
 const measureWeights: Record<FactMeasure, number> = {
@@ -87,10 +87,9 @@ export function coverage({ compared, missingDays }: CandidateFact): number {
 }
 
 function rankScore(fact: CandidateFact): number {
-  const { rank, ties, compared, comparison } = fact;
+  const { rank, ties, compared } = fact;
   const atLeastAsExtreme = rank + ties;
   if (atLeastAsExtreme > lowestRank) return 0;
-  if (comparison === "calendarDate" && rank > 1) return 0;
   // The missing days might hold values that beat it, so a rank is only as good as its coverage.
   return (
     Math.log(compared / atLeastAsExtreme) * recordWeight(fact) * coverage(fact)
@@ -116,8 +115,7 @@ function sinceScore({
   date,
   period,
 }: CandidateFact): number {
-  if (since === null || comparison === "year" || comparison === "calendarDate")
-    return 0;
+  if (since === null || comparison === "year") return 0;
   // A gap after the since day might hold a day that matched or beat this one.
   if (gaps.some(({ to }) => to > since.date)) return 0;
   // "The coldest November night since 13 November 2025" sounds rarer than it is.

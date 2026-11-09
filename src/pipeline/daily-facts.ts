@@ -47,7 +47,7 @@ export function generateDailyFacts({
       ([, { date }]) => date >= windowStart && date <= windowEnd,
     );
     return comparisons.flatMap((comparison) => {
-      const keyOf = (date: string) => comparisonKey(date, comparison);
+      const keyOf = (date: string) => dayKey(date, comparison, measure);
       const keys = days.map(({ date }) => keyOf(date));
       return inWindow.flatMap(([index, day]) => {
         const key = keys[index];
@@ -158,7 +158,20 @@ const seasons = [
   "summer",
 ] as const;
 
-/** Days with the same key are compared with each other. */
+/**
+ * Days with the same key are compared with each other. A night is credited to the date it
+ * ends on, but named by its evening, so for the calendar date it is keyed by its evening.
+ */
+export function dayKey(
+  date: string,
+  comparison: Comparison,
+  measure: FactMeasure,
+): string {
+  const night = measure === "minTemp" && comparison === "calendarDate";
+  return comparisonKey(night ? addDays(date, -1) : date, comparison);
+}
+
+/** Periods, and days apart from nights for the calendar date, with the same key are compared with each other. */
 export function comparisonKey(date: string, comparison: Comparison): string {
   switch (comparison) {
     case "all":

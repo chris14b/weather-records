@@ -42,7 +42,7 @@ A series is one measure's single-day values for a location, in date order (`seri
   - `year`: the days of the same year so far.
   - `season`: the days of the same season in every year. Seasons are meteorological, so December is summer.
   - `month`: the days of the same month in every year.
-  - `calendarDate`: the same date in every year.
+  - `calendarDate`: the same date in every year. A minimum is credited to the date its night ends on, but the site names the night by its evening, so for this comparison a night is keyed by its evening (`dayKey`). The night of 28 February is then compared only with other nights of 28 February, whether they ended on 29 February or 1 March.
 
 That's a few thousand candidates per location. Each is judged only against the comparable days **up to and including** its own date, so a day keeps the rank it had at the time. Each candidate records:
 
@@ -150,11 +150,11 @@ Periods score the same way, counting comparable periods instead of days. A run o
 
 These keep ranks easy to set from scoring too high:
 
-- **Rank limit:** a rank scores 0 if `rank + ties` is above 10 (`lowestRank`), because "the 23rd hottest" isn't worth saying. A calendar date scores only at rank 1.
+- **Rank limit:** a rank scores 0 if `rank + ties` is above 10 (`lowestRank`), because "the 23rd hottest" isn't worth saying.
 - **Short records:** a rank is multiplied by the cube root of (years of record / 30), capped at 1 (`fullStrengthYears`). This doesn't apply to the year so far. Olympic Park's 15 years give 0.79.
 - **Missing days:** a rank is multiplied by the share of comparable days that have a value. The missing days might have held something better.
-- **Sinces that don't count:** there is no since score for `year`, because its since is always the same day as the `all` since. There is none for `calendarDate`, and none when a gap falls after the since day, since the gap might have held a day that matched it. A day's or run's since for `month` or `season` counts only if it reaches back before the same month or season last year (`previousOccurrence`): "the coldest November night since 13 November 2025" covers only about 20 November days, but sounds like a year.
-- **Comparison weight:** all 1, season 0.85, month 0.8, year 0.75, calendar date 0.6 (`comparisonWeights`). Narrow comparisons give many more chances to set a record, and are less interesting to read.
+- **Sinces that don't count:** there is no since score for `year`, because its since is always the same day as the `all` since. There is none when a gap falls after the since day, since the gap might have held a day that matched it. A day's or run's since for `month` or `season` counts only if it reaches back before the same month or season last year (`previousOccurrence`): "the coldest November night since 13 November 2025" covers only about 20 November days, but sounds like a year.
+- **Comparison weight:** all 1, season 0.85, month 0.8, calendar date 0.8, year 0.75 (`comparisonWeights`). Narrow comparisons give many more chances to set a record, and are less interesting to read. The calendar date weighs as much as the month because "the coldest 9 November since 1999" reads better than a short since such as "the biggest day-to-day rise in minimum temperature since 1 November": on 9 November 2026 at Observatory Hill the first scores log(27) × 0.8, about 2.6, and the second 1.77. So a quiet day usually still has a fact for its date, and on a short record its record for the date can lead Today: Olympic Park's coldest 9 November since records began in 2011 scores 1.77.
 - **Measure weight:** 1 for temperature and rain, down to 0.75 for 9am and 3pm humidity (`measureWeights`). Changes weigh less than their measures: 0.9 for the maximum and 0.85 for the minimum.
 
 ### Worked examples
@@ -216,11 +216,11 @@ Past week and Past month run strongest first, and so do Today's observed and day
   - "day", "spring day", "October day", or "6 November".
   - The year so far: "day of the year so far".
   - The noun follows the measure: "temperature range", "9 am" and so on.
-  - The minimum and rain have no noun, because the site names their day "last night" or "the 24 hours to 9 am Friday", and "Last night was the coldest night" says night twice: "the coldest", "the wettest in October", "the coldest of the year so far", "the wettest for the date".
+  - The minimum and rain have no noun, because the site names their day "last night" or "the 24 hours to 9 am Friday", and "Last night was the coldest night" says night twice: "the coldest", "the wettest in October", "the coldest of the year so far", "the wettest for 9 November". A night for the date is named by its evening, as the site names the night itself: "Last night was the coldest for the night of 8 November since 1999", and with its noun, in a conditional fact, "A low of 10 °C tonight would make it the coldest night of 9 November". Its since is the year of its evening, so a night of 31 December 1999 is "since 1999". A day's rain keeps its date, since its subject names the 9 am it ends at: "the wettest for 4 November".
   - A change is "the biggest day-to-day rise in maximum temperature" or "drop in minimum temperature". Its comparison follows it: "in spring", "in October", "on 13 October".
 - **Scope:**
   - A rank-led fact says "since records began in 1859", or "since 2009" when the series doesn't go back to when records began.
-  - A since-led fact drops the rank and says "since 8 February", "since 20 December 2025", "since August 2024" or "since 2018", depending on how far back it reaches. For a `month` comparison it is always the year: "in November since 2024", never "since November 2024".
+  - A since-led fact drops the rank and says "since 8 February", "since 20 December 2025", "since August 2024" or "since 2018", depending on how far back it reaches. For a `month` or `calendarDate` comparison it is always the year: "in November since 2024", never "since November 2024", and "the coldest 9 November since 1999".
 - **Gaps:** a rank-led fact with under 95% coverage names its longest gap, e.g. "(no records from March 2018 to July 2020)". A period says how many earlier ones it left out: "(not counting 16 years with gaps)". At Observatory Hill these are years between 1864 and 1948 with a month or so missing.
 - **Periods:**
   - The site names the period, so one compared with its own kind has no noun: "the wettest" for an October among Octobers, a spring or a month so far, and "the wettest in spring" for 7 days among spring's. "October was the wettest October" would say it twice.

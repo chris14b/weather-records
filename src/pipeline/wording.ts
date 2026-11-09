@@ -10,7 +10,7 @@ import type {
 } from "../shared/facts.ts";
 import type { CandidateFact } from "./candidates.ts";
 import { comparisonKey } from "./daily-facts.ts";
-import { daysBetween } from "./dates.ts";
+import { addDays, daysBetween } from "./dates.ts";
 import type { DaylightCandidate } from "./daylight-facts.ts";
 import { coverage, minimumCoverage } from "./scoring.ts";
 
@@ -19,6 +19,8 @@ interface Phrase {
   noun: string;
   /** Whether the comparison follows the noun ("in October") rather than leading it. */
   periodAfter?: boolean;
+  /** Whether it is a night, which BOM credits to the date it ends on. */
+  night?: boolean;
 }
 
 const changing: Record<ChangingMeasure, string> = {
@@ -43,8 +45,18 @@ const phrases: Record<FactMeasure, Record<Direction, Phrase>> = {
   // The site names the night ("last night") and a day's rain ("the 24 hours to 9 am
   // Friday"), so they need no noun.
   minTemp: {
-    highest: { superlative: "warmest", noun: "", periodAfter: true },
-    lowest: { superlative: "coldest", noun: "", periodAfter: true },
+    highest: {
+      superlative: "warmest",
+      noun: "",
+      periodAfter: true,
+      night: true,
+    },
+    lowest: {
+      superlative: "coldest",
+      noun: "",
+      periodAfter: true,
+      night: true,
+    },
   },
   rain: {
     highest: { superlative: "wettest", noun: "", periodAfter: true },
@@ -215,7 +227,7 @@ function rankWords({ rank, ties }: CandidateFact): string {
 
 function subject(
   comparison: Comparison,
-  { noun, periodAfter = false }: Phrase,
+  { noun, periodAfter = false, night = false }: Phrase,
   date: string,
 ): string {
   switch (comparison) {
@@ -231,11 +243,20 @@ function subject(
       const month = format(date, { month: "long" });
       return periodAfter ? after(noun, `in ${month}`) : `${month} ${noun}`;
     }
-    case "calendarDate":
-      // The site names the day, so a night or a day's rain is "the coldest for the date".
-      if (noun === "") return "for the date";
-      if (periodAfter) return after(noun, `on ${dayMonth(date)}`);
-      return noun === "day" ? dayMonth(date) : `${dayMonth(date)} ${noun}`;
+    case "calendarDate": {
+      // The site names a night by its evening ("last night", "the night of 2 November").
+      if (night) {
+        const evening = dayMonth(addDays(date, -1));
+        return noun === ""
+          ? `for the night of ${evening}`
+          : `${noun} of ${evening}`;
+      }
+      const day = dayMonth(date);
+      // The site names the 24 hours to 9 am that a day's rain is for.
+      if (noun === "") return `for ${day}`;
+      if (periodAfter) return after(noun, `on ${day}`);
+      return noun === "day" ? day : `${day} ${noun}`;
+    }
   }
 }
 
@@ -260,6 +281,7 @@ function sinceScope({
   date,
   period,
   comparison,
+  measure,
 }: CandidateFact): string {
   if (since === null) throw new Error(`A fact for ${date} has no since`);
   switch (period.kind) {
@@ -267,6 +289,12 @@ function sinceScope({
     case "rolling":
       // "The biggest rise in November since November 2024" says November twice.
       if (comparison === "month") return ` since ${since.date.slice(0, 4)}`;
+      if (comparison === "calendarDate") {
+        // The night of 31 December 1999 ended in 2000.
+        const named =
+          measure === "minTemp" ? addDays(since.date, -1) : since.date;
+        return ` since ${named.slice(0, 4)}`;
+      }
       return ` since ${earlierDay(since.date, date)}`;
     case "month":
       if (!period.toDate && comparison === "all")

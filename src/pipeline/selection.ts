@@ -12,7 +12,7 @@ import {
   type ValueStatus,
 } from "../shared/facts.ts";
 import type { CandidateFact } from "./candidates.ts";
-import { beats, comparisonKey } from "./daily-facts.ts";
+import { beats, dayKey } from "./daily-facts.ts";
 import { addDays, daysBetween } from "./dates.ts";
 import type { DaylightCandidate } from "./daylight-facts.ts";
 import { forecastSeries, type ForecastInput } from "./forecast-facts.ts";
@@ -533,11 +533,12 @@ function explain(
         spell.value === null ? [] : [{ ...spell, value: spell.value }],
       );
     }
-    const key = comparisonKey(date, comparison);
+    const key = dayKey(date, comparison, fact.measure);
     return source.days
       .filter(
         (day) =>
-          day.date <= date && comparisonKey(day.date, comparison) === key,
+          day.date <= date &&
+          dayKey(day.date, comparison, fact.measure) === key,
       )
       .map((day) => ({ from: day.date, date: day.date, value: day.value }));
   }

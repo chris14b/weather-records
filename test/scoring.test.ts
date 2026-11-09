@@ -72,10 +72,6 @@ describe("scoreFact", () => {
   test.each([
     ["beyond 10th", { rank: 11 }],
     ["10th or better only by sharing it", { rank: 4, ties: 7 }],
-    [
-      "2nd for its calendar date",
-      { comparison: "calendarDate" as const, rank: 2, compared: 120 },
-    ],
   ])("gives no score to a rank %s that has no since", (_, fact) => {
     expect(score(fact)).toBe(0);
   });
@@ -86,11 +82,40 @@ describe("scoreFact", () => {
 
   test("scores narrow comparisons lower", () => {
     const all = score({ compared: 5000 });
+    const season = score({ comparison: "season", compared: 5000 });
     const month = score({ comparison: "month", compared: 5000 });
-    const calendarDate = score({ comparison: "calendarDate", compared: 5000 });
+    const year = score({ comparison: "year", compared: 5000 });
 
-    expect(month).toBeLessThan(all);
-    expect(calendarDate).toBeLessThan(month);
+    expect(season).toBeLessThan(all);
+    expect(month).toBeLessThan(season);
+    expect(year).toBeLessThan(month);
+  });
+
+  test("scores the coldest night for the date in 27 years above the biggest rise in minimum in 8 days", () => {
+    const forTheDate = score({
+      measure: "minTemp",
+      direction: "lowest",
+      comparison: "calendarDate",
+      rank: 8,
+      compared: 166,
+      since: { date: "1999-11-09", value: 11.4 },
+      comparedSince: 27,
+    });
+    const riseInMinimum = score({
+      measure: "minTempChange",
+      rank: 8485,
+      compared: 60_548,
+      since: { date: "2026-11-01", value: 2.4 },
+      comparedSince: 8,
+    });
+
+    expect(forTheDate).toBeGreaterThan(riseInMinimum);
+  });
+
+  test("scores a rank below the top for its calendar date", () => {
+    expect(
+      score({ comparison: "calendarDate", rank: 2, compared: 120 }),
+    ).toBeCloseTo(Math.log(60) * 0.8);
   });
 
   test("scores a rank lower in a short record, but not a since", () => {
@@ -134,19 +159,16 @@ describe("scoreFact", () => {
     ).toBeGreaterThan(0);
   });
 
-  test.each(["year", "calendarDate"] as const)(
-    "ignores the since for the %s comparison",
-    (comparison) => {
-      expect(
-        score({
-          comparison,
-          rank: 40,
-          since: { date: "2020-01-01", value: 41 },
-          comparedSince: 300,
-        }),
-      ).toBe(0);
-    },
-  );
+  test("ignores the since for the year so far", () => {
+    expect(
+      score({
+        comparison: "year",
+        rank: 40,
+        since: { date: "2020-01-01", value: 41 },
+        comparedSince: 300,
+      }),
+    ).toBe(0);
+  });
 
   test.each([
     ["month", "2025-11-13", 0],

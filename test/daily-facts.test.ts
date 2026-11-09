@@ -220,6 +220,36 @@ describe("generateDailyFacts", () => {
     test("counts December in the same summer as January and February", () => {
       expect(find(facts, "2026-01-02", "season").compared).toBe(5);
     });
+
+    test("compares a night for the calendar date with the nights of the same evening", () => {
+      const nights: Series = {
+        measure: "minTemp",
+        days: (
+          [
+            ["2024-02-29", 18],
+            ["2024-03-01", 15],
+            ["2025-03-01", 17],
+          ] as const
+        ).map(([date, value]) => ({
+          date,
+          value,
+          status: "confirmed" as const,
+        })),
+        fullRecord: true,
+      };
+      const nightOf28February = find(
+        factsFor(nights, "2025-03-01"),
+        "2025-03-01",
+        "calendarDate",
+        "lowest",
+      );
+
+      expect(nightOf28February).toMatchObject({
+        compared: 2,
+        rank: 1,
+        since: null,
+      });
+    });
   });
 
   describe("missing days", () => {

@@ -31,7 +31,11 @@ describe("describeFact", () => {
     ],
     [
       { comparison: "calendarDate" as const, measure: "minTemp" as const },
-      "the warmest for the date since records began in 1900",
+      "the warmest for the night of 5\u00a0November since records began in 1900",
+    ],
+    [
+      { comparison: "calendarDate" as const, measure: "rain" as const },
+      "the wettest for 6\u00a0November since records began in 1900",
     ],
   ])("words a rank: %o", (fact, expected) => {
     expect(words(fact)).toBe(expected);
@@ -121,7 +125,7 @@ describe("describeFact", () => {
     ],
     [
       { comparison: "calendarDate" as const },
-      "the coldest night on 6\u00a0November since records began in 1900",
+      "the coldest night of 5\u00a0November since records began in 1900",
     ],
   ])("names the night of a conditional minimum: %o", (fact, expected) => {
     expect(
@@ -220,6 +224,47 @@ describe("describeFact", () => {
         "since",
       ),
     ).toBe("the wettest in November since 2018");
+  });
+
+  test.each([
+    [
+      "minTemp",
+      "lowest",
+      "the coldest for the night of 5\u00a0November since 1999",
+    ],
+    ["maxTemp", "lowest", "the coldest 6 November since 1999"],
+  ] as const)(
+    "names only the year of a since for the calendar date: %s %s",
+    (measure, direction, expected) => {
+      expect(
+        words(
+          {
+            measure,
+            direction,
+            comparison: "calendarDate",
+            rank: 8,
+            since: { date: "1999-11-06", value: 11.4 },
+          },
+          "since",
+        ),
+      ).toBe(expected);
+    },
+  );
+
+  test("names the year a night for the calendar date began in", () => {
+    expect(
+      words(
+        {
+          measure: "minTemp",
+          direction: "lowest",
+          comparison: "calendarDate",
+          date: "2027-01-01",
+          rank: 8,
+          since: { date: "2000-01-01", value: 15.1 },
+        },
+        "since",
+      ),
+    ).toBe("the coldest for the night of 31 December since 1999");
   });
 
   test.each(["provisional", "forecast", "conditional"] as const)(

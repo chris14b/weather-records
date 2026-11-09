@@ -9,9 +9,10 @@ exports[`selectFacts on real data > chooses the facts at sydney-airport for the 
   ],
   "pastWeek": [
     "2026-10-25 5.29 minTemp the warmest since 10 April",
-    "2026-10-26 2.53 maxTempChange the seventh biggest day-to-day drop in maximum temperature of the year so far",
+    "2026-10-26 3.22 maxTempChange the biggest day-to-day drop in maximum temperature on 26 October since records began in 1939",
+    "2026-10-23 2.38 rain the fifth wettest for 23 October since records began in 1929",
     "2026-10-28 2.36 minRelHum the lowest humidity since 12 October",
-    "2026-10-23 1.95 rain the wettest since 16 October",
+    "2026-10-24 1.89 maxTemp the eighth hottest 24 October since records began in 1939",
     "2026-10-27 1.84 maxRelHum the lowest peak humidity since 17 October",
   ],
   "today": [
@@ -37,9 +38,10 @@ exports[`selectFacts on real data > chooses the facts at sydney-observatory-hill
     "1986-08-02 4.25 minTemp the coldest in August since 1979",
     "1986-08-02 4.14 range the biggest temperature range since 25 April",
     "1986-08-05 3.98 range the smallest August temperature range since 1977",
-    "1986-08-05 3.64 maxTemp the coldest August day since 1983",
+    "1986-08-05 3.89 rain the wettest for 5 August since records began in 1858",
     "1986-08-04 2.62 maxTempChange the biggest day-to-day drop in maximum temperature in August since 1984",
-    "1986-08-07 2.39 rain the ninth wettest of the year so far",
+    "1986-08-07 2.60 rain the fifth wettest for 7 August since records began in 1858",
+    "1986-08-03 2.47 minTemp the coldest for the night of 2 August since 1964",
   ],
   "today": [
     "1986-08-08 2.64 minTemp the warmest since 25 July",
@@ -59,6 +61,7 @@ exports[`selectFacts on real data > chooses the facts at sydney-observatory-hill
     "2013-01-13 4.14 solar the gloomiest day since 6 October 2012",
     "2013-01-14 3.02 minTempChange the biggest day-to-day drop in minimum temperature since 10 December 2012",
     "2013-01-15 2.94 minTemp the coldest since 27 December 2012",
+    "2013-01-17 1.79 minTempChange the biggest day-to-day rise in minimum temperature on 17 January since 1999",
   ],
   "today": [
     "2013-01-18 10.86 maxTemp the hottest day since records began in 1859",
@@ -82,8 +85,8 @@ exports[`selectFacts on real data > chooses the facts at sydney-observatory-hill
     "2026-10-12 5.12 maxTempChange the biggest day-to-day rise in maximum temperature since 19 December 2025",
     "2026-10-11 4.89 solar the sunniest day since 24 February",
     "2026-10-09 3.04 minTemp the coldest since 18 September",
-    "2026-10-10 2.50 minTempChange the biggest day-to-day rise in minimum temperature since 21 September",
-    "2026-10-07 2.20 maxTemp the coldest day since 28 September",
+    "2026-10-10 2.86 maxTempChange the third biggest day-to-day rise in maximum temperature on 10 October since records began in 1859",
+    "2026-10-07 2.38 range the sixth smallest 7 October temperature range since records began in 1859",
   ],
   "today": [
     "2026-10-13 4.95 range the smallest temperature range since 8 February",

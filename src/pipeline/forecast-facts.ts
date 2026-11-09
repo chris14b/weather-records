@@ -1,6 +1,6 @@
 import type { DayValue, Direction } from "../shared/facts.ts";
 import type { CandidateFact } from "./candidates.ts";
-import { comparisonKey, generateDailyFacts, rank } from "./daily-facts.ts";
+import { dayKey, generateDailyFacts, rank } from "./daily-facts.ts";
 import { addDays, daysBetween, sydneyDate, sydneyHour } from "./dates.ts";
 import type { ForecastDay } from "./forecast.ts";
 import { maxWindowClosesHour } from "./observations.ts";
@@ -161,11 +161,11 @@ function forecastDayFacts(
 
 function comparableEarlier(
   series: Series,
-  { date, comparison }: CandidateFact,
+  { date, comparison, measure }: CandidateFact,
 ): SeriesDay[] {
-  const key = comparisonKey(date, comparison);
+  const key = dayKey(date, comparison, measure);
   return series.days.filter(
-    (day) => day.date < date && comparisonKey(day.date, comparison) === key,
+    (day) => day.date < date && dayKey(day.date, comparison, measure) === key,
   );
 }
 

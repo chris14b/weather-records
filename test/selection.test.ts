@@ -441,10 +441,10 @@ describe("selectFacts with a forecast", () => {
       })),
     ).toEqual([
       {
-        date: "2026-11-13",
-        status: "conditional",
-        score: 2.3,
-        text: "the coldest day since 3\u00a0November",
+        date: "2026-11-07",
+        status: "forecast",
+        score: 2.89,
+        text: "the coldest 7\u00a0November since records began in 1990",
       },
     ]);
   });
