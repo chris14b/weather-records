@@ -216,6 +216,10 @@ Today, This week and This month run strongest first. The coming week runs soones
 - **Provisional:** shown exactly like a confirmed fact, with no words and the same dot ("Observed" in the legend). The live feed is treated as fact.
 - **Conditional:** built around what it needs: "A low of 10°C tonight (forecast 12°C) would make it the coldest November night since 2006", "A top of 36.6°C on Thursday (forecast 35°C) would make it…", "90.1 mm in the 7 days to Sunday (forecast 70 mm) would make them…".
 
+### Standout marks
+
+The site marks the rarest facts with a badge before the sentence, "Rare" or "Exceptional" (`standout` in `src/site/arrange.ts`), in every section and on the headline. A day or run of days is rare from a score of 6.5, about once in 2 years, and exceptional from 9, about once in 20. A calendar period's score counts periods, not days, so it is rare from 3.5 and exceptional from 4.5: in practice a top-3 period, and a record over a long record. On the snapshot windows these mark 12 of 58 facts, 5 of them exceptional. On 9 November 2026, an ordinary week, they marked only the year so far's records.
+
 Each fact also has a `why` for the site:
 
 - the value, rank, ties and days compared, and for a conditional fact the forecast value as `forecast` (its `value` is what the day would need)

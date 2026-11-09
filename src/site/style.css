@@ -610,6 +610,36 @@ h2 {
   border: 1.5px dotted var(--text-soft);
 }
 
+.standout {
+  display: inline-block;
+  padding: 0.05rem 0.5rem;
+  border: 1px solid rgb(255 255 255 / 0.7);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.14);
+  font-family: var(--sans);
+  font-size: 0.6875rem;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  vertical-align: 0.15em;
+  color: var(--text);
+}
+
+.standout[data-standout="exceptional"] {
+  border-color: var(--text);
+  background: var(--text);
+  color: #0b1026;
+}
+
+.headline .standout {
+  display: block;
+  width: fit-content;
+  margin: 0 auto 0.6rem;
+  font-size: 0.8125rem;
+}
+
 .empty {
   margin: 0;
   color: var(--text-soft);

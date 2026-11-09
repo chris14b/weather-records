@@ -1,6 +1,6 @@
 import type { Fact, FactsFile, ValueStatus } from "../shared/facts.ts";
 import { locations, type Location } from "../shared/locations.ts";
-import { arrange, headlineSize } from "./arrange.ts";
+import { arrange, headlineSize, standout, type Standout } from "./arrange.ts";
 import { longDate, sentence, sydneyDate } from "./naming.ts";
 import { forecastWeather, skyPhase, sydneyHour } from "./sky.ts";
 
@@ -40,9 +40,31 @@ function marker(status: ShownStatus): HTMLElement {
   });
 }
 
+const standoutLabels: Record<Standout, string> = {
+  rare: "Rare",
+  exceptional: "Exceptional",
+};
+
+function badge(fact: Fact): Children {
+  const level = standout(fact);
+  if (level === undefined) return [];
+  return [
+    element("span", { class: "standout", "data-standout": level }, [
+      standoutLabels[level],
+      element("span", { class: "visually-hidden" }, [":"]),
+    ]),
+    " ",
+  ];
+}
+
 function phrase(fact: Fact, today: string): Children {
   const { before, subject, after } = sentence(fact, today);
-  return [before, element("strong", {}, [subject]), `${after}.`];
+  return [
+    ...badge(fact),
+    before,
+    element("strong", {}, [subject]),
+    `${after}.`,
+  ];
 }
 
 function factItem(fact: Fact, today: string): HTMLElement {

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import type { Fact, LocationFacts } from "../src/shared/facts.ts";
-import { arrange, headlineSize } from "../src/site/arrange.ts";
+import { arrange, headlineSize, standout } from "../src/site/arrange.ts";
 
 const fact = (changes: Partial<Fact>): Fact => ({
   date: "2026-11-09",
@@ -106,5 +106,30 @@ describe("headlineSize", () => {
     [9, 5.5],
   ])("sizes a score of %d at %drem", (score, size) => {
     expect(headlineSize(score)).toBe(size);
+  });
+});
+
+describe("standout", () => {
+  test.each([
+    [5.9, undefined],
+    [6.5, "rare"],
+    [8.99, "rare"],
+    [9, "exceptional"],
+  ])("marks a day scoring %d as %s", (score, level) => {
+    expect(standout(fact({ score }))).toBe(level);
+  });
+
+  test("judges a run of days on the days' scale", () => {
+    const run = fact({ score: 5.17, period: { kind: "rolling", days: 3 } });
+    expect(standout(run)).toBeUndefined();
+  });
+
+  test.each([
+    [3.18, undefined],
+    [3.5, "rare"],
+    [4.5, "exceptional"],
+  ])("marks a calendar period scoring %d as %s", (score, level) => {
+    const year = fact({ score, period: { kind: "year", toDate: true } });
+    expect(standout(year)).toBe(level);
   });
 });

@@ -47,3 +47,24 @@ export function headlineSize(score: number): number {
   const size = 1.75 + (score - 2) * 0.75;
   return Math.min(5.5, Math.max(1.75, Math.round(size * 100) / 100));
 }
+
+/** How far a fact stands out from the everyday ones. */
+export type Standout = "rare" | "exceptional";
+
+// For days and runs, about once in 2 years and once in 20. A calendar period's score
+// counts periods, not days, so the same rarity scores much less.
+const standoutScores = {
+  days: { rare: 6.5, exceptional: 9 },
+  calendar: { rare: 3.5, exceptional: 4.5 },
+} as const;
+
+/** Whether a fact is rare enough to mark, and how rare. */
+export function standout({ score, period }: Fact): Standout | undefined {
+  const { rare, exceptional } =
+    period.kind === "day" || period.kind === "rolling"
+      ? standoutScores.days
+      : standoutScores.calendar;
+  if (score >= exceptional) return "exceptional";
+  if (score >= rare) return "rare";
+  return undefined;
+}

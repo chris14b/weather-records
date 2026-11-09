@@ -31,6 +31,7 @@ A static website that shows obscure weather records for the current and recent w
 - One page that scrolls. Frosted glass panels sit over a sky for the time of day. A small title and a toggle for the three locations are at the top.
 - The panels run Today, Coming week, This week, This month. Today's forecast and "if today reaches…" facts go in Today.
 - Today leads with one big fact, sized by its score, so a record fills the screen and an ordinary day's fact stays small.
+- The rarest facts carry a text badge, "Rare" or "Exceptional", separate from the status dots, so marks stay rare and don't rely on colour.
 - The background never shows the current weather, because `facts.json` is up to 12 hours old. The time of day comes from the viewer's clock, and the weather from BOM's forecast icon for the viewer's today. Each kind of sky is a few CSS layers over the time-of-day gradient, with no images. They pause when the tab is hidden and stand still with reduced motion.
 
 ## Hosting and updates

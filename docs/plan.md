@@ -114,19 +114,6 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 ---
 
-## T35: Mark standout facts
-
-**Status:** todo
-
-**Goal:** The rare facts stand out from the everyday ones at a glance, in every section.
-
-- Background: Today's headline is already sized by its score, but in the lists a record looks the same as "the coldest since 15 October". The user suggested a green dot or an exclamation mark.
-- Scope: choose a threshold from the scores. A once-a-year fact scores about 5.9, and a record among all days about 10. Consider two levels, such as notable and record, and check how many facts each would mark on the selection snapshots and the live `facts.json`, so that marks stay rare.
-- Scope: a mark that fits the glass design and still reads against every sky, isn't conveyed by colour alone, and has text for screen readers. The dots already show the status, so the mark mustn't be confused with them: perhaps a separate badge, or bolder text.
-- Done when: it has been checked in the browser on a day with a record and on an ordinary day.
-
----
-
 ## T17: Scheduled updates
 
 **Status:** todo
