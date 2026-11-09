@@ -44,13 +44,13 @@ const sectionRules: Record<Section, SectionRule> = {
     perDay: 3,
     total: 3,
   },
-  thisWeek: {
+  pastWeek: {
     minimumScore: 1.75,
     minimumExtraScore: 3.5,
     perDay: 2,
     total: 12,
   },
-  thisMonth: {
+  pastMonth: {
     minimumScore: 5,
     minimumExtraScore: 5,
     perDay: 1,
@@ -65,7 +65,7 @@ const sectionRules: Record<Section, SectionRule> = {
 };
 
 /**
- * The latest months, seasons and years go in This month, apart from its days. They are
+ * The latest months, seasons and years go in Past month, apart from its days. They are
  * scored among periods of their own kind, so a once-in-20-years period scores log(20).
  */
 const calendarRule: SectionRule = {
@@ -98,7 +98,7 @@ type Allowance = "days" | "calendar" | "conditional";
 const extraAllowances: Partial<
   Record<Section, { allowance: Allowance; rule: SectionRule }>
 > = {
-  thisMonth: { allowance: "calendar", rule: calendarRule },
+  pastMonth: { allowance: "calendar", rule: calendarRule },
   comingWeek: { allowance: "conditional", rule: conditionalRule },
 };
 
@@ -124,7 +124,7 @@ const families: Record<FactMeasure, string> = {
 // are at least 9 days apart, so each section has room for every one in its days.
 const daylightSections: readonly Section[] = [
   "today",
-  "thisWeek",
+  "pastWeek",
   "comingWeek",
 ];
 
@@ -215,8 +215,8 @@ export function selectFacts({
   return {
     locationId,
     today: section("today"),
-    thisWeek: section("thisWeek"),
-    thisMonth: section("thisMonth"),
+    pastWeek: section("pastWeek"),
+    pastMonth: section("pastMonth"),
     comingWeek: section("comingWeek"),
   };
 }
@@ -283,7 +283,7 @@ function candidateSection(
   latest: string,
 ): Section | undefined {
   if (isForecastStatus(fact.status)) return "comingWeek";
-  if (isCalendar(fact.period)) return "thisMonth";
+  if (isCalendar(fact.period)) return "pastMonth";
   return sectionOf(fact.from, fact.date, latest);
 }
 
@@ -296,8 +296,8 @@ function sectionOf(
   if (date > latest) return "comingWeek";
   const ago = daysBetween(from, latest);
   if (ago === 0) return "today";
-  if (ago <= 6) return "thisWeek";
-  return ago <= 30 ? "thisMonth" : undefined;
+  if (ago <= 6) return "pastWeek";
+  return ago <= 30 ? "pastMonth" : undefined;
 }
 
 // A spell stands for the days and the weaker spells that overlap it, which would only repeat it.

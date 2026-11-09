@@ -161,9 +161,9 @@ export interface LocationFacts {
   /** The latest day with data. */
   today: Fact[];
   /** The 6 days before it, and runs of days that start in them. */
-  thisWeek: Fact[];
+  pastWeek: Fact[];
   /** 7 to 30 days before it, and the latest calendar periods. */
-  thisMonth: Fact[];
+  pastMonth: Fact[];
   /** Forecast and conditional facts about the coming days, soonest first. */
   comingWeek: Fact[];
   /** BOM's forecast for the location's area, from the day of the run. */

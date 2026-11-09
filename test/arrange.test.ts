@@ -48,8 +48,8 @@ const longestDay: DaylightFact = {
 const location = (sections: Partial<LocationFacts>): LocationFacts => ({
   locationId: "sydney-airport",
   today: [],
-  thisWeek: [],
-  thisMonth: [],
+  pastWeek: [],
+  pastMonth: [],
   comingWeek: [],
   forecast: [],
   ...sections,
@@ -147,13 +147,13 @@ describe("standout", () => {
   test.each([
     ["today", 3.18, undefined],
     ["today", 3.2, "notable"],
-    ["thisWeek", 4.18, undefined],
-    ["thisWeek", 4.3, "notable"],
-    ["thisMonth", 5.46, undefined],
-    ["thisMonth", 5.7, "notable"],
+    ["pastWeek", 4.18, undefined],
+    ["pastWeek", 4.3, "notable"],
+    ["pastMonth", 5.46, undefined],
+    ["pastMonth", 5.7, "notable"],
     ["comingWeek", 5.18, undefined],
     ["comingWeek", 5.2, "notable"],
-    ["thisMonth", 6.5, "exceptional"],
+    ["pastMonth", 6.5, "exceptional"],
     ["today", 6.5, "exceptional"],
   ] as const)(
     "marks a fact in %s scoring %d as %s",
@@ -164,7 +164,7 @@ describe("standout", () => {
 
   test("judges a calendar period on the same scores as a day", () => {
     const year = fact({ score: 4.55, period: { kind: "year", toDate: true } });
-    expect(standout(year, "thisMonth")).toBeUndefined();
+    expect(standout(year, "pastMonth")).toBeUndefined();
   });
 
   test("never marks daylight, which comes round every year", () => {

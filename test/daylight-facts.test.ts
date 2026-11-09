@@ -143,13 +143,13 @@ describe("selectFacts with daylight", () => {
     });
   });
 
-  test("puts the week before in This week, and the days after in Coming week", () => {
+  test("puts the week before in Past week, and the days after in Coming week", () => {
     const sections = select("2026-12-20", [
       candidate({ date: "2026-12-14", event: "earliestSunrise" }),
       candidate({ date: "2026-12-22" }),
     ]);
 
-    expect(sections.thisWeek.map(({ date }) => date)).toEqual(["2026-12-14"]);
+    expect(sections.pastWeek.map(({ date }) => date)).toEqual(["2026-12-14"]);
     expect(sections.comingWeek.map(({ date }) => date)).toEqual(["2026-12-22"]);
   });
 
@@ -161,8 +161,8 @@ describe("selectFacts with daylight", () => {
     expect(
       [
         ...sections.today,
-        ...sections.thisWeek,
-        ...sections.thisMonth,
+        ...sections.pastWeek,
+        ...sections.pastMonth,
         ...sections.comingWeek,
       ].filter(({ kind }) => kind === "daylight"),
     ).toEqual([]);

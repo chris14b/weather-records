@@ -183,10 +183,10 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 **Goal:** A This year section with the standout months and seasons of the past 12 months, such as "February was the hottest February since 2012".
 
-- Background: the pipeline already ranks complete months, seasons and years, and the current ones so far (the Periods section of [facts.md](facts.md)). It drops a complete period once it ended more than 31 days ago, and shows the rest in This month under `calendarRule`.
-- Scope: a `thisYear` section in `LocationFacts` for the complete months and seasons that ended in the last 12 months, and the year so far. Decide whether calendar periods leave This month for it, or This month keeps the latest complete month.
+- Background: the pipeline already ranks complete months, seasons and years, and the current ones so far (the Periods section of [facts.md](facts.md)). It drops a complete period once it ended more than 31 days ago, and shows the rest in Past month under `calendarRule`.
+- Scope: a `thisYear` section in `LocationFacts` for the complete months and seasons that ended in the last 12 months, and the year so far. Decide whether calendar periods leave Past month for it, or Past month keeps the latest complete month.
 - Scope: selection rules of its own in `selection.ts`, within the Selection section of [facts.md](facts.md), so a strong month stays for the year but doesn't crowd the section.
-- Scope: a This year panel on the page, after This month, with its periods named as the site names the others.
+- Scope: a This year panel on the page, after Past month, with its periods named as the site names the others.
 - Done when: tests and the selection snapshots cover the section, and it has been checked in the browser.
 
 ---
@@ -199,11 +199,11 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 - Scope: a README covering what the site is, how to refresh the ZIPs once a year (link to [refreshing-history.md](refreshing-history.md)), how to run the site locally, and the attribution.
 - Scope: a pass over scoring, selection and wording once the scheduled runs have produced a couple of weeks of output. The constants are `sectionRules`, `calendarRule` and `conditionalRule` in `selection.ts`, and the weights in `scoring.ts`. Weak spots found so far:
-  - This week is often filled by short sinces such as "the coldest night since 20 October". These are true, but much alike from day to day.
+  - Past week is often filled by short sinces such as "the coldest night since 20 October". These are true, but much alike from day to day.
   - Year-so-far ranks such as "the 9th wettest day of the year so far" or "the 7th biggest day-to-day drop in maximum temperature of the year so far" still get in at around 2.4.
   - Quiet days give Today nothing at all, as on 2026-10-30, whose only data is a minimum and rain.
   - Observatory Hill's year so far leaves out 9 to 16 years between 1864 and 1948, each with a month or so missing, so its records carry "(not counting 16 years with gaps)". That is still long for a headline. Allowing a missing month in a year so far might be fairer.
-  - A period so far shows every day until the period ends, so it can sit in This month for months.
+  - A period so far shows every day until the period ends, so it can sit in Past month for months.
   - The coming week's fallback (`forecastFloor`) can pick a conditional fact over a plainer forecast one, such as "A top of 18°C on Friday (forecast 20°C) would make it the coldest day since 3 November". Decide whether a fallback should prefer forecast facts.
 - Done when: the README is written, and the retuning is reviewed with the user and the snapshot tests updated.
 
@@ -329,6 +329,6 @@ The open tasks, in order of priority. Background and settled decisions are in [C
   - **Fixed temperature thresholds.** The user doesn't want hand-set degrees, because the site may one day cover all of Australia. Two alternatives were put to the user, and neither was chosen:
     1. Each location's own percentiles over 1991–2020, rounded to whole degrees. The wording stays concrete, but neighbouring locations get different numbers, and hot streaks only happen in summer. The branch's numbers are close to Observatory Hill's: maximum 95th percentile 30.2°C, 99th 35.3°C, 10th 17.3°C; minimum 90th 20.6°C, 10th 8.6°C. Olympic Park's are 33.6, 38.9, 17.8, 19.9 and 5.7°C.
     2. Claude's suggestion: percentiles for the time of year, like the climate indices TX90p and TN10p (the 90th percentile of the days within about a week of each date, 1991–2020). This gives warm days, cool days, warm nights and cold nights in any season and anywhere, worded as "the 5th unusually warm day in a row", with the day's threshold in the why. Olympic Park has only about 9 years in that base period.
-  - **Short dry spells.** Observatory Hill has about 29 runs of 3 or more dry days a year and 18 of 5 or more. A 2-day minimum put "the 2nd dry day in a row" in Today. Even at 5 days, about 16 dry spells a year score above 1.75, so This week fills with ones like "the last of 5 dry days in a row, the longest dry spell since 24 June". A 7-day minimum or a weight might fix it. 0 mm needs no threshold, so dry spells work anywhere.
-  - **Wet-day streaks** were tried and dropped. They mostly repeated the 3- and 7-day rain totals. At Olympic Park in February 2020, "the last of 5 days in a row with rain" took This week's second slot for 10 February from "the wettest 3 days on record", because facts per day are counted by their last day.
+  - **Short dry spells.** Observatory Hill has about 29 runs of 3 or more dry days a year and 18 of 5 or more. A 2-day minimum put "the 2nd dry day in a row" in Today. Even at 5 days, about 16 dry spells a year score above 1.75, so Past week fills with ones like "the last of 5 dry days in a row, the longest dry spell since 24 June". A 7-day minimum or a weight might fix it. 0 mm needs no threshold, so dry spells work anywhere.
+  - **Wet-day streaks** were tried and dropped. They mostly repeated the 3- and 7-day rain totals. At Olympic Park in February 2020, "the last of 5 days in a row with rain" took Past week's second slot for 10 February from "the wettest 3 days on record", because facts per day are counted by their last day.
   - **The station change.** 066214's minimums read about 0.3°C lower, which shortens runs of warm nights but would lengthen runs of cold nights since 2020. Settle T23 first.

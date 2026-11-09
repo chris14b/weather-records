@@ -143,7 +143,7 @@
           }
         }
       ],
-      "thisWeek": [
+      "pastWeek": [
         {
           "kind": "record",
           "date": "2026-11-04",
@@ -645,7 +645,7 @@
           }
         }
       ],
-      "thisMonth": [
+      "pastMonth": [
         {
           "kind": "record",
           "date": "2026-10-12",
@@ -1472,7 +1472,7 @@
           }
         }
       ],
-      "thisWeek": [
+      "pastWeek": [
         {
           "kind": "record",
           "date": "2026-11-07",
@@ -1832,7 +1832,7 @@
           }
         }
       ],
-      "thisMonth": [
+      "pastMonth": [
         {
           "kind": "record",
           "date": "2026-10-14",
@@ -2684,7 +2684,7 @@
           }
         }
       ],
-      "thisWeek": [
+      "pastWeek": [
         {
           "kind": "record",
           "date": "2026-11-03",
@@ -3026,7 +3026,7 @@
           }
         }
       ],
-      "thisMonth": [
+      "pastMonth": [
         {
           "kind": "record",
           "date": "2026-10-12",

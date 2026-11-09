@@ -225,7 +225,7 @@ export function render(
   const page = facts === undefined ? undefined : arrange(facts, today);
 
   const header = element("header", { class: "top" }, [
-    element("h1", {}, ["Sydney weather records"]),
+    element("h1", {}, ["Sydney Weather Records"]),
     locationToggle(location, onSelect),
   ]);
 
@@ -260,11 +260,21 @@ export function render(
           "Nothing notable in the forecast.",
         ),
       ]),
-      panel("this-week", "This week", [
-        factList(page.thisWeek, page, today, "Nothing notable this week."),
+      panel("past-week", "Past week", [
+        factList(
+          page.pastWeek,
+          page,
+          today,
+          "Nothing notable in the past week.",
+        ),
       ]),
-      panel("this-month", "This month", [
-        factList(page.thisMonth, page, today, "Nothing notable this month."),
+      panel("past-month", "Past month", [
+        factList(
+          page.pastMonth,
+          page,
+          today,
+          "Nothing notable in the past month.",
+        ),
       ]),
     ]),
     footer(location, file.generatedAt),

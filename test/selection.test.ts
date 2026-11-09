@@ -21,7 +21,7 @@ const latest = "2026-11-06";
 
 type Sections = Pick<
   SelectedFacts,
-  "today" | "thisWeek" | "thisMonth" | "comingWeek"
+  "today" | "pastWeek" | "pastMonth" | "comingWeek"
 >;
 
 /** The facts chosen without any daylight, so every one is a record fact. */
@@ -37,8 +37,8 @@ function selectRecords(request: SelectionRequest): {
   return {
     locationId: selected.locationId,
     today: records(selected.today),
-    thisWeek: records(selected.thisWeek),
-    thisMonth: records(selected.thisMonth),
+    pastWeek: records(selected.pastWeek),
+    pastMonth: records(selected.pastMonth),
     comingWeek: records(selected.comingWeek),
   };
 }
@@ -127,8 +127,8 @@ describe("selectFacts", () => {
   });
 
   test("leaves out the facts that a later day beat", () => {
-    expect(selected.thisWeek).toEqual([]);
-    expect(selected.thisMonth).toEqual([]);
+    expect(selected.pastWeek).toEqual([]);
+    expect(selected.pastMonth).toEqual([]);
   });
 
   test("keeps the strongest of a day's facts about the same family of measures and direction", () => {
@@ -209,7 +209,7 @@ describe("selectFacts", () => {
   });
 
   test("lets a spell of rain stand for the weaker days and spells inside it", () => {
-    const { thisWeek } = selectAll([
+    const { pastWeek } = selectAll([
       series("maxTemp", () => 20, { "2026-11-06": 30 }),
       series("rain", wetFifteenth, {
         "2026-11-01": 30,
@@ -220,7 +220,7 @@ describe("selectFacts", () => {
     ]);
 
     expect(
-      thisWeek
+      pastWeek
         .filter(({ measure }) => measure === "rain")
         .map(({ from, date, period, text }) => ({ from, date, period, text })),
     ).toEqual([
@@ -239,8 +239,8 @@ describe("selectFacts", () => {
     ]);
   });
 
-  test("adds the latest calendar periods to This month without crowding out its days", () => {
-    const { thisMonth } = selectAll([
+  test("adds the latest calendar periods to Past month without crowding out its days", () => {
+    const { pastMonth } = selectAll([
       series("maxTemp", () => 20, { "2026-11-06": 30 }),
       series(
         "rain",
@@ -250,7 +250,7 @@ describe("selectFacts", () => {
     ]);
 
     expect(
-      thisMonth.map(({ from, date, text }) => ({ from, date, text })),
+      pastMonth.map(({ from, date, text }) => ({ from, date, text })),
     ).toEqual([
       {
         from: "2026-10-10",
@@ -292,19 +292,19 @@ describe("selectFacts", () => {
       );
 
     test("shows an all-time record however little it scores", () => {
-      const { thisMonth } = selectAll([hotStart("2026")]);
+      const { pastMonth } = selectAll([hotStart("2026")]);
 
-      expect(thisMonth.map(({ text, score }) => ({ text, score }))).toEqual([
+      expect(pastMonth.map(({ text, score }) => ({ text, score }))).toEqual([
         {
           text: "so far the hottest year since records began in 2016",
           score: expect.any(Number) as number,
         },
       ]);
-      expect(thisMonth[0]?.score).toBeLessThan(3);
+      expect(pastMonth[0]?.score).toBeLessThan(3);
     });
 
     test("leaves out a lesser rank that scores too little", () => {
-      expect(selectAll([hotStart("2026", "2020")]).thisMonth).toEqual([]);
+      expect(selectAll([hotStart("2026", "2020")]).pastMonth).toEqual([]);
     });
   });
 
@@ -312,8 +312,8 @@ describe("selectFacts", () => {
     expect(selectFacts({ locationId: "test", facts: [], series: [] })).toEqual({
       locationId: "test",
       today: [],
-      thisWeek: [],
-      thisMonth: [],
+      pastWeek: [],
+      pastMonth: [],
       comingWeek: [],
     });
   });
@@ -454,7 +454,7 @@ describe("selectFacts on real data", () => {
 
   const sections = (facts: ReturnType<typeof selectRecords>) =>
     Object.fromEntries(
-      (["today", "thisWeek", "thisMonth"] as const).map((section) => [
+      (["today", "pastWeek", "pastMonth"] as const).map((section) => [
         section,
         facts[section].map(({ from, date, score, measure, text }) =>
           [

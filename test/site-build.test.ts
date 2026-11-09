@@ -33,7 +33,7 @@ describe("the site build", async () => {
 
   test("leaves out the development-only sky preview", () => {
     expect(
-      files.some(({ content }) => content.includes("weather records")),
+      files.some(({ content }) => content.includes("Sydney Weather Records")),
     ).toBe(true);
     for (const { content } of files) {
       expect(content).not.toMatch(/sky-preview|Sky preview|sydneyInstant/i);

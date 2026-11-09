@@ -9,8 +9,8 @@ export interface Page {
   /** Today's other facts, observed first, then its forecast and conditional facts. */
   today: Fact[];
   comingWeek: Fact[];
-  thisWeek: Fact[];
-  thisMonth: Fact[];
+  pastWeek: Fact[];
+  pastMonth: Fact[];
   /** The facts that stand out, judged in the section the pipeline chose them for. */
   standouts: ReadonlyMap<Fact, Standout>;
 }
@@ -51,8 +51,8 @@ export function arrange(location: LocationFacts, viewerToday: string): Page {
       (fact) => fact !== headline,
     ),
     comingWeek: location.comingWeek.filter((fact) => !isToday(fact)),
-    thisWeek: location.thisWeek,
-    thisMonth: location.thisMonth,
+    pastWeek: location.pastWeek,
+    pastMonth: location.pastMonth,
     standouts,
   };
 }
@@ -67,20 +67,20 @@ export function headlineSize(score: number): number {
 export type Standout = "notable" | "exceptional";
 
 /** A section of `facts.json`. */
-export type Section = "today" | "thisWeek" | "thisMonth" | "comingWeek";
+export type Section = "today" | "pastWeek" | "pastMonth" | "comingWeek";
 
 const sections: readonly Section[] = [
   "today",
-  "thisWeek",
-  "thisMonth",
+  "pastWeek",
+  "pastMonth",
   "comingWeek",
 ];
 
 // What a day's further facts need in each section, from sectionRules in src/pipeline/selection.ts.
 const sectionScores: Record<Section, number> = {
   today: 2.5,
-  thisWeek: 3.5,
-  thisMonth: 5,
+  pastWeek: 3.5,
+  pastMonth: 5,
   comingWeek: 4.5,
 };
 

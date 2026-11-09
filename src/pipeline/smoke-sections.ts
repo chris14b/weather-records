@@ -23,7 +23,7 @@ const selected = selectFacts({
 });
 
 console.log(`${location.name}, for the 31 days to ${date}`);
-for (const section of ["today", "thisWeek", "thisMonth"] as const) {
+for (const section of ["today", "pastWeek", "pastMonth"] as const) {
   console.log(`\n${section}:`);
   for (const fact of selected[section]) console.log(`  ${factLine(fact)}`);
 }
