@@ -447,6 +447,19 @@ h1 {
   outline-offset: 1px;
 }
 
+@media (max-width: 40rem) {
+  .toggle {
+    flex-direction: column;
+    width: 100%;
+    border-radius: 1rem;
+  }
+
+  .toggle span {
+    padding: 0.6rem 0.9rem;
+    border-radius: 0.8rem;
+  }
+}
+
 h2 {
   margin: 0 0 0.75rem;
   font-size: 0.8125rem;
