@@ -558,34 +558,40 @@ h2 {
   border: 1.5px solid var(--text);
 }
 
-.standout {
-  display: inline-block;
-  padding: 0.05rem 0.5rem;
-  border: 1px solid rgb(255 255 255 / 0.7);
-  border-radius: 999px;
-  background: rgb(255 255 255 / 0.14);
-  font-family: var(--sans);
-  font-size: 0.6875rem;
-  font-style: normal;
-  font-weight: 700;
-  line-height: 1.5;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  vertical-align: 0.15em;
-  color: var(--text);
+.fact[data-standout="notable"] .marker {
+  box-shadow: 0 0 0 3px rgb(255 255 255 / 0.18);
 }
 
-.standout[data-standout="exceptional"] {
-  border-color: var(--text);
-  background: var(--text);
-  color: #0b1026;
+.fact[data-standout="exceptional"] .marker {
+  animation: breathe 3.2s ease-in-out infinite;
 }
 
-.headline .standout {
-  display: block;
-  width: fit-content;
-  margin: 0 auto 0.6rem;
-  font-size: 0.8125rem;
+@keyframes breathe {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 2px rgb(255 255 255 / 0.25),
+      0 0 6px 2px rgb(255 255 255 / 0.25);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 5px rgb(255 255 255 / 0.08),
+      0 0 14px 5px rgb(255 255 255 / 0.4);
+  }
+}
+
+:root[data-paused] .fact .marker {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fact[data-standout="exceptional"] .marker {
+    animation: none;
+    box-shadow:
+      0 0 0 4px rgb(255 255 255 / 0.18),
+      0 0 10px 3px rgb(255 255 255 / 0.3);
+  }
 }
 
 .empty {

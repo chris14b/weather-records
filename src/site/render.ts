@@ -1,6 +1,6 @@
 import type { Fact, FactsFile, ValueStatus } from "../shared/facts.ts";
 import { locations, type Location } from "../shared/locations.ts";
-import { arrange, headlineSize, standout, type Standout } from "./arrange.ts";
+import { arrange, headlineSize, type Page, type Standout } from "./arrange.ts";
 import { daylightSentence, longDate, sentence, sydneyDate } from "./naming.ts";
 
 export type Children = (Node | string)[];
@@ -43,45 +43,57 @@ function marker(status: ShownStatus): HTMLElement {
 }
 
 const standoutLabels: Record<Standout, string> = {
-  rare: "Rare",
+  notable: "Notable",
   exceptional: "Exceptional",
 };
 
-function badge(fact: Fact): Children {
-  const level = standout(fact);
+// Read out but not shown: the dot's glow shows it.
+function spokenStandout(level: Standout | undefined): Children {
   if (level === undefined) return [];
   return [
-    element("span", { class: "standout", "data-standout": level }, [
-      standoutLabels[level],
-      element("span", { class: "visually-hidden" }, [":"]),
+    element("span", { class: "visually-hidden" }, [
+      `${standoutLabels[level]}: `,
     ]),
-    " ",
   ];
 }
 
-function phrase(fact: Fact, today: string): Children {
+function phrase(
+  fact: Fact,
+  today: string,
+  level: Standout | undefined,
+): Children {
   const { before, subject, after } =
     fact.kind === "daylight"
       ? daylightSentence(fact, today)
       : sentence(fact, today);
   return [
-    ...badge(fact),
+    ...spokenStandout(level),
     before,
     element("strong", {}, [subject]),
     `${after}.`,
   ];
 }
 
-function factItem(fact: Fact, today: string): HTMLElement {
+function factItem(
+  fact: Fact,
+  today: string,
+  level: Standout | undefined,
+): HTMLElement {
   const status = shown(fact);
-  return element("li", { class: "fact", "data-status": status }, [
+  const attributes: Record<string, string> = {
+    class: "fact",
+    "data-status": status,
+  };
+  if (level !== undefined) attributes["data-standout"] = level;
+  return element("li", attributes, [
     marker(status),
-    element("p", {}, phrase(fact, today)),
+    element("p", {}, phrase(fact, today, level)),
   ]);
 }
 
 function factList(
   facts: readonly Fact[],
+  page: Page,
   today: string,
   empty: string,
 ): HTMLElement {
@@ -89,7 +101,7 @@ function factList(
   return element(
     "ul",
     { class: "facts" },
-    facts.map((fact) => factItem(fact, today)),
+    facts.map((fact) => factItem(fact, today, page.standouts.get(fact))),
   );
 }
 
@@ -100,7 +112,8 @@ function panel(id: string, title: string, children: Children): HTMLElement {
   ]);
 }
 
-function headline(fact: Fact | undefined, today: string): HTMLElement {
+function headline(page: Page, today: string): HTMLElement {
+  const fact = page.headline;
   if (fact === undefined) {
     return element("p", { class: "headline empty" }, [
       "Nothing notable yet today.",
@@ -109,7 +122,7 @@ function headline(fact: Fact | undefined, today: string): HTMLElement {
   const node = element(
     "p",
     { class: "headline", "data-status": shown(fact) },
-    phrase(fact, today),
+    phrase(fact, today, page.standouts.get(fact)),
   );
   const size = headlineSize(fact.score);
   node.style.fontSize = `min(${String(size)}rem, ${String(size * 3.2)}vw)`;
@@ -233,18 +246,25 @@ export function render(
         "Today",
         element("span", { class: "date" }, [longDate(page.date)]),
       ]),
-      headline(page.headline, today),
-      ...(page.today.length === 0 ? [] : [factList(page.today, today, "")]),
+      headline(page, today),
+      ...(page.today.length === 0
+        ? []
+        : [factList(page.today, page, today, "")]),
     ]),
     element("div", { class: "panels" }, [
       panel("coming-week", "Coming week", [
-        factList(page.comingWeek, today, "Nothing notable in the forecast."),
+        factList(
+          page.comingWeek,
+          page,
+          today,
+          "Nothing notable in the forecast.",
+        ),
       ]),
       panel("this-week", "This week", [
-        factList(page.thisWeek, today, "Nothing notable this week."),
+        factList(page.thisWeek, page, today, "Nothing notable this week."),
       ]),
       panel("this-month", "This month", [
-        factList(page.thisMonth, today, "Nothing notable this month."),
+        factList(page.thisMonth, page, today, "Nothing notable this month."),
       ]),
     ]),
     footer(location, file.generatedAt),

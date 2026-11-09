@@ -11,6 +11,8 @@ export interface Page {
   comingWeek: Fact[];
   thisWeek: Fact[];
   thisMonth: Fact[];
+  /** The facts that stand out, judged in the section the pipeline chose them for. */
+  standouts: ReadonlyMap<Fact, Standout>;
 }
 
 function strongest(facts: readonly Fact[]): Fact | undefined {
@@ -34,6 +36,14 @@ export function arrange(location: LocationFacts, viewerToday: string): Page {
       ),
     );
 
+  const standouts = new Map<Fact, Standout>();
+  for (const section of sections) {
+    for (const fact of location[section]) {
+      const level = standout(fact, section);
+      if (level !== undefined) standouts.set(fact, level);
+    }
+  }
+
   return {
     date,
     headline,
@@ -43,6 +53,7 @@ export function arrange(location: LocationFacts, viewerToday: string): Page {
     comingWeek: location.comingWeek.filter((fact) => !isToday(fact)),
     thisWeek: location.thisWeek,
     thisMonth: location.thisMonth,
+    standouts,
   };
 }
 
@@ -52,25 +63,40 @@ export function headlineSize(score: number): number {
   return Math.min(5.5, Math.max(1.75, Math.round(size * 100) / 100));
 }
 
-/** How far a fact stands out from the everyday ones. */
-export type Standout = "rare" | "exceptional";
+/** How far a fact stands out from the others in its section. */
+export type Standout = "notable" | "exceptional";
 
-// For days and runs, about once in 2 years and once in 20. A calendar period's score
-// counts periods, not days, so the same rarity scores much less.
-const standoutScores = {
-  days: { rare: 6.5, exceptional: 9 },
-  calendar: { rare: 3.5, exceptional: 4.5 },
-} as const;
+/** A section of `facts.json`. */
+export type Section = "today" | "thisWeek" | "thisMonth" | "comingWeek";
 
-/** Whether a fact is rare enough to mark, and how rare. Daylight comes round every year. */
-export function standout(fact: Fact): Standout | undefined {
-  if (fact.kind === "daylight") return undefined;
-  const { score, period } = fact;
-  const { rare, exceptional } =
-    period.kind === "day" || period.kind === "rolling"
-      ? standoutScores.days
-      : standoutScores.calendar;
-  if (score >= exceptional) return "exceptional";
-  if (score >= rare) return "rare";
+const sections: readonly Section[] = [
+  "today",
+  "thisWeek",
+  "thisMonth",
+  "comingWeek",
+];
+
+// What a day's further facts need in each section, from sectionRules in src/pipeline/selection.ts.
+const sectionScores: Record<Section, number> = {
+  today: 2.5,
+  thisWeek: 3.5,
+  thisMonth: 5,
+  comingWeek: 4.5,
+};
+
+/** About a once-in-2-years day for one measure, and every 3 months or so across them all. */
+const exceptionalScore = 6.5;
+
+/**
+ * Whether a fact stands out in its section, and how far. It is notable if it is at least
+ * twice as rare as the section needs, and exceptional from the same score everywhere.
+ * Daylight comes round every year, and a conditional fact may never happen.
+ */
+export function standout(fact: Fact, section: Section): Standout | undefined {
+  if (fact.kind === "daylight" || fact.status === "conditional") {
+    return undefined;
+  }
+  if (fact.score >= exceptionalScore) return "exceptional";
+  if (fact.score >= sectionScores[section] + Math.log(2)) return "notable";
   return undefined;
 }

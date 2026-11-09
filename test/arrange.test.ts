@@ -145,29 +145,55 @@ describe("headlineSize", () => {
 
 describe("standout", () => {
   test.each([
-    [5.9, undefined],
-    [6.5, "rare"],
-    [8.99, "rare"],
-    [9, "exceptional"],
-  ])("marks a day scoring %d as %s", (score, level) => {
-    expect(standout(fact({ score }))).toBe(level);
+    ["today", 3.18, undefined],
+    ["today", 3.2, "notable"],
+    ["thisWeek", 4.18, undefined],
+    ["thisWeek", 4.3, "notable"],
+    ["thisMonth", 5.46, undefined],
+    ["thisMonth", 5.7, "notable"],
+    ["comingWeek", 5.18, undefined],
+    ["comingWeek", 5.2, "notable"],
+    ["thisMonth", 6.5, "exceptional"],
+    ["today", 6.5, "exceptional"],
+  ] as const)(
+    "marks a fact in %s scoring %d as %s",
+    (section, score, level) => {
+      expect(standout(fact({ score }), section)).toBe(level);
+    },
+  );
+
+  test("judges a calendar period on the same scores as a day", () => {
+    const year = fact({ score: 4.55, period: { kind: "year", toDate: true } });
+    expect(standout(year, "thisMonth")).toBeUndefined();
   });
 
   test("never marks daylight, which comes round every year", () => {
-    expect(standout({ ...longestDay, score: 10 })).toBeUndefined();
+    expect(standout({ ...longestDay, score: 10 }, "today")).toBeUndefined();
   });
 
-  test("judges a run of days on the days' scale", () => {
-    const run = fact({ score: 5.17, period: { kind: "rolling", days: 3 } });
-    expect(standout(run)).toBeUndefined();
+  test("never marks a conditional fact, which may never happen", () => {
+    const conditional = fact({ status: "conditional", score: 10 });
+    expect(standout(conditional, "comingWeek")).toBeUndefined();
+  });
+});
+
+describe("arrange's standouts", () => {
+  test("judges a fact moved into Today by the coming week's score", () => {
+    const forecast = fact({ status: "forecast", score: 4.5 });
+    const page = arrange(
+      location({ today: [fact({})], comingWeek: [forecast] }),
+      "2026-11-09",
+    );
+
+    expect(page.today).toEqual([forecast]);
+    expect(page.standouts.has(forecast)).toBe(false);
   });
 
-  test.each([
-    [3.18, undefined],
-    [3.5, "rare"],
-    [4.5, "exceptional"],
-  ])("marks a calendar period scoring %d as %s", (score, level) => {
-    const year = fact({ score, period: { kind: "year", toDate: true } });
-    expect(standout(year)).toBe(level);
+  test("marks the headline", () => {
+    const record = fact({ score: 7 });
+    const page = arrange(location({ today: [record] }), "2026-11-09");
+
+    expect(page.headline).toBe(record);
+    expect(page.standouts.get(record)).toBe("exceptional");
   });
 });
