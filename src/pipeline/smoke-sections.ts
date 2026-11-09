@@ -11,7 +11,7 @@ const [locationId = "sydney-observatory-hill", date = sydneyDate(new Date())] =
 const location = locationById(locationId);
 const series = await readSavedSeries(location);
 const selected = selectFacts({
-  locationId,
+  date,
   facts: generateCandidates({
     locationId,
     series,

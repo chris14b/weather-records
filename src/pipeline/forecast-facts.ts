@@ -1,4 +1,4 @@
-import type { Direction } from "../shared/facts.ts";
+import type { DayValue, Direction } from "../shared/facts.ts";
 import type { CandidateFact } from "./candidates.ts";
 import { comparisonKey, generateDailyFacts, rank } from "./daily-facts.ts";
 import { addDays, daysBetween, sydneyDate, sydneyHour } from "./dates.ts";
@@ -41,23 +41,22 @@ export function forecastStart(now: Date): string {
 }
 
 /**
- * Ranks the forecast's maximums and minimums from its start, and its rain over the next
- * 7 days, against the observed days and the forecast's earlier days. Each also gets a
- * conditional fact for the most notable value within reach. See docs/facts.md.
+ * Ranks the forecast's maximums and minimums from its start, its rain on each day, and its
+ * rain over the next 7 days, against the observed days and the forecast's earlier days.
+ * Each also gets a conditional fact for the most notable value within reach. See
+ * docs/facts.md.
  */
 export function generateForecastFacts({
   locationId,
   series,
   forecast,
 }: ForecastFactsRequest): CandidateFact[] {
-  return series.flatMap((source) => {
-    if (source.measure === "rain") {
-      return rainFacts(locationId, source, forecast.days);
-    }
-    return isForecastMeasure(source.measure)
-      ? temperatureFacts(locationId, source, forecast)
-      : [];
-  });
+  return series.flatMap((source) => [
+    ...dayFacts(locationId, source, forecast),
+    ...(source.measure === "rain"
+      ? rainFacts(locationId, source, forecast.days)
+      : []),
+  ]);
 }
 
 type ForecastMeasure = "maxTemp" | "minTemp";
@@ -67,26 +66,56 @@ function isForecastMeasure(measure: string): measure is ForecastMeasure {
 }
 
 /**
- * A maximum or minimum series with the forecast's values from its start added, after the
- * last observed day. Any other series is unchanged.
+ * A maximum, minimum or rain series with the forecast's values added after the last
+ * observed day: temperatures from the forecast's start, and the rain with a 50% chance.
+ * Any other series is unchanged.
  */
 export function forecastSeries(
   source: Series,
-  { days, from }: ForecastInput,
+  forecast: ForecastInput,
 ): Series {
-  const { measure } = source;
-  if (!isForecastMeasure(measure)) return source;
   const observedTo = source.days.at(-1)?.date ?? "";
-  const forecastDays = days.flatMap((day): SeriesDay[] => {
-    const value = day[measure];
-    return value === null || day.date < from || day.date <= observedTo
+  const forecastDays = forecast.days.flatMap((day): SeriesDay[] => {
+    const value = forecastValue(source.measure, day, forecast.from);
+    return value === undefined || value.date <= observedTo
       ? []
-      : [{ date: day.date, value, status: "forecast" }];
+      : [{ ...value, status: "forecast" }];
   });
   return { ...source, days: [...source.days, ...forecastDays] };
 }
 
-function temperatureFacts(
+function forecastValue(
+  measure: Series["measure"],
+  day: ForecastDay,
+  from: string,
+): DayValue | undefined {
+  if (measure === "rain") {
+    const rain = forecastRain(day);
+    return rain === undefined ? undefined : creditRain(day, rain.rain50);
+  }
+  if (!isForecastMeasure(measure) || day.date < from) return undefined;
+  const value = day[measure];
+  return value === null ? undefined : { date: day.date, value };
+}
+
+/** Observed rain is the 24 hours to 9am, so most of a forecast day's rain counts towards the next day's. */
+function creditRain(day: ForecastDay, value: number): DayValue {
+  return { date: addDays(day.date, 1), value };
+}
+
+/** How far beyond its forecast value a day's conditional fact may reach. */
+function reachLimit(
+  fact: CandidateFact,
+  days: readonly ForecastDay[],
+): number | undefined {
+  if (fact.measure !== "rain") {
+    return reach(fact.value, temperatureReach, fact.direction);
+  }
+  const day = days.find((d) => creditRain(d, 0).date === fact.date);
+  return day === undefined ? undefined : forecastRain(day)?.rain25;
+}
+
+function dayFacts(
   locationId: string,
   source: Series,
   forecast: ForecastInput,
@@ -107,12 +136,16 @@ function temperatureFacts(
       ({ date }) =>
         date < fact.date && comparisonKey(date, fact.comparison) === key,
     );
-    const value = conditionalValue(
-      earlier.map((day) => day.value),
-      fact.value,
-      reach(fact.value, temperatureReach, fact.direction),
-      fact.direction,
-    );
+    const limit = reachLimit(fact, forecast.days);
+    const value =
+      limit === undefined
+        ? undefined
+        : conditionalValue(
+            earlier.map((day) => day.value),
+            fact.value,
+            limit,
+            fact.direction,
+          );
     if (value === undefined) return [fact];
     return [
       fact,
@@ -128,10 +161,7 @@ function temperatureFacts(
   });
 }
 
-/**
- * The rain in the forecast's 7 days. Observed rain is the 24 hours to 9am, so most of a
- * forecast day's rain counts towards the next day's.
- */
+/** The rain in the forecast's 7 days, credited as in `creditRain`. */
 function rainFacts(
   locationId: string,
   source: Series,

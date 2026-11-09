@@ -279,6 +279,16 @@ describe("sentence", () => {
     ],
     [
       fact({
+        date: "2026-11-09",
+        measure: "minTemp",
+        status: "forecast",
+        text: "the warmest in November since 2014",
+        why: { value: 23 },
+      }),
+      "[Sunday night] is forecast to be the warmest in November since 2014, with a low of 23°C",
+    ],
+    [
+      fact({
         date: "2026-11-12",
         status: "conditional",
         text: "the hottest November day since records began in 1859",
@@ -297,6 +307,26 @@ describe("sentence", () => {
         why: { value: 90.1, forecast: 70 },
       }),
       "90.1 mm in [the 7 days to 16 November] (forecast 70 mm) would make them the wettest since 2022",
+    ],
+    [
+      fact({
+        date: "2026-11-10",
+        measure: "rain",
+        status: "forecast",
+        text: "the wettest since 14 October",
+        why: { value: 24 },
+      }),
+      "[The 24 hours to 9am tomorrow] are forecast to be the wettest since 14 October, with 24 mm",
+    ],
+    [
+      fact({
+        date: "2026-11-10",
+        measure: "rain",
+        status: "conditional",
+        text: "the wettest in November since 2022",
+        why: { value: 30.1, forecast: 20 },
+      }),
+      "30.1 mm in [the 24 hours to 9am tomorrow] (forecast 20 mm) would make them the wettest in November since 2022",
     ],
     [
       fact({

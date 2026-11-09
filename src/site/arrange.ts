@@ -1,8 +1,11 @@
-import type { Fact, LocationFacts } from "../shared/facts.ts";
+import {
+  type Fact,
+  isForecastStatus,
+  type PageFacts,
+} from "../shared/facts.ts";
 
 /** A location's facts as the page lays them out. */
 export interface Page {
-  /** The latest day with facts, or failing that the viewer's today. */
   date: string;
   /** Today's strongest observed fact, or failing that its strongest forecast. */
   headline: Fact | undefined;
@@ -23,36 +26,42 @@ function strongest(facts: readonly Fact[]): Fact | undefined {
   );
 }
 
-/** Lays out a location's sections, moving the coming week's facts about the latest day into Today. */
-export function arrange(location: LocationFacts, viewerToday: string): Page {
-  const date = location.today[0]?.date ?? viewerToday;
-  const isToday = (fact: Fact) => fact.date <= date;
-  const todaysOutlook = location.comingWeek.filter(isToday);
+/**
+ * The page for the viewer's today, or if the updates have stopped, the latest one. The
+ * page for a date would only be missing before it if the viewer's clock were wrong.
+ */
+export function pageFor(
+  pages: readonly PageFacts[],
+  viewerToday: string,
+): PageFacts | undefined {
+  return pages.findLast(({ date }) => date <= viewerToday) ?? pages[0];
+}
+
+/** Lays out a page's sections, leading Today with its headline. */
+export function arrange(facts: PageFacts): Page {
   const headline =
-    strongest(location.today) ??
+    strongest(facts.today.filter((fact) => !isForecast(fact))) ??
     strongest(
-      todaysOutlook.filter(
+      facts.today.filter(
         (fact) => fact.kind === "record" && fact.status === "forecast",
       ),
     );
 
   const standouts = new Map<Fact, Standout>();
   for (const section of sections) {
-    for (const fact of location[section]) {
+    for (const fact of facts[section]) {
       const level = standout(fact, section);
       if (level !== undefined) standouts.set(fact, level);
     }
   }
 
   return {
-    date,
+    date: facts.date,
     headline,
-    today: [...location.today, ...todaysOutlook].filter(
-      (fact) => fact !== headline,
-    ),
-    comingWeek: location.comingWeek.filter((fact) => !isToday(fact)),
-    pastWeek: location.pastWeek,
-    pastMonth: location.pastMonth,
+    today: facts.today.filter((fact) => fact !== headline),
+    comingWeek: facts.comingWeek,
+    pastWeek: facts.pastWeek,
+    pastMonth: facts.pastMonth,
     standouts,
   };
 }
@@ -90,13 +99,19 @@ const exceptionalScore = 6.5;
 /**
  * Whether a fact stands out in its section, and how far. It is notable if it is at least
  * twice as rare as the section needs, and exceptional from the same score everywhere.
- * Daylight comes round every year, and a conditional fact may never happen.
+ * Forecasts keep to the coming week's rules, even in Today. Daylight comes round every
+ * year, and a conditional fact may never happen.
  */
 export function standout(fact: Fact, section: Section): Standout | undefined {
   if (fact.kind === "daylight" || fact.status === "conditional") {
     return undefined;
   }
+  const needs = sectionScores[isForecast(fact) ? "comingWeek" : section];
   if (fact.score >= exceptionalScore) return "exceptional";
-  if (fact.score >= sectionScores[section] + Math.log(2)) return "notable";
+  if (fact.score >= needs + Math.log(2)) return "notable";
   return undefined;
+}
+
+function isForecast(fact: Fact): boolean {
+  return fact.kind === "record" && isForecastStatus(fact.status);
 }

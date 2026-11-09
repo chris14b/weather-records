@@ -109,7 +109,7 @@ function seasonName(month: number): string {
 }
 
 type Named = Pick<RecordFact, "period" | "from" | "date"> &
-  Partial<Pick<RecordFact, "measure">>;
+  Partial<Pick<RecordFact, "measure" | "status">>;
 
 /** What the site needs of a fact to make a sentence of it. */
 export type Phrased = Named &
@@ -123,13 +123,20 @@ export type Phrased = Named &
 /**
  * A night named by the evening it starts, mid-sentence: "last night", "tonight", "Thursday
  * night", "the night of 2 November". A minimum is for the 24 hours to 9am, so the night
- * that ends on `date`.
+ * that ends on `date`. A forecast for last night is for the night still under way, after
+ * midnight, so it is named by its weekday.
  */
-export function nightName(date: string, today: string): string {
+export function nightName(
+  date: string,
+  today: string,
+  isForecast = false,
+): string {
   const evening = addDays(date, -1);
   const offset = daysFrom(today, evening);
   if (offset === 0) return "tonight";
-  if (offset === -1) return "last night";
+  if (offset === -1) {
+    return isForecast ? `${weekday(parse(evening))} night` : "last night";
+  }
   if (offset === 1) return "tomorrow night";
   const name = dayName(evening, today);
   return Math.abs(offset) <= 6 ? `${name} night` : `the night of ${name}`;
@@ -137,13 +144,19 @@ export function nightName(date: string, today: string): string {
 
 /** What a fact is about, named mid-sentence: "today", "last night", "the 3 days to Tuesday", "November so far". */
 export function periodName(
-  { period, from, date, measure }: Named,
+  { period, from, date, measure, status }: Named,
   today: string,
 ): string {
   const start = parse(from);
   switch (period.kind) {
     case "day":
-      if (measure === "minTemp") return nightName(date, today);
+      if (measure === "minTemp") {
+        return nightName(
+          date,
+          today,
+          status !== undefined && isForecastStatus(status),
+        );
+      }
       if (measure === "rain") {
         return `the 24 hours to 9am ${dayName(date, today)}`;
       }
@@ -289,7 +302,7 @@ function valueClause({ measure, period, direction, status, why }: Phrased) {
   return `at ${value}`;
 }
 
-// "A low of 10°C tonight (forecast 12°C) would make it…"
+// "A low of 10°C tonight (forecast 12°C) would make it…", "30.0 mm in the 24 hours to 9am tomorrow (forecast 12.0 mm) would make them…"
 function conditional(fact: Phrased, today: string): Sentence {
   const { measure, why } = fact;
   const forecast = why.forecast ?? why.value;
@@ -301,13 +314,13 @@ function conditional(fact: Phrased, today: string): Sentence {
         ? `A low of ${needs}`
         : needs;
   const when = periodName(fact, today);
-  const preposition =
-    fact.period.kind === "rolling"
-      ? "in "
-      : /^(today|tomorrow|tonight|last night|tomorrow night)$/.test(when)
-        ? ""
-        : "on ";
-  const them = fact.period.kind === "rolling" ? "them" : "it";
+  const plural = fact.period.kind === "rolling" || isRainDay(fact);
+  const preposition = plural
+    ? "in "
+    : /^(today|tomorrow|tonight|last night|tomorrow night)$/.test(when)
+      ? ""
+      : "on ";
+  const them = plural ? "them" : "it";
   return {
     before: `${what} ${preposition}`,
     subject: when,

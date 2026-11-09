@@ -95,10 +95,17 @@ describe("buildFactsFile", () => {
       "sydney-observatory-hill",
     ]);
     const [facts] = file.locations;
-    expect(new Set(facts?.today.map(({ date }) => date))).toEqual(
-      new Set(["2026-10-30"]),
-    );
-    expect(facts?.comingWeek.every(({ date }) => date >= "2026-10-30")).toBe(
+    expect(facts?.pages.map(({ date }) => date)).toEqual([
+      "2026-10-30",
+      "2026-10-31",
+    ]);
+    const [page] = facts?.pages ?? [];
+    expect(
+      page?.today.every(({ date }) =>
+        ["2026-10-29", "2026-10-30"].includes(date),
+      ),
+    ).toBe(true);
+    expect(page?.comingWeek.every(({ date }) => date >= "2026-10-30")).toBe(
       true,
     );
     expect(facts?.forecast).toHaveLength(7);

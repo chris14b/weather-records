@@ -20,7 +20,7 @@ const { series, forecast } =
   date === undefined ? await live(saved) : hindcast(saved, date);
 const windowEnd = addDays(forecast.from, -1);
 const selected = selectFacts({
-  locationId,
+  date: forecast.from,
   facts: generateCandidates({
     locationId,
     series,
@@ -35,7 +35,10 @@ const selected = selectFacts({
 
 console.log(`${location.name}, forecast from ${forecast.from}`);
 console.table(forecast.days);
-for (const fact of selected.comingWeek) console.log(`  ${factLine(fact)}`);
+for (const section of ["today", "comingWeek"] as const) {
+  console.log(`\n${section}:`);
+  for (const fact of selected[section]) console.log(`  ${factLine(fact)}`);
+}
 
 async function live(
   series: Series[],

@@ -77,6 +77,9 @@ function find(
   );
 }
 
+const runs = (facts: readonly CandidateFact[]) =>
+  facts.filter(({ period }) => period.kind === "rolling");
+
 const maxTemps = (values: Readonly<Record<string, number>> = {}) =>
   series("maxTemp", "2026-11-05", 20, values);
 
@@ -249,7 +252,7 @@ describe("generateForecastFacts", () => {
       );
 
     test("totals the amounts with a 50% chance, each counted towards the next day", () => {
-      const facts = factsFor([observed], wetWeek());
+      const facts = runs(factsFor([observed], wetWeek()));
 
       expect(find(facts, {})).toMatchObject({
         from: "2026-11-07",
@@ -263,7 +266,7 @@ describe("generateForecastFacts", () => {
     });
 
     test("finds what it would take, up to the amounts with a 25% chance", () => {
-      const facts = factsFor([observed], wetWeek());
+      const facts = runs(factsFor([observed], wetWeek()));
 
       expect(find(facts, { status: "conditional" })).toMatchObject({
         value: 90.1,
@@ -276,7 +279,7 @@ describe("generateForecastFacts", () => {
     test("counts a day with a low chance and no rain range as 0 mm", () => {
       const days = wetWeek({ 0: { ...noRange, rainChance: 10 } });
 
-      expect(find(factsFor([observed], days), {})?.value).toBe(60);
+      expect(find(runs(factsFor([observed], days)), {})?.value).toBe(60);
     });
 
     test.each([
@@ -285,14 +288,69 @@ describe("generateForecastFacts", () => {
     ])("gives no total when a day has %s", (_, change) => {
       const days = wetWeek({ 3: { ...noRange, ...change } });
 
-      expect(
-        factsFor([observed], days).filter(({ measure }) => measure === "rain"),
-      ).toEqual([]);
+      expect(runs(factsFor([observed], days))).toEqual([]);
     });
 
     test("gives no total for a dry week or a short forecast", () => {
       expect(factsFor([observed], forecastDays())).toEqual([]);
-      expect(factsFor([observed], wetWeek().slice(0, 6))).toEqual([]);
+      expect(runs(factsFor([observed], wetWeek().slice(0, 6)))).toEqual([]);
+    });
+  });
+
+  describe("rain on each day", () => {
+    const observed = series("rain", "2026-11-06", 0, { "2020-02-08": 30 });
+    const wetDay = (change: Partial<ForecastDay>) =>
+      forecastDays({
+        2: { rainChance: 80, rain50: 40, rain25: 60, ...change },
+      });
+    const days = (facts: readonly CandidateFact[]) =>
+      facts.filter(({ period }) => period.kind === "day");
+
+    test("ranks the amount with a 50% chance as the 24 hours to 9am the next day", () => {
+      const facts = days(factsFor([observed], wetDay({})));
+
+      expect(find(facts, {})).toMatchObject({
+        from: "2026-11-09",
+        date: "2026-11-09",
+        measure: "rain",
+        value: 40,
+        rank: 1,
+        status: "forecast",
+      });
+    });
+
+    test("finds what it would take, up to the amount with a 25% chance", () => {
+      const facts = days(
+        factsFor([observed], wetDay({ rain50: 20, rain25: 35 })),
+      );
+
+      expect(find(facts, { status: "conditional" })).toMatchObject({
+        date: "2026-11-09",
+        value: 30.1,
+        forecast: 20,
+        rank: 1,
+      });
+    });
+
+    test("starts from the day after the observed rain, whatever day the temperatures start from", () => {
+      const evening = factsFor(
+        [observed],
+        forecastDays({ 0: { rain50: 5, rain25: 9 } }),
+        "2026-11-07",
+      );
+
+      expect(days(evening)).toContainEqual(
+        expect.objectContaining({ date: "2026-11-07", measure: "rain" }),
+      );
+    });
+
+    test("leaves out a day with no rain range and a higher chance", () => {
+      const facts = factsFor(
+        [observed],
+        wetDay({ rain50: null, rain25: null, rainChance: 40 }),
+      );
+
+      expect(days(facts)).toEqual([]);
     });
   });
 });

@@ -4,7 +4,7 @@ import {
   type Fact,
   type FactMeasure,
   type FactWhy,
-  type LocationFacts,
+  type PageFacts,
   type Period,
   type RankedDay,
   type RecordFact,
@@ -12,7 +12,7 @@ import {
 } from "../shared/facts.ts";
 import type { CandidateFact } from "./candidates.ts";
 import { beats, comparisonKey } from "./daily-facts.ts";
-import { daysBetween } from "./dates.ts";
+import { addDays, daysBetween } from "./dates.ts";
 import type { DaylightCandidate } from "./daylight-facts.ts";
 import { forecastSeries, type ForecastInput } from "./forecast-facts.ts";
 import { comparablePeriods } from "./period-facts.ts";
@@ -20,10 +20,7 @@ import { scoreDaylight, scoreFact, type ScoredFact } from "./scoring.ts";
 import type { Series } from "./series.ts";
 import { describeDaylight, describeFact } from "./wording.ts";
 
-/** A location's chosen facts, before its forecast is added. */
-export type SelectedFacts = Omit<LocationFacts, "forecast">;
-
-type Section = Exclude<keyof SelectedFacts, "locationId">;
+type Section = Exclude<keyof PageFacts, "date">;
 
 interface SectionRule {
   minimumScore: number;
@@ -93,14 +90,7 @@ const forecastFloor = 2;
 /** A conditional fact must be at least twice as rare as what the forecast gets. */
 const conditionalGain = Math.log(2);
 
-type Allowance = "days" | "calendar" | "conditional";
-
-const extraAllowances: Partial<
-  Record<Section, { allowance: Allowance; rule: SectionRule }>
-> = {
-  pastMonth: { allowance: "calendar", rule: calendarRule },
-  comingWeek: { allowance: "conditional", rule: conditionalRule },
-};
+type Allowance = "days" | "calendar" | "forecast" | "conditional";
 
 // Facts about measures in the same family say much the same about a day. A change isn't in
 // its measure's family: "the biggest drop in maximum" says more than "the coldest day".
@@ -131,7 +121,8 @@ const daylightSections: readonly Section[] = [
 const leaderCount = 10;
 
 export interface SelectionRequest {
-  locationId: string;
+  /** The viewer's date that the page is for. */
+  date: string;
   /** Every candidate fact for the location's window, from `generateCandidates`. */
   facts: readonly CandidateFact[];
   /** The series the facts were made from. */
@@ -142,19 +133,23 @@ export interface SelectionRequest {
   daylight?: readonly DaylightCandidate[];
 }
 
-/** Chooses the few facts worth showing in each section of a location's home page. */
+/** Chooses the few facts worth showing in each section of a location's home page on `date`. */
 export function selectFacts({
-  locationId,
+  date,
   facts,
   series,
   forecast,
   daylight = [],
-}: SelectionRequest): SelectedFacts {
+}: SelectionRequest): PageFacts {
   const latest = facts.reduce(
-    (last, { date, status }) =>
-      date > last && !isForecastStatus(status) ? date : last,
+    (last, fact) =>
+      fact.date > last && fact.date <= date && !isForecastStatus(fact.status)
+        ? fact.date
+        : last,
     "",
   );
+  const sectionFor = (fact: CandidateFact) =>
+    candidateSection(fact, date, latest);
   const groupKey = ({ fact }: ScoredFact) =>
     `${fact.date} ${families[fact.measure]} ${fact.direction} ${isCalendar(fact.period) ? "calendar" : fact.period.kind}`;
   // A fact that a later day beat would only send the reader to that day's.
@@ -179,41 +174,56 @@ export function selectFacts({
         candidate.score >=
           (forecastScores.get(groupKey(candidate)) ?? 0) + conditionalGain,
     )
-    .filter((candidate, _, all) => !isPartOfSpell(candidate, all, latest));
+    .filter((candidate, _, all) => !isPartOfSpell(candidate, all, sectionFor));
   const inSection = (name: Section, allowance: Allowance) =>
     chosen.filter(
       ({ fact }) =>
-        allowanceOf(fact) === allowance &&
-        candidateSection(fact, latest) === name,
+        allowanceOf(fact) === allowance && sectionFor(fact) === name,
     );
-  const section = (name: Section) => {
-    const extra = extraAllowances[name];
-    const picked = [
-      ...pick(inSection(name, "days"), sectionRules[name]),
-      ...(extra === undefined
-        ? []
-        : pick(inSection(name, extra.allowance), extra.rule)),
-    ];
-    const shown =
+  const ahead = (allowance: Allowance) =>
+    chosen.filter(
+      ({ fact }) =>
+        allowanceOf(fact) === allowance && sectionFor(fact) !== undefined,
+    );
+  // Today's forecasts and the coming week's are chosen together, by the same rules.
+  const outlook = withFallback(
+    [
+      ...pick(ahead("forecast"), sectionRules.comingWeek),
+      ...pick(ahead("conditional"), conditionalRule),
+    ],
+    [...ahead("forecast"), ...ahead("conditional")],
+    ({ fact }) => sectionFor(fact) === "comingWeek",
+  );
+  const presentAll = (candidates: readonly ScoredFact[]) =>
+    candidates.map((candidate) => present(candidate, series, forecast));
+  const section = (name: Section): Fact[] => {
+    const observed =
       name === "comingWeek"
-        ? withFallback(
-            picked,
-            [...inSection(name, "days"), ...inSection(name, "conditional")],
-            latest,
-          )
-        : picked;
+        ? []
+        : [
+            ...pick(inSection(name, "days"), sectionRules[name]),
+            ...(name === "pastMonth"
+              ? pick(inSection(name, "calendar"), calendarRule)
+              : []),
+          ];
     const daylightFacts = daylightSections.includes(name)
       ? daylight
-          .filter(({ date }) => sectionOf(date, date, latest) === name)
+          .filter((fact) => daylightSection(fact.date, date) === name)
           .map(presentDaylight)
       : [];
+    const forecasts = presentAll(
+      outlook.filter(({ fact }) => sectionFor(fact) === name),
+    );
+    if (name === "comingWeek") {
+      return [...forecasts, ...daylightFacts].toSorted(soonestFirst);
+    }
     return [
-      ...shown.map((candidate) => present(candidate, series, forecast)),
-      ...daylightFacts,
-    ].toSorted(name === "comingWeek" ? soonestFirst : strongestFirst);
+      ...[...presentAll(observed), ...daylightFacts].toSorted(strongestFirst),
+      ...forecasts.toSorted(soonestFirst),
+    ];
   };
   return {
-    locationId,
+    date,
     today: section("today"),
     pastWeek: section("pastWeek"),
     pastMonth: section("pastMonth"),
@@ -240,15 +250,14 @@ function outlookOrder(fact: Fact): number {
 }
 
 /**
- * The site moves forecasts about the latest day into Today. If nothing is left for the
- * coming days, the best forecast fact about them stands in, if it is worth saying at all.
+ * If nothing is left for the coming week once Today has its forecasts, the best forecast
+ * fact for it stands in, if it is worth saying at all.
  */
 function withFallback(
   picked: readonly ScoredFact[],
   candidates: readonly ScoredFact[],
-  latest: string,
+  isAhead: (candidate: ScoredFact) => boolean,
 ): ScoredFact[] {
-  const isAhead = ({ fact }: ScoredFact) => fact.date > latest;
   if (picked.some(isAhead)) return [...picked];
   const best = candidates
     .filter(isAhead)
@@ -270,7 +279,7 @@ function origin(status: ValueStatus): string {
 }
 
 function allowanceOf({ status, period }: CandidateFact): Allowance {
-  if (status === "conditional") return "conditional";
+  if (status === "forecast" || status === "conditional") return status;
   return isCalendar(period) ? "calendar" : "days";
 }
 
@@ -278,40 +287,76 @@ function isCalendar(period: Period): boolean {
   return period.kind !== "day" && period.kind !== "rolling";
 }
 
-function candidateSection(
-  fact: CandidateFact,
-  latest: string,
-): Section | undefined {
-  if (isForecastStatus(fact.status)) return "comingWeek";
-  if (isCalendar(fact.period)) return "pastMonth";
-  return sectionOf(fact.from, fact.date, latest);
+// Measures over by 9am on their date. The rest run past it, as the official maximum
+// runs to 9am the next day.
+const overnightMeasures: ReadonlySet<FactMeasure> = new Set([
+  "minTemp",
+  "minTempChange",
+  "temp9am",
+  "relHum9am",
+  "rain",
+]);
+
+/** BOM's observation day for a day's value: the date of the 9am by which it is over. */
+function observationDay(date: string, measure: FactMeasure): string {
+  return overnightMeasures.has(measure) ? date : addDays(date, 1);
 }
 
-// A day or a run of days goes in the section its first day falls in.
-function sectionOf(
-  from: string,
+/**
+ * Today has the newest observations, from `latest`, the last date with any. After
+ * midnight, until the morning run, that is the day before: its daytime values stay, but
+ * its night and its rain to 9am, over before the page's date began, go to Past week. A
+ * run of days goes in the section its first day falls in.
+ */
+function candidateSection(
+  fact: CandidateFact,
   date: string,
   latest: string,
 ): Section | undefined {
-  if (date > latest) return "comingWeek";
-  const ago = daysBetween(from, latest);
-  if (ago === 0) return "today";
-  if (ago <= 6) return "pastWeek";
-  return ago <= 30 ? "pastMonth" : undefined;
+  if (isForecastStatus(fact.status)) return forecastSection(fact, date);
+  if (isCalendar(fact.period)) return "pastMonth";
+  if (fact.from === latest && observationDay(fact.from, fact.measure) >= date) {
+    return "today";
+  }
+  return sectionOf(daysBetween(fact.from, date));
+}
+
+// Today has the forecasts that end by 9am tomorrow, and after midnight the night under
+// way. A forecast about a day before the page's date is out of date.
+function forecastSection(
+  fact: CandidateFact,
+  date: string,
+): Section | undefined {
+  if (fact.period.kind !== "day") return "comingWeek";
+  if (fact.date < date) return undefined;
+  return observationDay(fact.date, fact.measure) <= addDays(date, 1)
+    ? "today"
+    : "comingWeek";
+}
+
+function daylightSection(day: string, date: string): Section | undefined {
+  return day > date ? "comingWeek" : sectionOf(daysBetween(day, date));
+}
+
+function sectionOf(daysAgo: number): Section | undefined {
+  if (daysAgo <= 0) return "today";
+  if (daysAgo <= 6) return "pastWeek";
+  return daysAgo <= 30 ? "pastMonth" : undefined;
 }
 
 // A spell stands for the days and the weaker spells that overlap it, which would only repeat it.
 function isPartOfSpell(
   { fact, score }: ScoredFact,
   facts: readonly ScoredFact[],
-  latest: string,
+  sectionFor: (fact: CandidateFact) => Section | undefined,
 ): boolean {
   if (isCalendar(fact.period)) return false;
   return facts.some((spell) => {
-    const section = candidateSection(spell.fact, latest);
+    const section = sectionFor(spell.fact);
     return (
       spell.fact !== fact &&
       spell.fact.period.kind === "rolling" &&
+      !isForecastStatus(spell.fact.status) &&
       origin(spell.fact.status) === origin(fact.status) &&
       families[spell.fact.measure] === families[fact.measure] &&
       spell.fact.direction === fact.direction &&
@@ -419,8 +464,12 @@ function explain(
   const { measure, direction, comparison, date, from } = fact;
   const observed = series.find((s) => s.measure === measure);
   const isForecast = isForecastStatus(fact.status);
+  // Only a forecast day is compared with the forecast's earlier days.
   const source =
-    observed !== undefined && forecast !== undefined && isForecast
+    observed !== undefined &&
+    forecast !== undefined &&
+    isForecast &&
+    fact.period.kind === "day"
       ? forecastSeries(observed, forecast)
       : observed;
   const found = source === undefined ? [] : comparables(source, fact);

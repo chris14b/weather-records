@@ -121,7 +121,7 @@ describe("describeDaylight", () => {
 describe("selectFacts with daylight", () => {
   const select = (latest: string, daylight: readonly DaylightCandidate[]) =>
     selectFacts({
-      locationId: "test",
+      date: latest,
       facts: [dailyFact({ date: latest })],
       series: [],
       daylight,

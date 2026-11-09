@@ -160,7 +160,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 **Goal:** A This year section with the standout months and seasons of the past 12 months, such as "February was the hottest February since 2012".
 
 - Background: the pipeline already ranks complete months, seasons and years, and the current ones so far (the Periods section of [facts.md](facts.md)). It drops a complete period once it ended more than 31 days ago, and shows the rest in Past month under `calendarRule`.
-- Scope: a `thisYear` section in `LocationFacts` for the complete months and seasons that ended in the last 12 months, and the year so far. Decide whether calendar periods leave Past month for it, or Past month keeps the latest complete month.
+- Scope: a `thisYear` section in `PageFacts` for the complete months and seasons that ended in the last 12 months, and the year so far. Decide whether calendar periods leave Past month for it, or Past month keeps the latest complete month.
 - Scope: selection rules of its own in `selection.ts`, within the Selection section of [facts.md](facts.md), so a strong month stays for the year but doesn't crowd the section.
 - Scope: a This year panel on the page, after Past month, with its periods named as the site names the others.
 - Done when: tests and the selection snapshots cover the section, and it has been checked in the browser.

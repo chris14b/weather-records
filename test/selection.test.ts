@@ -4,13 +4,17 @@ import { generateDailyFacts } from "../src/pipeline/daily-facts.ts";
 import { addDays, daysBetween } from "../src/pipeline/dates.ts";
 import { readSavedSeries } from "../src/pipeline/saved-series.ts";
 import {
-  type SelectedFacts,
   type SelectionRequest,
   selectFacts,
 } from "../src/pipeline/selection.ts";
 import type { ForecastDay } from "../src/pipeline/forecast.ts";
 import { changeSeries, type Series } from "../src/pipeline/series.ts";
-import type { Fact, FactMeasure, RecordFact } from "../src/shared/facts.ts";
+import type {
+  Fact,
+  FactMeasure,
+  PageFacts,
+  RecordFact,
+} from "../src/shared/facts.ts";
 import {
   type Location,
   locations,
@@ -19,15 +23,12 @@ import {
 
 const latest = "2026-11-06";
 
-type Sections = Pick<
-  SelectedFacts,
-  "today" | "pastWeek" | "pastMonth" | "comingWeek"
->;
+type Sections = Omit<PageFacts, "date">;
 
 /** The facts chosen without any daylight, so every one is a record fact. */
 function selectRecords(request: SelectionRequest): {
   [Section in keyof Sections]: RecordFact[];
-} & Pick<SelectedFacts, "locationId"> {
+} & Pick<PageFacts, "date"> {
   const selected = selectFacts(request);
   const records = (facts: readonly Fact[]) =>
     facts.map((fact) => {
@@ -35,7 +36,7 @@ function selectRecords(request: SelectionRequest): {
       return fact;
     });
   return {
-    locationId: selected.locationId,
+    date: selected.date,
     today: records(selected.today),
     pastWeek: records(selected.pastWeek),
     pastMonth: records(selected.pastMonth),
@@ -82,22 +83,19 @@ const allSeries = [
   series("temp3pm", () => 20, maxTemps),
   rain,
 ];
-const selected = selectRecords({
+const facts = generateDailyFacts({
   locationId: "test",
-  facts: generateDailyFacts({
-    locationId: "test",
-    series: allSeries,
-    windowEnd: latest,
-  }),
   series: allSeries,
+  windowEnd: latest,
 });
+const selected = selectRecords({ date: latest, facts, series: allSeries });
 
 const summary = (facts: readonly RecordFact[]) =>
   facts.map(({ date, measure, text }) => ({ date, measure, text }));
 
 function selectAll(allSeries: readonly Series[]) {
   return selectRecords({
-    locationId: "test",
+    date: latest,
     facts: generateCandidates({
       locationId: "test",
       series: allSeries,
@@ -110,8 +108,8 @@ function selectAll(allSeries: readonly Series[]) {
 const wetFifteenth = (date: string) => (date.endsWith("-15") ? 100 : 0);
 
 describe("selectFacts", () => {
-  test("puts the latest day's strongest facts in today", () => {
-    expect(selected.locationId).toBe("test");
+  test("puts the page's day's strongest facts in Today", () => {
+    expect(selected.date).toBe(latest);
     expect(summary(selected.today)).toEqual([
       {
         date: "2026-11-06",
@@ -187,7 +185,7 @@ describe("selectFacts", () => {
     const coldChange = [max, changeSeries(max), changeSeries(min)];
 
     const { today } = selectRecords({
-      locationId: "test",
+      date: latest,
       facts: generateDailyFacts({
         locationId: "test",
         series: coldChange,
@@ -196,7 +194,11 @@ describe("selectFacts", () => {
       series: coldChange,
     });
 
-    expect(today.map(({ measure, text }) => ({ measure, text }))).toEqual([
+    expect(
+      today
+        .filter(({ date }) => date === latest)
+        .map(({ measure, text }) => ({ measure, text })),
+    ).toEqual([
       {
         measure: "maxTemp",
         text: "the coldest day since records began in 2016",
@@ -204,6 +206,48 @@ describe("selectFacts", () => {
       {
         measure: "maxTempChange",
         text: "the biggest day-to-day drop in maximum temperature since records began in 2016",
+      },
+    ]);
+  });
+
+  test("moves yesterday's maximum to Past week once the night after it is in", () => {
+    const yesterday = addDays(latest, -1);
+    const hotDay = [
+      series("maxTemp", () => 20, { [yesterday]: 35 }),
+      series("minTemp", () => 10, { [yesterday]: 25 }),
+    ];
+
+    const { today, pastWeek } = selectAll(hotDay);
+
+    expect(today.filter(({ date }) => date === yesterday)).toEqual([]);
+    expect(pastWeek.map(({ date, measure }) => ({ date, measure }))).toEqual(
+      expect.arrayContaining([
+        { date: yesterday, measure: "maxTemp" },
+        { date: yesterday, measure: "minTemp" },
+      ]),
+    );
+  });
+
+  test("turns the page over at midnight, keeping the day's maximum in Today", () => {
+    const tomorrow = selectRecords({
+      date: addDays(latest, 1),
+      facts,
+      series: allSeries,
+    });
+
+    expect(tomorrow.date).toBe("2026-11-07");
+    expect(summary(tomorrow.today)).toEqual([
+      {
+        date: latest,
+        measure: "maxTemp",
+        text: "the hottest day since records began in 2016",
+      },
+    ]);
+    expect(summary(tomorrow.pastWeek)).toEqual([
+      {
+        date: latest,
+        measure: "rain",
+        text: "the wettest since records began in 2016",
       },
     ]);
   });
@@ -309,8 +353,8 @@ describe("selectFacts", () => {
   });
 
   test("has empty sections when there are no facts", () => {
-    expect(selectFacts({ locationId: "test", facts: [], series: [] })).toEqual({
-      locationId: "test",
+    expect(selectFacts({ date: latest, facts: [], series: [] })).toEqual({
+      date: latest,
       today: [],
       pastWeek: [],
       pastMonth: [],
@@ -335,6 +379,7 @@ describe("selectFacts with a forecast", () => {
   function selectWithForecast(
     values: Readonly<Record<string, number>>,
     maxTemp: number,
+    date = latest,
   ) {
     const allSeries = [
       series(
@@ -346,7 +391,7 @@ describe("selectFacts with a forecast", () => {
     ];
     const forecast = { days: forecastDays(maxTemp), from: addDays(latest, 1) };
     return selectRecords({
-      locationId: "test",
+      date,
       facts: generateCandidates({
         locationId: "test",
         series: allSeries,
@@ -404,7 +449,101 @@ describe("selectFacts with a forecast", () => {
     ]);
   });
 
-  test("keeps today as the latest observed day", () => {
+  test("puts the forecast for the observation day under way in Today", () => {
+    const { today, comingWeek } = selectWithForecast(
+      { "2019-01-10": 36.5, "2021-01-10": 35.5 },
+      35,
+      "2026-11-08",
+    );
+
+    expect(
+      today.map(({ date, status, text }) => ({ date, status, text })),
+    ).toEqual([
+      {
+        date: "2026-11-08",
+        status: "forecast",
+        text: "the 3rd hottest day since records began in 1990",
+      },
+      {
+        date: "2026-11-08",
+        status: "conditional",
+        text: "the hottest day since records began in 1990",
+      },
+    ]);
+    expect(comingWeek.map(({ date }) => date)).not.toContain("2026-11-08");
+  });
+
+  test("leaves out the forecast for an observation day that has ended", () => {
+    const { today, comingWeek } = selectWithForecast(
+      { "2019-01-10": 36.5, "2021-01-10": 35.5 },
+      35,
+      "2026-11-09",
+    );
+
+    expect([...today, ...comingWeek].map(({ date }) => date)).not.toContain(
+      "2026-11-08",
+    );
+  });
+
+  describe("with tonight's low and the rain to 9am tomorrow", () => {
+    const observed = [
+      series("minTemp", () => 15, {}),
+      series("rain", wetFifteenth, {}),
+    ];
+    const days = Array.from({ length: 7 }, (_, index) => ({
+      date: addDays(latest, index),
+      minTemp: index === 1 ? 2 : 15,
+      maxTemp: 20,
+      rainChance: 90,
+      rain50: index === 0 ? 120 : 1,
+      rain25: index === 0 ? 150 : 2,
+      iconCode: null,
+      precis: null,
+    }));
+    const forecast = { days, from: latest };
+    const facts = generateCandidates({
+      locationId: "test",
+      series: observed,
+      windowEnd: latest,
+      forecast,
+    });
+    const tonight = (date: string) =>
+      selectRecords({ date, facts, series: observed, forecast });
+    const forecasts = (page: ReturnType<typeof tonight>) =>
+      summary(page.today.filter(({ status }) => status === "forecast"));
+
+    test("puts them in Today", () => {
+      const page = tonight(latest);
+
+      expect(forecasts(page)).toEqual(
+        expect.arrayContaining([
+          {
+            date: "2026-11-07",
+            measure: "minTemp",
+            text: "the coldest since records began in 2016",
+          },
+          {
+            date: "2026-11-07",
+            measure: "rain",
+            text: "the wettest since records began in 2016",
+          },
+        ]),
+      );
+      expect(page.comingWeek.every(({ date }) => date > "2026-11-07")).toBe(
+        true,
+      );
+    });
+
+    test("keeps the night under way in Today after midnight", () => {
+      expect(forecasts(tonight("2026-11-07"))).toContainEqual({
+        date: "2026-11-07",
+        measure: "minTemp",
+        text: "the coldest since records began in 2016",
+      });
+    });
+  });
+
+  test("keeps the coming days' forecasts out of Today", () => {
     expect(summary(nearRecord.today)).toEqual([
       {
         date: latest,
@@ -481,7 +620,7 @@ describe("selectFacts on real data", () => {
       const locationSeries = await savedSeriesTo(location);
 
       const facts = selectRecords({
-        locationId: id,
+        date: windowEnd,
         facts: generateCandidates({
           locationId: id,
           series: locationSeries,

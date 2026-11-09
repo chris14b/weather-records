@@ -155,17 +155,23 @@ export interface DaylightFact {
 
 export type Fact = RecordFact | DaylightFact;
 
-/** The facts for each section of a location's home page, latest first. */
+/** The facts for each section of a location's home page as it reads on one date. */
+export interface PageFacts {
+  date: string;
+  /** The newest observations, then the forecasts that end by 9am the next day. */
+  today: Fact[];
+  /** The 6 days before, and runs of days that start in them. */
+  pastWeek: Fact[];
+  /** 7 to 30 days before, and the latest calendar periods. */
+  pastMonth: Fact[];
+  /** The forecast and conditional facts after Today's, soonest first. */
+  comingWeek: Fact[];
+}
+
 export interface LocationFacts {
   locationId: string;
-  /** The latest day with data. */
-  today: Fact[];
-  /** The 6 days before it, and runs of days that start in them. */
-  pastWeek: Fact[];
-  /** 7 to 30 days before it, and the latest calendar periods. */
-  pastMonth: Fact[];
-  /** Forecast and conditional facts about the coming days, soonest first. */
-  comingWeek: Fact[];
+  /** The page for the day of the run and for the day after, so the page can turn over at midnight. */
+  pages: PageFacts[];
   /** BOM's forecast for the location's area, from the day of the run. */
   forecast: DayForecast[];
 }

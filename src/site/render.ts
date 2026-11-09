@@ -1,6 +1,12 @@
 import type { Fact, FactsFile, ValueStatus } from "../shared/facts.ts";
 import { locations, type Location } from "../shared/locations.ts";
-import { arrange, headlineSize, type Page, type Standout } from "./arrange.ts";
+import {
+  arrange,
+  headlineSize,
+  type Page,
+  pageFor,
+  type Standout,
+} from "./arrange.ts";
 import { daylightSentence, longDate, sentence, sydneyDate } from "./naming.ts";
 
 export type Children = (Node | string)[];
@@ -222,7 +228,9 @@ export function render(
   const today = sydneyDate(now);
   const facts = file.locations.find((l) => l.locationId === location.id);
 
-  const page = facts === undefined ? undefined : arrange(facts, today);
+  const pageFacts =
+    facts === undefined ? undefined : pageFor(facts.pages, today);
+  const page = pageFacts === undefined ? undefined : arrange(pageFacts);
 
   const header = element("header", { class: "top" }, [
     element("h1", {}, ["Sydney Weather Records"]),
