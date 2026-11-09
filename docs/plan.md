@@ -58,17 +58,6 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 ---
 
-## T31: Favicon
-
-**Status:** todo
-
-**Goal:** The site has its own icon in the browser tab and on a phone's home screen.
-
-- Scope: a simple SVG favicon in `src/site/public/`, in keeping with the page's sky and glass, that reads at 16 px. Add a PNG `apple-touch-icon` from it, and link both from `index.html` with paths that keep working under Vite's `base` (`/weather-records/`).
-- Done when: the icon shows in the browser tab with `npm run dev`, and the site build includes it.
-
----
-
 ## T32: Location in the URL
 
 **Status:** todo
