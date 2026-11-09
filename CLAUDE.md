@@ -38,7 +38,8 @@ A static website that shows obscure weather records for the current and recent w
 
 ## Hosting and updates
 
-- The website is hosted on GitHub Pages and contains only static files.
+- The website is hosted on GitHub Pages at `https://chris14b.github.io/weather-records/` and contains only static files. Vite's `base` is `/weather-records/`, so `npm run dev` serves the site there too.
+- `.github/workflows/deploy.yml` checks, builds and deploys the site on every push to `main`, by hand, and when another workflow calls it. Its actions are pinned to commit SHAs, with the version in a comment.
 - A GitHub Actions workflow runs twice a day, each time with a backup run two hours later in case GitHub skips one. Times are in UTC, so Sydney time shifts by an hour with daylight saving.
   - **Morning:** `45 23 * * *`, backup `45 1 * * *` (10:45am with daylight saving, 9:45am without). By then last night's minimum, the rain to 9am and the 9am reading are final, and BOM has issued today's forecast. This run gives "if today reaches…" facts.
   - **Evening:** `15 11 * * *`, backup `15 13 * * *` (10:15pm or 9:15pm). By then today's maximum and the 3pm reading are in.

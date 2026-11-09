@@ -18,28 +18,9 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 ---
 
-## T25: Deploy to GitHub Pages
-
-**Status:** todo
-
-**Depends on:** T16
-
-**Goal:** The site is live on GitHub Pages, deployed on every push to `main`.
-
-- Scope: a workflow on push to `main` and a manual trigger. It installs, runs `npm test`, `npm run typecheck` and `npm run lint`, builds the site, and deploys it with `actions/upload-pages-artifact` and `actions/deploy-pages`. Pin each action's version.
-- Scope: make the deploy reusable (e.g. `workflow_call`), so T17's scheduled runs can deploy too. A push made with the workflow's own `GITHUB_TOKEN` doesn't trigger other workflows, so T17 has to call it directly.
-- Scope: Vite's `base` is `/weather-records/`, since this is a project site.
-- Out of scope: fetching data. The workflow deploys the committed `facts.json`.
-- Manual step for the user: in the repository's settings on GitHub, set Pages' source to **GitHub Actions**. Wait for the user to confirm this. Don't use `gh` to check runs; use the browser or `curl`.
-- Done when: a push to `main` deploys, and `https://chris14b.github.io/weather-records/` shows the site with the committed facts.
-
----
-
 ## T26: Fact cards
 
 **Status:** todo
-
-**Depends on:** T16
 
 **Goal:** Each fact as a card that can explain itself.
 
@@ -83,7 +64,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 **Goal:** The site has its own icon in the browser tab and on a phone's home screen.
 
-- Scope: a simple SVG favicon in `src/site/public/`, in keeping with the page's sky and glass, that reads at 16 px. Add a PNG `apple-touch-icon` from it, and link both from `index.html` with paths that keep working under T25's `base`.
+- Scope: a simple SVG favicon in `src/site/public/`, in keeping with the page's sky and glass, that reads at 16 px. Add a PNG `apple-touch-icon` from it, and link both from `index.html` with paths that keep working under Vite's `base` (`/weather-records/`).
 - Done when: the icon shows in the browser tab with `npm run dev`, and the site build includes it.
 
 ---
@@ -95,7 +76,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 **Goal:** Each location has its own address, so a link opens the location it was copied from.
 
 - Scope: the selected location goes in the URL, e.g. `?location=sydney-airport`, using the location's `id`. Choosing a location updates it with `history.replaceState`, so the back button doesn't step through every toggle.
-- Scope: a URL with an unknown location falls back to the default. Paths must keep working under T25's `base`.
+- Scope: a URL with an unknown location falls back to the default. Paths must keep working under Vite's `base` (`/weather-records/`).
 - Scope: if T27's remembered choice or geolocation lands first, the URL wins over both.
 - Done when: tests cover reading and writing the parameter, and it has been checked in the browser, including reloading and an unknown location.
 
@@ -119,17 +100,21 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 **Status:** todo
 
-**Depends on:** T25
-
 **Goal:** The site updates itself every morning and evening.
 
-- Scope: a workflow on the four schedules in CLAUDE.md (morning, evening and a backup for each) plus a manual trigger. It runs the tests and `build:data`, commits `data/recent/`, `data/ftp-history/` and `facts.json` when they change, and deploys with T25's workflow.
+- Scope: a workflow on the four schedules in CLAUDE.md (morning, evening and a backup for each) plus a manual trigger. It runs the tests and `build:data`, commits `data/recent/`, `data/ftp-history/` and `facts.json` when they change, and deploys by calling `.github/workflows/deploy.yml`.
 - Scope: two runs must never overlap (a `concurrency` group).
 - Scope: check that FTP works from GitHub's servers.
 - Scope: `facts.json` changes on every run, because of its `generatedAt`, so every run makes a commit. A second run otherwise writes the same files.
 - Scope: check the morning timing against the forecast. On 2026-11-09, BOM issued IDN11060 at 9:45am AEDT, with the next routine issue at 4pm. The 10:45am run gets that issue, but without daylight saving the morning run is at 9:45am and may get the earlier one.
 - Scope: check the evening timing. Without daylight saving, the evening run is at 9:15pm, so it saves the maximum only if the 9pm observation is already published. If not, the 11:15pm backup should save it.
 - Done when: a manual run deploys successfully, the live site shows the current facts, and a scheduled run has done the same.
+
+**Notes:**
+
+- A push made with the workflow's own `GITHUB_TOKEN` doesn't trigger other workflows, so the push to `main` won't deploy. Call the deploy as a job instead: `uses: ./.github/workflows/deploy.yml`, with `ref` set to the commit just made (otherwise it deploys the commit the run started from), and `permissions: { contents: read, pages: write, id-token: write }` on that job, since a called workflow can't have more than its caller grants.
+- The deploy workflow's own concurrency group is `pages`. Give the scheduled workflow a different one, or the call waits on itself.
+- The deploy runs the tests, typecheck, lint and format check again before building.
 
 ---
 
@@ -192,7 +177,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 - Scope: light, ordinary and heavy rain, by the density of the rain layer, for showers (codes 17, 11 and 18) and rain (8 and 12).
 - Scope: a brownish-orange tint for haze and dust (codes 6 and 13), since bushfire smoke haze is common in Sydney, separate from fog (10).
 - Out of scope: snow (15), tropical cyclone (19) and frost (14), which Sydney almost never gets. Their current looks stay.
-- Scope: once the site is deployed (T25), check the rain and storm skies on a real phone. The glass panels re-blur everything moving behind them on every frame, which headless measurement doesn't capture. If they stutter or drain the battery, slow or thin the rain on small screens.
+- Scope: check the rain and storm skies on a real phone. The glass panels re-blur everything moving behind them on every frame, which headless measurement doesn't capture. If they stutter or drain the battery, slow or thin the rain on small screens.
 - Done when: each new look has been checked in the browser by day and night, and with reduced motion.
 
 **Notes:**
@@ -239,8 +224,6 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 **Status:** todo
 
-**Depends on:** T25
-
 **Goal:** Give the 9am and 3pm facts about a year of history, from BOM's Daily Weather Observations (DWO), and make DWO the way to fill any gap that missed runs leave. The user wants this done after the site is live.
 
 - Background:
@@ -259,8 +242,6 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 ## T21: Longer solar history from the IDCJAC0016 ZIPs
 
 **Status:** todo
-
-**Depends on:** T25
 
 **Goal:** Solar history back to about 1990 from BOM's free daily solar exposure ZIPs (product `IDCJAC0016` in Climate Data Online), instead of only from 2009 (2011 at Olympic Park). The user wants this done after the site is live.
 
@@ -323,7 +304,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 ## T29: Daily values and a timeline strip
 
-**Status:** deferred (the user may want it after T16)
+**Status:** deferred (the user may want it later)
 
 **Goal:** A strip of the past month's days and the coming week under the big fact, each day shaded by its temperature, with facts pinned to their days.
 
