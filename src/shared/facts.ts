@@ -25,6 +25,18 @@ export function isChangeMeasure(
   return measure.endsWith("Change");
 }
 
+/**
+ * Measures over by 9am on their date: a night, the rain to 9am and the 9am readings. The
+ * rest run past it, as the official maximum runs to 9am the next day.
+ */
+export const overnightMeasures: ReadonlySet<FactMeasure> = new Set([
+  "minTemp",
+  "minTempChange",
+  "temp9am",
+  "relHum9am",
+  "rain",
+]);
+
 export type Direction = "highest" | "lowest";
 
 /**

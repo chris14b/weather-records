@@ -1,6 +1,7 @@
 import {
   isChangeMeasure,
   isForecastStatus,
+  overnightMeasures,
   type DaylightEvent,
   type DaylightFact,
   type FactMeasure,
@@ -198,14 +199,6 @@ function capitalise(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-// A night, the rain to 9 am and a 9 am reading are over by the time the page names them.
-const overByMorning = new Set<FactMeasure>([
-  "minTemp",
-  "rain",
-  "temp9am",
-  "relHum9am",
-]);
-
 function verb(fact: Phrased, today: string): string {
   const plural = fact.period.kind === "rolling" || isRainDay(fact);
   if (fact.status === "forecast") {
@@ -215,7 +208,7 @@ function verb(fact: Phrased, today: string): string {
   const ongoing =
     "toDate" in fact.period
       ? fact.period.toDate
-      : overByMorning.has(fact.measure) && fact.status !== "partial"
+      : overnightMeasures.has(fact.measure) && fact.status !== "partial"
         ? fact.date > today
         : fact.date >= today;
   if (isHad(fact)) return ongoing ? "has" : "had";

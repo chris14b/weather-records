@@ -1,5 +1,6 @@
 import {
   isForecastStatus,
+  overnightMeasures,
   type DaylightFact,
   type Fact,
   type FactMeasure,
@@ -290,16 +291,6 @@ function allowanceOf({ status, period }: CandidateFact): Allowance {
 function isCalendar(period: Period): boolean {
   return period.kind !== "day" && period.kind !== "rolling";
 }
-
-// Measures over by 9am on their date. The rest run past it, as the official maximum
-// runs to 9am the next day.
-const overnightMeasures: ReadonlySet<FactMeasure> = new Set([
-  "minTemp",
-  "minTempChange",
-  "temp9am",
-  "relHum9am",
-  "rain",
-]);
 
 /** BOM's observation day for a day's value: the date of the 9am by which it is over. */
 function observationDay(date: string, measure: FactMeasure): string {

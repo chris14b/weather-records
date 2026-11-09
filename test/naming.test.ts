@@ -287,6 +287,22 @@ describe("sentence", () => {
     ],
     [
       fact({
+        measure: "minTempChange",
+        text: "the biggest day-to-day rise in minimum temperature since 1\u00a0November",
+        why: { value: 2.2 },
+      }),
+      "[Today] had the biggest day-to-day rise in minimum temperature since 1\u00a0November, up 2.2\u00a0°C",
+    ],
+    [
+      fact({
+        measure: "maxTempChange",
+        text: "the biggest day-to-day rise in maximum temperature since 1\u00a0November",
+        why: { value: 3.1 },
+      }),
+      "[Today] has the biggest day-to-day rise in maximum temperature since 1\u00a0November, up 3.1\u00a0°C",
+    ],
+    [
+      fact({
         measure: "minRelHum",
         text: "the most humid day since 3\u00a0March",
         why: { value: 82 },
