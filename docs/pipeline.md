@@ -87,7 +87,7 @@ Every error from a file names the file and the line or element (`inContext`).
 - The station is found by `bom-id`, and its `stn-name`, `description` and `wmo-id` are checked.
 - `rainfall_24hr` must run 9am to 9am, `minimum_air_temperature` 6pm to 9am and `maximum_air_temperature` 6am to 9pm, or the build fails.
 - A value is used only once its window's `end-time-utc` is at or before the observation's time. Rain and the minimum are credited to the day the window ends, the maximum to the day it starts. This relies only on each element's own times, not on when BOM rolls them over.
-- So a morning run never saves or overwrites a maximum. Without daylight saving, the 9:15pm evening run saves the maximum only if the 9pm observation is already published; otherwise the backup run does.
+- So a morning run never saves or overwrites a maximum, and an evening run never saves a minimum, because by then the minimum's window runs to tomorrow's 9am. A skipped run leaves its value to the daily file, two days later.
 - The snapshot minimum covers 6pm–9am, not the official 9am–9am, so like the maximum it is provisional.
 
 ### Readings (IDN60910)

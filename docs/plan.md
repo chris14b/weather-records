@@ -98,23 +98,20 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 ## T17: Scheduled updates
 
-**Status:** todo
+**Status:** in progress (`.github/workflows/update.yml` is written; it needs runs on GitHub)
 
 **Goal:** The site updates itself every morning and evening.
 
-- Scope: a workflow on the four schedules in CLAUDE.md (morning, evening and a backup for each) plus a manual trigger. It runs the tests and `build:data`, commits `data/recent/`, `data/ftp-history/` and `facts.json` when they change, and deploys by calling `.github/workflows/deploy.yml`.
-- Scope: two runs must never overlap (a `concurrency` group).
-- Scope: check that FTP works from GitHub's servers.
-- Scope: `facts.json` changes on every run, because of its `generatedAt`, so every run makes a commit. A second run otherwise writes the same files.
-- Scope: check the morning timing against the forecast. On 2026-11-09, BOM issued IDN11060 at 9:45am AEDT, with the next routine issue at 4pm. The 10:45am run gets that issue, but without daylight saving the morning run is at 9:45am and may get the earlier one.
-- Scope: check the evening timing. Without daylight saving, the evening run is at 9:15pm, so it saves the maximum only if the 9pm observation is already published. If not, the 11:15pm backup should save it.
+- Scope: check that FTP works from GitHub's servers, in the first manual run's `build:data` step.
+- Scope: check the timings in the first scheduled runs' logs: that the morning run had the 23:00 UTC forecast and the 9am values, and the evening run the 11:00 UTC forecast and today's maximum. The 9:30pm winter run, 25 minutes after the 9pm reading, can only be checked once daylight saving ends in April 2027; if it is still unchecked once everything else is done, split it off as its own task.
+- Scope: check that an evening run handles the 11:00 UTC (10pm) forecast issue, whose day 0 is today with nothing left in it. No such issue has been seen yet.
 - Done when: a manual run deploys successfully, the live site shows the current facts, and a scheduled run has done the same.
 
 **Notes:**
 
-- A push made with the workflow's own `GITHUB_TOKEN` doesn't trigger other workflows, so the push to `main` won't deploy. Call the deploy as a job instead: `uses: ./.github/workflows/deploy.yml`, with `ref` set to the commit just made (otherwise it deploys the commit the run started from), and `permissions: { contents: read, pages: write, id-token: write }` on that job, since a called workflow can't have more than its caller grants.
-- The deploy workflow's own concurrency group is `pages`. Give the scheduled workflow a different one, or the call waits on itself.
-- The deploy runs the tests, typecheck, lint and format check again before building.
+- The workflow runs `npm test` and `build:data`, commits `data/recent/`, `data/ftp-history/` and `facts.json`, rebases onto `main` in case it moved during the run, pushes, and calls `deploy.yml` with the commit it pushed. A run started by hand on any branch other than `main` does nothing.
+- A manual run: Actions → Update → Run workflow, on `main`. The push needs `main` to accept pushes from `github-actions[bot]`; if branch protection blocks it, the commit step fails.
+- The run times and why are in CLAUDE.md. BOM's forecast schedule there comes from search results quoting its announcement (its site refuses automated requests), and matched the feed on 2026-11-09.
 
 ---
 
@@ -126,8 +123,8 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 **Goal:** Beside "Updated…", the page says when the next update is due.
 
-- Scope: work out the next run in the browser from the schedule in CLAUDE.md (10:45am and 10:15pm with daylight saving, 9:45am and 9:15pm without; the times are fixed in UTC). Keep the schedule in one place that the page and the workflow both use, or test that they match.
-- Scope: GitHub often starts scheduled runs late, so say "next update due around 10:45pm", and once that time has passed without a new `facts.json`, say it is running late rather than giving a time in the past. Decide how this fits T27's stale-data banner.
+- Scope: work out the next run in the browser from the schedule in CLAUDE.md (10:30am and 10:30pm with daylight saving, 9:30am and 9:30pm without; the times are fixed in UTC). Keep the schedule in one place that the page and the workflow both use, or test that they match.
+- Scope: GitHub often starts scheduled runs late, so say "next update due around 10:30pm", and once that time has passed without a new `facts.json`, say it is running late rather than giving a time in the past. Decide how this fits T27's stale-data banner.
 - Done when: tests cover the next time either side of each run and across a daylight saving change, and it has been checked in the browser.
 
 ---

@@ -40,12 +40,13 @@ A static website that shows obscure weather records for the current and recent w
 
 - The website is hosted on GitHub Pages at `https://chris14b.github.io/weather-records/` and contains only static files. Vite's `base` is `/weather-records/`, so `npm run dev` serves the site there too.
 - `.github/workflows/deploy.yml` checks, builds and deploys the site on every push to `main`, by hand, and when another workflow calls it. Its actions are pinned to commit SHAs, with the version in a comment.
-- A GitHub Actions workflow runs twice a day, each time with a backup run two hours later in case GitHub skips one. Times are in UTC, so Sydney time shifts by an hour with daylight saving.
-  - **Morning:** `45 23 * * *`, backup `45 1 * * *` (10:45am with daylight saving, 9:45am without). By then last night's minimum, the rain to 9am and the 9am reading are final, and BOM has issued today's forecast. This run gives "if today reaches…" facts.
-  - **Evening:** `15 11 * * *`, backup `15 13 * * *` (10:15pm or 9:15pm). By then today's maximum and the 3pm reading are in.
+- `.github/workflows/update.yml` runs twice a day, with no backup runs: a skipped run leaves the site 12 hours stale and its provisional value to the daily file, two days later. Times are in UTC, so Sydney time shifts by an hour with daylight saving, as do BOM's own schedules, which are fixed in UTC too.
+  - **Morning:** `30 23 * * *` (10:30am with daylight saving, 9:30am without). By then last night's minimum, the rain to 9am and the 9am reading are in (9am is 22:00 or 23:00 UTC), the daily files have updated (22:34 UTC), and BOM has issued its 23:00 UTC forecast. This run gives "if today reaches…" facts.
+  - **Evening:** `30 11 * * *` (10:30pm or 9:30pm). By then today's maximum is in (the 9pm reading is 10:00 or 11:00 UTC), as is the 3pm reading, and BOM has issued its 11:00 UTC forecast.
+  - BOM issues its routine forecasts at 17:00, 23:00, 05:00 and 11:00 UTC. On 2026-11-09 the 23:00 issue came out at 22:45 UTC. The latest observations appear about 5 minutes after each half-hour reading.
 - Every run does the same work, and its facts reflect the time it ran. Running twice in a row must be harmless.
 - Missed runs must never leave a permanent gap. We don't keep our own archive: store only data that BOM still offers, and no longer than BOM keeps it. Then anything missed can be fetched again, automatically where the feed allows, otherwise by hand (the ZIPs and the Daily Weather Observations).
-- Each run downloads the BOM FTP feeds, updates `data/recent/`, regenerates `facts.json`, commits the data and deploys the site.
+- Each run downloads the BOM FTP feeds, updates `data/recent/`, regenerates `facts.json`, commits the data and deploys the site. It runs on `main` only, by schedule or by hand, and never overlaps another run (its concurrency group is `update`, not the deploy's `pages`). It pushes with its own `GITHUB_TOKEN`, which doesn't trigger the push deploy, so it calls `deploy.yml` with the commit it made.
 - `npm run build:data` writes `facts.json` to `src/site/public/`, Vite's public directory, so `npm run dev` serves it and the site build copies it into `dist/`. It is committed with the data, so the deploy needs no data step.
 - There is no server, and nothing updates on demand.
 

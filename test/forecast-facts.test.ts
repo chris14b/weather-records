@@ -84,27 +84,22 @@ describe("forecastStart", () => {
   test.each([
     [
       "the morning run, with daylight saving",
-      "2026-11-05T23:45:00Z",
+      "2026-11-05T23:30:00Z",
       "2026-11-06",
     ],
     [
       "the evening run, with daylight saving",
-      "2026-11-06T11:15:00Z",
+      "2026-11-06T11:30:00Z",
       "2026-11-07",
     ],
     [
       "the morning run, without daylight saving",
-      "2026-06-05T23:45:00Z",
+      "2026-06-05T23:30:00Z",
       "2026-06-06",
     ],
     [
       "the evening run, without daylight saving",
-      "2026-06-06T11:15:00Z",
-      "2026-06-07",
-    ],
-    [
-      "the evening backup, without daylight saving",
-      "2026-06-06T13:15:00Z",
+      "2026-06-06T11:30:00Z",
       "2026-06-07",
     ],
   ])("starts %s at %s on %s", (_, now, expected) => {
