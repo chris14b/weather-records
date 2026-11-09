@@ -1,8 +1,9 @@
 import "./style.css";
 import type { FactsFile } from "../shared/facts.ts";
-import { locations, type Location } from "../shared/locations.ts";
+import { locations } from "../shared/locations.ts";
 import { sunPosition, type SunPosition } from "../shared/sun.ts";
 import type { Weather } from "../shared/weather.ts";
+import { addressFor, startingAddress, startingLocation } from "./address.ts";
 import { sydneyDate } from "./naming.ts";
 import { render } from "./render.ts";
 import { forecastWeather, skyStyle } from "./sky.ts";
@@ -12,16 +13,13 @@ const storageKey = "location";
 const refreshEvery = 5 * 60_000;
 const skyEvery = 60_000;
 
-function storedLocation(): Location {
-  let id: string | null = null;
+function rememberedId(): string | null {
   try {
-    id = localStorage.getItem(storageKey);
+    return localStorage.getItem(storageKey);
   } catch {
-    // Storage can be blocked; the first location will do.
+    // Storage can be blocked; the address or the first location will do.
+    return null;
   }
-  const location = locations.find((l) => l.id === id) ?? locations[0];
-  if (location === undefined) throw new Error("No locations are configured");
-  return location;
 }
 
 function remember(id: string): void {
@@ -29,6 +27,12 @@ function remember(id: string): void {
     localStorage.setItem(storageKey, id);
   } catch {
     // Storage can be blocked; the choice lasts until the page is reloaded.
+  }
+}
+
+function replaceAddress(address: URL): void {
+  if (address.href !== window.location.href) {
+    history.replaceState(history.state, "", address);
   }
 }
 
@@ -63,7 +67,9 @@ async function loadFacts(): Promise<FactsFile> {
 }
 
 async function start(root: HTMLElement, file: FactsFile): Promise<void> {
-  let location = storedLocation();
+  const address = startingAddress(new URL(window.location.href), locations);
+  replaceAddress(address);
+  let location = startingLocation(address, rememberedId(), locations);
   let preview: SkyPreview | undefined;
   let previewPanel: { refresh: () => void } | undefined;
   const paintSky = () => {
@@ -87,6 +93,7 @@ async function start(root: HTMLElement, file: FactsFile): Promise<void> {
       onSelect: (id) => {
         location = locations.find((l) => l.id === id) ?? location;
         remember(location.id);
+        replaceAddress(addressFor(new URL(window.location.href), location));
         show();
         root
           .querySelector<HTMLInputElement>(`input[value="${location.id}"]`)

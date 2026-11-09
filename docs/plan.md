@@ -43,7 +43,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 **Goal:** The site handles every location, state and screen well.
 
-- Scope: default to the nearest location using browser geolocation. Coordinates are never sent anywhere, and a location the user chose wins and is remembered.
+- Scope: default to the nearest location using browser geolocation. Coordinates are never sent anywhere. The location in the address wins, then one the user chose, which is already remembered, then the nearest. The order is `startingLocation` in `src/site/address.ts`.
 - Scope: a banner when the data is stale, from `generatedAt`. Runs are twice a day, so decide how old is too old.
 - Scope: empty and error states: `facts.json` missing or malformed, a section with no facts, a quiet day with nothing in Today.
 - Scope: dark mode, and accessibility, including the charts.
@@ -55,19 +55,6 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 - The page is already white text on dark glass over the sky, so decide what dark mode should change, if anything, beyond a darker sky.
 - On a phone, the location toggle wraps onto two lines, and the headline's size is capped by the viewport width (`headline` in `src/site/render.ts`).
 - Empty sections already show a line such as "Nothing notable in the forecast.", and an empty Today shows "Nothing notable yet today." If `facts.json` fails to load, the page shows one line of text.
-
----
-
-## T32: Location in the URL
-
-**Status:** todo
-
-**Goal:** Each location has its own address, so a link opens the location it was copied from.
-
-- Scope: the selected location goes in the URL, e.g. `?location=sydney-airport`, using the location's `id`. Choosing a location updates it with `history.replaceState`, so the back button doesn't step through every toggle.
-- Scope: a URL with an unknown location falls back to the default. Paths must keep working under Vite's `base` (`/weather-records/`).
-- Scope: if T27's remembered choice or geolocation lands first, the URL wins over both.
-- Done when: tests cover reading and writing the parameter, and it has been checked in the browser, including reloading and an unknown location.
 
 ---
 
