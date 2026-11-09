@@ -112,6 +112,42 @@ describe("describeFact", () => {
     },
   );
 
+  test.each([
+    [{}, "the coldest night since records began in 1900"],
+    [{ comparison: "year" as const }, "the coldest night of the year so far"],
+    [
+      { comparison: "month" as const },
+      "the coldest night in November since records began in 1900",
+    ],
+    [
+      { comparison: "calendarDate" as const },
+      "the coldest night on 6 November since records began in 1900",
+    ],
+  ])("names the night of a conditional minimum: %o", (fact, expected) => {
+    expect(
+      words({
+        measure: "minTemp",
+        direction: "lowest",
+        status: "conditional",
+        ...fact,
+      }),
+    ).toBe(expected);
+  });
+
+  test("names the night of a conditional minimum that leads with its since", () => {
+    expect(
+      words(
+        {
+          measure: "minTemp",
+          direction: "highest",
+          status: "conditional",
+          since: { date: "2026-03-17", value: 21.4 },
+        },
+        "since",
+      ),
+    ).toBe("the warmest night since 17 March");
+  });
+
   test("words a change that leads with its since", () => {
     expect(
       words(

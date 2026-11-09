@@ -272,10 +272,10 @@ describe("sentence", () => {
         measure: "minTemp",
         direction: "lowest",
         status: "conditional",
-        text: "the coldest in November since 2006",
+        text: "the coldest night in November since 2006",
         why: { value: 10, forecast: 12 },
       }),
-      "A low of 10°C [tonight] (forecast 12°C) would make it the coldest in November since 2006",
+      "A low of 10°C [tonight] (forecast 12°C) would make it the coldest night in November since 2006",
     ],
     [
       fact({

@@ -139,11 +139,18 @@ export function ordinal(n: number): string {
   return `${String(n)}${suffix}`;
 }
 
-function dayHead(
-  { measure, direction, comparison, date }: CandidateFact,
-  ranked: string,
-): string {
+// A conditional fact names its night only in passing ("A low of 10°C tonight would make
+// it…"), so it needs the noun.
+function dayPhrase({ measure, direction, status }: CandidateFact): Phrase {
   const phrase = phrases[measure][direction];
+  return measure === "minTemp" && status === "conditional"
+    ? { ...phrase, noun: "night" }
+    : phrase;
+}
+
+function dayHead(fact: CandidateFact, ranked: string): string {
+  const { comparison, date } = fact;
+  const phrase = dayPhrase(fact);
   return [
     `the ${ranked}${phrase.superlative}`,
     subject(comparison, phrase, date),
