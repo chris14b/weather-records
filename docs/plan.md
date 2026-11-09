@@ -5,7 +5,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 ## How to use this plan
 
 - Each task has a permanent ID, such as `T15`. An ID is never reused or renumbered, and never has a letter after it (no `T5b`). A new task, including one split off another, takes the next ID, and goes where its priority puts it. Its place in the list, not its ID, sets its priority.
-- **Next ID:** T39
+- **Next ID:** T40
 - **Depends on** lists the tasks that must be finished first. A task that is no longer in this plan is finished. Keep every task below the tasks it depends on.
 - The next task is the first one that isn't deferred or blocked and whose dependencies are all finished.
 - Statuses: `todo`, `in progress`, `blocked` (say on what), `deferred` (skip until the user says otherwise). An open task can have **Notes** for whatever a later session needs.
@@ -86,6 +86,29 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 **Notes:**
 
 - The run times and their reasons are in CLAUDE.md. BOM's forecast schedule there comes from search results quoting its announcement (its site refuses automated requests), and matched the feed on 2026-11-09. The latest observations appeared about 5 minutes after the half-hour then.
+
+---
+
+## T39: Earlier update runs
+
+**Status:** todo
+
+**Goal:** Each run comes as soon as the news it brings is useful: the evening run near the end of the afternoon rather than at 10:30pm, and the morning run as soon as last night's values are in.
+
+- Background, from 2026-11-09:
+  - The user felt the 10:30pm run was too late, and wanted the trade-offs written up rather than decided then. Put them to the user in plain terms, with a recommendation, before changing anything.
+  - The evening run is at 11:30 UTC mainly because `parseObservations` saves the maximum only once its 6am–9pm window has closed (the 9pm reading is at 10:00 UTC with daylight saving). The 11:00 UTC forecast is the other reason, but the 05:00 UTC issue already has tomorrow. The 3pm reading is in by about 3:05pm.
+  - Sydney's maximum usually comes between about 1pm and 4pm, but it can still be rising after 5pm ahead of a change. 9pm isn't final either, since the official maximum runs 9am to 9am.
+- Evening: Claude's suggestion was 06:30 UTC (5:30pm with daylight saving, 4:30pm without), after the 3pm reading and the 05:00 UTC forecast. What it costs:
+  - The maximum must be saved while its window is still open, with a cutoff such as 4pm Sydney time. Without one, the morning run, or any manual run, saves a mid-morning value that stands for two days if the evening run is skipped, giving bogus facts such as "the coldest maximum since…". A rise after the run is missed until the daily file, two days later.
+  - `forecastStart` switches to tomorrow at 9pm (`maxWindowCloses`). It would switch at the cutoff instead.
+  - The gaps between runs become about 7 and 17 hours instead of 12 and 12, and the page overnight has the 4pm forecast rather than the 10pm one. T34 and T27's stale-data banner must allow for 17 hours.
+  - It never meets the 11:00 UTC forecast issue whose day 0 has nothing left in it, which T38 worries the parser may reject.
+- Morning: now 23:30 UTC (10:30am with daylight saving, 9:30am without). It waits for the 9am reading (22:00 or 23:00 UTC), the daily files (22:34 UTC) and the 23:00 UTC forecast (out at 22:45 UTC on 2026-11-09).
+  - Earlier, such as 22:15 UTC (9:15am with daylight saving), gets last night's minimum, the rain to 9am and the 9am reading, but not that morning's daily files or the 23:00 UTC forecast, which then wait for the evening run. Check whether that matters: the daily files run behind anyway, and the 17:00 UTC (4am) forecast is usually close.
+  - Without daylight saving, 22:15 UTC is 8:15am, before the 9am reading, so the run would save no minimum or rain. A cron is fixed in UTC, so no single time sits just after 9am all year. Options: accept the hour's shift, two schedules where each run checks the Sydney time and stops if it isn't its turn, or a schedule with a time zone, if GitHub Actions supports one.
+- Scope, once the user has chosen: `update.yml`, the maximum's cutoff and `forecastStart`, CLAUDE.md's Hosting and updates section (a settled decision), [pipeline.md](pipeline.md), [facts.md](facts.md), and the run times in T34 and T38.
+- Done when: the user has chosen the times, tests cover the cutoff and `forecastStart` either side of it, and a scheduled run at each new time has been checked to get its data, as in T38.
 
 ---
 
