@@ -27,12 +27,14 @@ A static website that shows obscure weather records for the current and recent w
 ## Website
 
 - Designed for desktop first. It must still be easy to read and use on a phone.
-- Plain TypeScript and the DOM, with no framework. Styles are one CSS file.
-- One page that scrolls. Frosted glass panels sit over a sky for the time of day. A small title and a toggle for the three locations are at the top.
+- Plain TypeScript and the DOM, with no framework. Styles are one CSS file, apart from the development-only sky preview's, which load with it.
+- One page that scrolls. Frosted glass panels sit over a sky that follows the sun. A small title and a toggle for the three locations are at the top.
 - The panels run Today, Coming week, This week, This month. Today's forecast and "if today reaches…" facts go in Today.
 - Today leads with one big fact, sized by its score, so a record fills the screen and an ordinary day's fact stays small.
 - The rarest facts carry a text badge, "Rare" or "Exceptional", separate from the status dots, so marks stay rare and don't rely on colour.
-- The background never shows the current weather, because `facts.json` is up to 12 hours old. The time of day comes from the viewer's clock, and the weather from BOM's forecast icon for the viewer's today. Each kind of sky is a few CSS layers over the time-of-day gradient, with no images. They pause when the tab is hidden and stand still with reduced motion.
+- The background never shows the current weather, because `facts.json` is up to 12 hours old. The weather comes from BOM's forecast icon for the viewer's today. Each kind of sky is a few CSS layers over the time-of-day gradient, with no images. They pause when the tab is hidden and stand still with reduced motion.
+- The time of day follows the sun's height at the selected location, worked out in the browser from the viewer's clock and redrawn every minute. `skyStyle` in `src/site/sky.ts` blends the sky's and the weather's colours between a few heights of the sun, from deep night to midday. The glow follows the sun's arc as if facing north, towards the midday sun: across by the time of day (the hour angle), from the right in the morning to the left in the evening, and up by the sun's height. So a summer arc is wide and nearly reaches the top, and a winter arc is narrow and low. Dawn and dusk keep their colours on clear and slightly cloudy days, show only a hint of them when it is cloudy, showery or foggy, and turn grey in rain and storms. Cloud also mutes the sun's glow.
+- With `npm run dev`, adding `?sky` to the address opens a panel to try the sky at any date and time, in any weather, with a button to play through the day. It is left out of the site build, styles and all, and `test/site-build.test.ts` fails if any of it gets in.
 
 ## Hosting and updates
 

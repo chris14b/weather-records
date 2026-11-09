@@ -1,13 +1,16 @@
 /** The kinds of sky the page draws for a day's forecast. */
-export type Weather =
-  | "clear"
-  | "partlyCloudy"
-  | "cloudy"
-  | "showers"
-  | "rain"
-  | "storm"
-  | "fog"
-  | "windy";
+export const weathers = [
+  "clear",
+  "partlyCloudy",
+  "cloudy",
+  "showers",
+  "rain",
+  "storm",
+  "fog",
+  "windy",
+] as const;
+
+export type Weather = (typeof weathers)[number];
 
 /** BOM's forecast icon codes. Codes 5 and 7 aren't used. */
 const weatherByIcon: Readonly<Partial<Record<number, Weather>>> = {

@@ -1,0 +1,43 @@
+/* The sky preview's panel, loaded with it, so the site build leaves it out. */
+.sky-preview {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 1;
+  display: grid;
+  gap: 0.5rem;
+  width: min(20rem, calc(100vw - 2rem));
+  padding: 0.9rem 1rem;
+  font-size: 0.8125rem;
+  background: rgb(12 18 40 / 0.6);
+}
+
+.sky-preview h2 {
+  margin: 0;
+}
+
+.sky-preview label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sky-preview .time input {
+  flex: 1;
+}
+
+.sky-preview output {
+  min-width: 4.5em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.sky-preview .buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.sky-preview .readout {
+  margin: 0;
+  color: var(--text-soft);
+}

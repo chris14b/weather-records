@@ -2,11 +2,11 @@ import type { Fact, FactsFile, ValueStatus } from "../shared/facts.ts";
 import { locations, type Location } from "../shared/locations.ts";
 import { arrange, headlineSize, standout, type Standout } from "./arrange.ts";
 import { daylightSentence, longDate, sentence, sydneyDate } from "./naming.ts";
-import { forecastWeather, skyPhase, sydneyHour } from "./sky.ts";
 
-type Children = (Node | string)[];
+export type Children = (Node | string)[];
 
-function element<K extends keyof HTMLElementTagNameMap>(
+/** An element with its attributes and children. */
+export function element<K extends keyof HTMLElementTagNameMap>(
   tag: K,
   attributes: Record<string, string> = {},
   children: Children = [],
@@ -209,12 +209,6 @@ export function render(
   const today = sydneyDate(now);
   const facts = file.locations.find((l) => l.locationId === location.id);
 
-  const { dataset } = document.documentElement;
-  dataset.sky = skyPhase(sydneyHour(now));
-  const weather =
-    facts === undefined ? undefined : forecastWeather(facts.forecast, today);
-  if (weather === undefined) delete dataset.weather;
-  else dataset.weather = weather;
   const page = facts === undefined ? undefined : arrange(facts, today);
 
   const header = element("header", { class: "top" }, [

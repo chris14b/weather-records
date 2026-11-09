@@ -51,18 +51,24 @@ describe("sunPosition", () => {
   test("puts the sun just below the horizon at sunrise, south of east in summer", () => {
     const times = sunTimes("2026-12-21", observatoryHill);
     if (times === undefined) throw new Error("No sunrise");
-    const { elevation, azimuth } = sunPosition(times.sunrise, observatoryHill);
+    const { elevation, azimuth, hourAngle } = sunPosition(
+      times.sunrise,
+      observatoryHill,
+    );
 
     expect(elevation).toBeCloseTo(-0.833, 1);
+    expect(hourAngle).toBeCloseTo(-108, 0);
     expect(azimuth).toBeGreaterThan(110);
     expect(azimuth).toBeLessThan(125);
   });
 
   test("puts the sun high in the north at midsummer noon", () => {
-    const { elevation, azimuth } = sunPosition(
+    const { elevation, azimuth, hourAngle } = sunPosition(
       new Date("2026-12-21T01:53:00Z"),
       observatoryHill,
     );
+
+    expect(Math.abs(hourAngle)).toBeLessThan(1);
 
     expect(elevation).toBeCloseTo(90 - 33.86 + 23.44, 0);
     expect(Math.min(azimuth, 360 - azimuth)).toBeLessThan(2);

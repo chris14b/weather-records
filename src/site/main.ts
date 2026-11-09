@@ -1,10 +1,16 @@
 import "./style.css";
 import type { FactsFile } from "../shared/facts.ts";
 import { locations, type Location } from "../shared/locations.ts";
+import { sunPosition, type SunPosition } from "../shared/sun.ts";
+import type { Weather } from "../shared/weather.ts";
+import { sydneyDate } from "./naming.ts";
 import { render } from "./render.ts";
+import { forecastWeather, skyStyle } from "./sky.ts";
+import type { SkyPreview } from "./sky-preview.ts";
 
 const storageKey = "location";
 const refreshEvery = 5 * 60_000;
+const skyEvery = 60_000;
 
 function storedLocation(): Location {
   let id: string | null = null;
@@ -24,6 +30,15 @@ function remember(id: string): void {
   } catch {
     // Storage can be blocked; the choice lasts until the page is reloaded.
   }
+}
+
+function drawSky(sun: SunPosition, weather: Weather | undefined): void {
+  const root = document.documentElement;
+  for (const [name, value] of Object.entries(skyStyle(sun, weather))) {
+    root.style.setProperty(name, value);
+  }
+  if (weather === undefined) delete root.dataset.weather;
+  else root.dataset.weather = weather;
 }
 
 function isFactsFile(value: unknown): value is FactsFile {
@@ -47,8 +62,23 @@ async function loadFacts(): Promise<FactsFile> {
   return file;
 }
 
-function start(root: HTMLElement, file: FactsFile): void {
+async function start(root: HTMLElement, file: FactsFile): Promise<void> {
   let location = storedLocation();
+  let preview: SkyPreview | undefined;
+  let previewPanel: { refresh: () => void } | undefined;
+  const paintSky = () => {
+    const now = preview?.instant ?? new Date();
+    const forecast =
+      file.locations.find((l) => l.locationId === location.id)?.forecast ?? [];
+    const weather =
+      preview === undefined || preview.weather === "forecast"
+        ? forecastWeather(forecast, sydneyDate(now))
+        : preview.weather === "none"
+          ? undefined
+          : preview.weather;
+    drawSky(sunPosition(now, location), weather);
+    previewPanel?.refresh();
+  };
   const show = () => {
     render(root, {
       file,
@@ -63,9 +93,27 @@ function start(root: HTMLElement, file: FactsFile): void {
           ?.focus();
       },
     });
+    paintSky();
   };
   show();
   setInterval(show, refreshEvery);
+  setInterval(paintSky, skyEvery);
+
+  // A panel for trying the sky at any time and in any weather, only with `npm run dev`.
+  // The mode, unlike DEV, can't be switched on in a build by setting NODE_ENV.
+  if (
+    import.meta.env.MODE === "development" &&
+    new URLSearchParams(window.location.search).has("sky")
+  ) {
+    const { mountSkyPreview } = await import("./sky-preview.ts");
+    previewPanel = mountSkyPreview({
+      place: () => location,
+      onChange: (changed) => {
+        preview = changed;
+        paintSky();
+      },
+    });
+  }
 }
 
 document.addEventListener("visibilitychange", () => {
@@ -75,7 +123,7 @@ document.addEventListener("visibilitychange", () => {
 const root = document.querySelector<HTMLElement>("#app");
 if (root !== null) {
   try {
-    start(root, await loadFacts());
+    await start(root, await loadFacts());
   } catch (error) {
     console.error(error);
     root.textContent =

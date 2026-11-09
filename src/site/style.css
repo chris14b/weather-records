@@ -1,16 +1,16 @@
 :root {
   --text: #fff;
   --text-soft: rgb(255 255 255 / 0.78);
-  --glass: rgb(12 18 40 / 0.3);
+  /* Darker on a light, cloudy day, so the text stays clear. */
+  --glass: rgb(12 18 40 / calc(0.3 + 0.1 * var(--daylight) * var(--heavy)));
   --glass-edge: rgb(255 255 255 / 0.22);
   --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
   --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-  --sky: linear-gradient(180deg, #0b1026 0%, #1b2550 55%, #2d3a6e 100%);
-  --glow: radial-gradient(
-    circle at 80% 12%,
-    rgb(220 230 255 / 0.18),
-    transparent 22%
-  );
+  /* The sky for the sun's height, set by drawSky in sky.ts. These are deep night's. */
+  --sky: linear-gradient(180deg, #0b1026 0%, #1b2550 50%, #2d3a6e 100%);
+  --glow: none;
+  --stars: 0.8;
+  --daylight: 0;
 
   color-scheme: dark;
   color: var(--text);
@@ -18,33 +18,6 @@
   font-size: 16px;
   line-height: 1.5;
   background: #0b1026;
-}
-
-:root[data-sky="dawn"] {
-  --sky: linear-gradient(180deg, #2d3a6e 0%, #b86a8a 55%, #f4b183 100%);
-  --glow: radial-gradient(
-    circle at 20% 95%,
-    rgb(255 214 150 / 0.55),
-    transparent 35%
-  );
-}
-
-:root[data-sky="day"] {
-  --sky: linear-gradient(180deg, #23629f 0%, #4f93d6 50%, #9ccbef 100%);
-  --glow: radial-gradient(
-    circle at 82% 10%,
-    rgb(255 250 220 / 0.6),
-    transparent 20%
-  );
-}
-
-:root[data-sky="dusk"] {
-  --sky: linear-gradient(180deg, #1e2a5a 0%, #74509a 50%, #e8875a 100%);
-  --glow: radial-gradient(
-    circle at 78% 95%,
-    rgb(255 180 120 / 0.55),
-    transparent 35%
-  );
 }
 
 *,
@@ -63,38 +36,17 @@ body {
 /* The forecast's weather, drawn over the time of day. Every layer is hidden until a kind of sky shows it. */
 
 :root {
-  --overcast: #2a2c3a;
-  --fog: #3a3f4e;
-  --mist: rgb(150 160 190 / 0.3);
-  --cloud: rgb(190 195 215 / 0.32);
-  --drop: rgb(190 205 240 / 0.4);
+  --overcast: var(--sun-overcast, #2a2c3a);
+  --fog: var(--sun-fog, #3a3f4e);
+  --mist: var(--sun-mist, rgb(150 160 190 / 0.3));
+  --cloud: var(--sun-cloud, rgb(190 195 215 / 0.32));
+  --drop: var(--sun-drop, rgb(190 205 240 / 0.4));
+  --heavy: 0;
   --veil: 0;
   --far-clouds: 0;
   --near-clouds: 0;
   --far-drift: 240s;
   --near-drift: 150s;
-}
-
-:root[data-sky="dawn"] {
-  --overcast: #5e5568;
-  --fog: #a79aa6;
-  --mist: rgb(255 225 215 / 0.35);
-  --cloud: rgb(255 215 215 / 0.55);
-}
-
-:root[data-sky="day"] {
-  --overcast: #74808f;
-  --fog: #b4bcc6;
-  --mist: rgb(255 255 255 / 0.4);
-  --cloud: rgb(255 255 255 / 0.8);
-  --drop: rgb(225 235 250 / 0.5);
-}
-
-:root[data-sky="dusk"] {
-  --overcast: #463f58;
-  --fog: #7d7088;
-  --mist: rgb(255 210 190 / 0.3);
-  --cloud: rgb(255 200 185 / 0.45);
 }
 
 :root[data-weather="partlyCloudy"] {
@@ -103,18 +55,21 @@ body {
 }
 
 :root[data-weather="cloudy"] {
+  --heavy: 1;
   --veil: 0.6;
   --far-clouds: 1;
   --near-clouds: 0.9;
 }
 
 :root[data-weather="showers"] {
+  --heavy: 1;
   --veil: 0.55;
   --far-clouds: 1;
   --near-clouds: 0.9;
 }
 
 :root[data-weather="rain"] {
+  --heavy: 1;
   --veil: 0.75;
   --far-clouds: 1;
   --near-clouds: 1;
@@ -129,17 +84,9 @@ body {
 }
 
 :root[data-weather="fog"] {
+  --heavy: 1;
   --veil: 0.75;
   --overcast: var(--fog);
-}
-
-:root[data-sky="day"]:is(
-    [data-weather="cloudy"],
-    [data-weather="showers"],
-    [data-weather="rain"],
-    [data-weather="fog"]
-  ) {
-  --glass: rgb(12 18 40 / 0.4);
 }
 
 :root[data-weather="windy"] {
@@ -178,7 +125,7 @@ body {
     [data-weather="windy"]
   )
   .clouds,
-:root[data-sky="night"]:is(
+:root:is(
     [data-weather="clear"],
     [data-weather="partlyCloudy"],
     [data-weather="windy"]
@@ -226,13 +173,8 @@ body {
     410px 330px;
 }
 
-:root[data-sky="night"]:is(
-    [data-weather="clear"],
-    [data-weather="partlyCloudy"],
-    [data-weather="windy"]
-  )
-  .stars {
-  opacity: 0.8;
+.stars {
+  opacity: var(--stars);
 }
 
 /* Twice the viewport wide, repeating every viewport width, so drifting by half loops without a seam. */

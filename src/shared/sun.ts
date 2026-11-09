@@ -14,6 +14,9 @@ const cos = (degrees: number) => Math.cos(degrees * radians);
 const tan = (degrees: number) => Math.tan(degrees * radians);
 const degrees = (value: number) => value / radians;
 
+/** An angle in degrees, turned into the range -180 to 180. */
+const halfTurn = (angle: number) => (((angle % 360) + 540) % 360) - 180;
+
 interface SolarCoordinates {
   /** In degrees. */
   declination: number;
@@ -63,6 +66,8 @@ export interface SunPosition {
   elevation: number;
   /** Degrees clockwise from north. */
   azimuth: number;
+  /** Degrees the sun is past solar noon, negative before it, from -180 to 180. */
+  hourAngle: number;
 }
 
 /** Where the sun is in the sky at an instant, seen from a place. */
@@ -73,7 +78,9 @@ export function sunPosition(
   const time = instant.getTime();
   const { declination, equationOfTime } = solarCoordinates(time);
   const utcMinutes = (((time % msPerDay) + msPerDay) % msPerDay) / msPerMinute;
-  const hourAngle = (utcMinutes + equationOfTime + 4 * longitude) / 4 - 180;
+  const hourAngle = halfTurn(
+    (utcMinutes + equationOfTime + 4 * longitude) / 4 - 180,
+  );
   const elevation = degrees(
     Math.asin(
       sin(latitude) * sin(declination) +
@@ -86,7 +93,7 @@ export function sunPosition(
       cos(hourAngle) * sin(latitude) - tan(declination) * cos(latitude),
     ),
   );
-  return { elevation, azimuth: (fromSouth + 180) % 360 };
+  return { elevation, azimuth: (fromSouth + 180) % 360, hourAngle };
 }
 
 export interface SunTimes {

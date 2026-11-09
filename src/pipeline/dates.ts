@@ -50,18 +50,3 @@ export function sydneyHour(instant: Date): number {
     }).format(instant),
   );
 }
-
-/** How far Sydney's clocks are ahead of UTC at `instant`, in minutes, including daylight saving. */
-export function sydneyOffsetMinutes(instant: Date): number {
-  const name = new Intl.DateTimeFormat("en-AU", {
-    timeZone: "Australia/Sydney",
-    timeZoneName: "longOffset",
-  })
-    .formatToParts(instant)
-    .find((part) => part.type === "timeZoneName")?.value;
-  const match = /^GMT([+-])(\d{2}):(\d{2})$/.exec(name ?? "");
-  if (match === null)
-    throw new Error(`Unexpected Sydney offset ${String(name)}`);
-  const [, sign, hours, minutes] = match;
-  return (sign === "-" ? -1 : 1) * (Number(hours) * 60 + Number(minutes));
-}

@@ -182,28 +182,6 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 ---
 
-## T14: A sky that follows the sun
-
-**Status:** in progress
-
-**Goal:** A sky that changes with the sun's height at the selected location, rather than at fixed hours.
-
-- Scope: replace the fixed hours in `skyPhase` (`src/site/sky.ts`), which switch the sky at set hours, with a sky that changes gradually with the sun's height at the selected location, worked out in the browser from the viewer's clock.
-  - Blend the sky's colours between a few points by the sun's height, such as night, twilight, sunrise or sunset glow, low sun and midday, updated every minute. Using the sun's height rather than the clock makes twilight longer in summer than in winter without special cases.
-  - Blend the weather colours (`--overcast`, `--fog`, `--mist`, `--cloud` and `--drop` in `style.css`) the same way, so an overcast evening fades to grey rather than orange, and mute the sunset glow under heavy cloud.
-  - Put the glow on the side of the sky where the sun is: east in the morning, west in the evening.
-  - Out of scope: moon phases, and a sun that moves across the sky.
-- Done when: tests pass, and the sky has been checked in the browser through a summer and a winter day, under clear and overcast skies.
-
-**Notes:**
-
-- The daylight facts are done (see the Daylight section of [facts.md](facts.md)). This is what is left of the task.
-- `sunPosition` in `src/shared/sun.ts` gives the sun's elevation (geometric, without refraction) and its azimuth (clockwise from north) at an instant, for a location's `latitude` and `longitude`. Tests check it against USNO's published sunrise and sunset times.
-- `render` in `src/site/render.ts` sets `data-sky` and `data-weather` on the root element, and `main.ts` re-renders every 5 minutes. A sky updated every minute is better kept apart from `render`, so the page isn't rebuilt each minute.
-- `data-sky` is used throughout `style.css`, including for the stars and for darker glass on a cloudy day.
-
----
-
 ## T37: More forecast icon looks
 
 **Status:** todo
@@ -216,6 +194,10 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 - Out of scope: snow (15), tropical cyclone (19) and frost (14), which Sydney almost never gets. Their current looks stay.
 - Scope: once the site is deployed (T25), check the rain and storm skies on a real phone. The glass panels re-blur everything moving behind them on every frame, which headless measurement doesn't capture. If they stutter or drain the battery, slow or thin the rain on small screens.
 - Done when: each new look has been checked in the browser by day and night, and with reduced motion.
+
+**Notes:**
+
+- With `npm run dev`, `/?sky` opens a panel that sets the sky to any date, time and kind of weather. Add the new looks to its weather list (`weathers` in `src/shared/weather.ts`).
 
 ---
 

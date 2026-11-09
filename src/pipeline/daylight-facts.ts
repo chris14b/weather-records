@@ -1,6 +1,7 @@
 import type { DaylightEvent, Direction } from "../shared/facts.ts";
 import { type Coordinates, sunTimes } from "../shared/sun.ts";
-import { addDays, daysBetween, sydneyOffsetMinutes } from "./dates.ts";
+import { sydneyOffsetMinutes } from "../shared/sydney-time.ts";
+import { addDays, daysBetween } from "./dates.ts";
 
 /** How far either side of the window's last day the page can show a turning point. */
 const daylightReach = { before: 30, after: 7 };
