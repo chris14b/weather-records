@@ -188,8 +188,8 @@ function footer(
   if (location.id === "sydney-observatory-hill") {
     notes.push(
       element("p", {}, [
-        "Observatory Hill's records join two stations: 066062 until 31 August 2020, then 066214. ",
-        "The new station reads about 0.3°C warmer for maximums and 0.3°C cooler for minimums, so records that span the change are less exact.",
+        "Observatory Hill's records join two stations: 066062 until 31\u00a0August 2020, then 066214. ",
+        "The new station reads about 0.3\u00a0°C warmer for maximums and 0.3\u00a0°C cooler for minimums, so records that span the change are less exact.",
       ]),
     );
   }

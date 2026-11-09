@@ -1,12 +1,5 @@
 import { nextUpdate } from "../shared/schedule.ts";
-import { clockTime, sydneyDate } from "./naming.ts";
-
-const dayFormat = new Intl.DateTimeFormat("en-AU", {
-  timeZone: "Australia/Sydney",
-  weekday: "long",
-  day: "numeric",
-  month: "long",
-});
+import { clockTime, sydneyDate, weekdayDate } from "./naming.ts";
 
 function atClock(instant: Date): string {
   return clockTime(instant.toISOString());
@@ -14,11 +7,11 @@ function atClock(instant: Date): string {
 
 /**
  * When the data was made and when the next update is due, as read at `now`:
- * "Updated Monday 9 November at 10:41am. Next update due around 10:30pm."
+ * "Updated Monday 9 November at 10:41 am. Next update due around 10:30 pm."
  */
 export function updateNote(generatedAt: string, now: Date): string {
   const generated = new Date(generatedAt);
-  const updated = `Updated ${dayFormat.format(generated)} at ${atClock(generated)}.`;
+  const updated = `Updated ${weekdayDate(sydneyDate(generated))} at ${atClock(generated)}.`;
   const due = nextUpdate(generated);
   if (now < due) {
     const day = sydneyDate(due) === sydneyDate(now) ? "" : " tomorrow";

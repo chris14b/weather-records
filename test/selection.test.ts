@@ -419,7 +419,7 @@ describe("selectFacts with a forecast", () => {
       {
         date: "2026-11-08",
         status: "forecast",
-        text: "the 3rd hottest day since records began in 1990",
+        text: "the third hottest day since records began in 1990",
       },
       {
         date: "2026-11-08",
@@ -444,7 +444,7 @@ describe("selectFacts with a forecast", () => {
         date: "2026-11-13",
         status: "conditional",
         score: 2.3,
-        text: "the coldest day since 3 November",
+        text: "the coldest day since 3\u00a0November",
       },
     ]);
   });
@@ -462,7 +462,7 @@ describe("selectFacts with a forecast", () => {
       {
         date: "2026-11-08",
         status: "forecast",
-        text: "the 3rd hottest day since records began in 1990",
+        text: "the third hottest day since records began in 1990",
       },
       {
         date: "2026-11-08",
@@ -485,7 +485,7 @@ describe("selectFacts with a forecast", () => {
     );
   });
 
-  describe("with tonight's low and the rain to 9am tomorrow", () => {
+  describe("with tonight's low and the rain to 9 am tomorrow", () => {
     const observed = [
       series("minTemp", () => 15, {}),
       series("rain", wetFifteenth, {}),
@@ -548,7 +548,7 @@ describe("selectFacts with a forecast", () => {
       {
         date: latest,
         measure: "maxTemp",
-        text: "the 3rd hottest day since records began in 1990",
+        text: "the third hottest day since records began in 1990",
       },
     ]);
   });

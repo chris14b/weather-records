@@ -107,7 +107,7 @@ Each forecast maximum and minimum is ranked like an observed day, with the same 
 
 Each day's rain with a 50% chance is ranked like an observed day's rain, against the observed days and the forecast's earlier days, with the same crediting and the same treatment of a missing range as the 7 days below. It starts from the day after the last observed rain, whatever day the temperatures start from, so a run from 4:30pm can still give the rain to 9am tomorrow if BOM gives today's.
 
-Its conditional fact is a **chance** (`rainChances`): BOM's range ends at the amount with a 25% chance, so the day is ranked at exactly that amount, against the observed days and the forecast's earlier days at their 50% amounts. There is one whenever that amount does better than the 50% amount, even if the 50% amount is 0 mm and the day has no forecast fact of its own, as on most showery days: "The 24 hours to 9am Monday have a 25% chance of being the wettest since 4 November, with 20 mm or more". On 9 November 2026, a showery week, the best of these scored about 3.1, below the 4 a conditional fact needs, so none was shown.
+Its conditional fact is a **chance** (`rainChances`): BOM's range ends at the amount with a 25% chance, so the day is ranked at exactly that amount, against the observed days and the forecast's earlier days at their 50% amounts. There is one whenever that amount does better than the 50% amount, even if the 50% amount is 0 mm and the day has no forecast fact of its own, as on most showery days: "The 24 hours to 9 am Monday have a 25% chance of being the wettest since 4 November, with 20 mm or more". On 9 November 2026, a showery week, the best of these scored about 3.1, below the 4 a conditional fact needs, so none was shown.
 
 #### Rain over the next 7 days
 
@@ -119,7 +119,7 @@ The rain amounts with a 50% chance are totalled over the forecast's first 7 days
 
 #### What it would take
 
-For every forecast fact, a **conditional** fact gives the most notable rank and since within reach, at the least value that gets them: "a top of 36.6°C would make it the hottest November day since records began in 1859".
+For every forecast fact, a **conditional** fact gives the most notable rank and since within reach, at the least value that gets them: "a top of 36.6 °C would make it the hottest November day since records began in 1859".
 
 - **Within reach:** 2°C beyond the forecast temperature, either way, and for the 7 days' rain up to the total of the amounts with a 25% chance. That total is much less likely than 1 in 4, so the fact never says 25%. A single day's rain is a chance instead (see Rain on each day).
 - **Least value:** `boundariesBetween` in `thresholds.ts` gives the earlier values that the forecast doesn't beat but the limit does. A value 0.1 beyond the furthest of them gets the same rank and since as the limit itself. T12's near misses can use the same function to find the nearest one.
@@ -201,14 +201,14 @@ Past week and Past month run strongest first, and so do Today's observed and day
 
 ## 5. Wording
 
-`describeFact` writes what the day was, without naming the day, its value or its status: e.g. "the 2nd hottest October day since records began in 1859". The site makes a sentence of it for when the page is viewed (see The sentence, below).
+`describeFact` writes what the day was, without naming the day, its value or its status: e.g. "the second hottest October day since records began in 1859". The site makes a sentence of it for when the page is viewed (see The sentence, below).
 
-- **Rank:** "the hottest", "the 2nd hottest", "the equal 3rd hottest".
+- **Rank:** "the hottest", "the second hottest", "the equal third hottest".
 - **Comparison:**
   - "day", "spring day", "October day", or "6 November".
   - The year so far: "day of the year so far".
-  - The noun follows the measure: "temperature range", "9am" and so on.
-  - The minimum and rain have no noun, because the site names their day "last night" or "the 24 hours to 9am Friday", and "Last night was the coldest night" says night twice: "the coldest", "the wettest in October", "the coldest of the year so far", "the wettest for the date".
+  - The noun follows the measure: "temperature range", "9 am" and so on.
+  - The minimum and rain have no noun, because the site names their day "last night" or "the 24 hours to 9 am Friday", and "Last night was the coldest night" says night twice: "the coldest", "the wettest in October", "the coldest of the year so far", "the wettest for the date".
   - A change is "the biggest day-to-day rise in maximum temperature" or "drop in minimum temperature". Its comparison follows it: "in spring", "in October", "on 13 October".
 - **Scope:**
   - A rank-led fact says "since records began in 1859", or "since 2009" when the series doesn't go back to when records began.
@@ -216,7 +216,7 @@ Past week and Past month run strongest first, and so do Today's observed and day
 - **Gaps:** a rank-led fact with under 95% coverage names its longest gap, e.g. "(no records from March 2018 to July 2020)". A period says how many earlier ones it left out: "(not counting 16 years with gaps)". At Observatory Hill these are years between 1864 and 1948 with a month or so missing.
 - **Periods:**
   - The site names the period, so one compared with its own kind has no noun: "the wettest" for an October among Octobers, a spring or a month so far, and "the wettest in spring" for 7 days among spring's. "October was the wettest October" would say it twice.
-  - Months among all months and years keep theirs: "the 3rd hottest month", "the hottest year", and for the year so far "so far the 3rd hottest year", since "start to the year" reads oddly by November.
+  - Months among all months and years keep theirs: "the third hottest month", "the hottest year", and for the year so far "so far the third hottest year", since "start to the year" reads oddly by November.
   - A period's minimum is its nights: "the warmest nights" (the site says "October had…"), or "the month with the coldest nights" among all months.
   - A since is a day for a run of days ("since 8 February"). For months among all months it is a month ("since March", "since March 2025") or a year. Everything else is compared once a year, so its since is a year.
 
@@ -224,11 +224,11 @@ Past week and Past month run strongest first, and so do Today's observed and day
 
 `sentence` in `src/site/naming.ts` makes the sentence for when the page is viewed, in Sydney time. It has three parts, so the page can set the day apart.
 
-- **Subject:** "Today", "Yesterday", a weekday within 6 days, otherwise a date ("12 October"). A minimum is for the 24 hours to 9am, so it names the night that ends on its date by its evening: "Last night", "Tonight", "Thursday night", "The night of 2 November". A forecast for last night is for the night still under way after midnight, so it is named by its weekday: "Sunday night is forecast to be…". A day's rain is "The 24 hours to 9am Friday". Periods are "October", "October 2025" in another year, "The 3 days to Tuesday", "November so far", "Spring", "2026" for the year so far, and "2025".
+- **Subject:** "Today", "Yesterday", a weekday within 6 days, otherwise a date ("12 October"). A minimum is for the 24 hours to 9am, so it names the night that ends on its date by its evening: "Last night", "Tonight", "Thursday night", "The night of 2 November". A forecast for last night is for the night still under way after midnight, so it is named by its weekday: "Sunday night is forecast to be…". A day's rain is "The 24 hours to 9 am Friday". Periods are "October", "October 2025" in another year, "The 3 days to Tuesday", "November so far", "Spring", "2026" for the year so far, and "2025".
 - **Verb:** "is" or "was" by whether the day is over. A night, the rain to 9am and the 9am readings are over by the time the page shows them. Rain days and runs of days take "were". Measures that aren't a kind of day take "had": changes, ranges, humidity and the 9am and 3pm readings ("Thursday had the lowest peak humidity"). A period's nights take "had", "has had" or, for the year so far, "has so far had". Forecasts are "is forecast to be".
-- **Value**, with its unit from the measure: "with a top of 23.6°C", "with a low of 11.6°C", "with 49.6 mm", "up 6.7°C" for a change, "at 79%", "with an average top of 23.6°C" for a period. Observed values show one decimal, forecasts whole degrees as BOM gives them.
+- **Value**, with its unit from the measure: "with a top of 23.6 °C", "with a low of 11.6 °C", "with 49.6 mm", "up 6.7 °C" for a change, "at 79%", "with an average top of 23.6 °C" for a period. Observed values show one decimal, forecasts whole degrees as BOM gives them.
 - **Provisional:** shown exactly like a confirmed fact, with no words and the same dot ("Observed" in the legend). The live feed is treated as fact.
-- **Conditional:** built around what it needs: "A low of 10°C tonight (forecast 12°C) would make it the coldest night in November since 2006", "A top of 36.6°C on Thursday (forecast 35°C) would make it…", "90.1 mm in the 7 days to Sunday (forecast 70 mm) would make them…". A single day's rain is a chance: "The 24 hours to 9am Monday have a 25% chance of being the wettest since 4 November, with 20 mm or more".
+- **Conditional:** built around what it needs: "A low of 10 °C tonight (forecast 12 °C) would make it the coldest night in November since 2006", "A top of 36.6 °C on Thursday (forecast 35 °C) would make it…", "90.1 mm in the 7 days to Sunday (forecast 70 mm) would make them…". A single day's rain is a chance: "The 24 hours to 9 am Monday have a 25% chance of being the wettest since 4 November, with 20 mm or more".
 
 ### Standout marks
 
@@ -251,7 +251,7 @@ Each fact also has a `why` for the site:
 - **Of the year or the season:** on the clock, daylight saving moves sunrise and sunset an hour. The sunrises just before it starts in October are earlier than December's (5:30am on 3 October 2026, against 5:37am), and those just before it ends in April later than July's. So a turning point is "of the year" only if no other day of its calendar year beats it on the clock, and otherwise "of" its season, if nothing in the season does: "the earliest sunrise of summer", "the latest sunrise of winter". Day lengths don't change with the clock, so the solstices are always of the year.
 - **Scoring:** six turning points a year make each about a once-in-61-days fact, so they score log(365.25 / 6), or 4.11 (`scoreDaylight` in `scoring.ts`). Sunrises and sunsets weigh 0.9, since the solstices are the turning points people know, and one of only its season weighs 0.85 more, as a season comparison does. So the scores are 4.11, 3.70 and 3.14. That beats an everyday fact, so a solstice can lead Today, but not a record.
 - **Selection:** a turning point is news for about a week either side. It goes in Today on the page's date, in Past week for the 6 days before, and in the coming week for the 7 days after the window's end (`daylightAround`), never in Past month. Turning points are at least 9 days apart, so each section has room for every one in its days, on top of its weather facts.
-- **Wording:** `describeDaylight` gives "the longest day of the year" or "the earliest sunrise of summer". The site's `daylightSentence` adds the day and its value: "Thursday has the earliest sunrise of summer, at 5:37am", "Friday had the latest sunset of the year, at 8:10pm". A solstice gives its daylight: "Today is the longest day of the year, with 14 hours 25 minutes of daylight".
+- **Wording:** `describeDaylight` gives "the longest day of the year" or "the earliest sunrise of summer". The site's `daylightSentence` adds the day and its value: "Thursday has the earliest sunrise of summer, at 5:37 am", "Friday had the latest sunset of the year, at 8:10 pm". A solstice gives its daylight: "Today is the longest day of the year, with 14 hours 25 minutes of daylight".
 - **On the page:** a daylight fact has its own mark, a half-filled dot ("Daylight" in the legend), since it is neither observed nor forecast. It never gets a standout mark, since it comes round every year. It has no `why`: `facts.json` gives its `event`, `scope`, and its day's `sunrise` and `sunset` to the minute.
 
 Every fact in `facts.json` has a `kind`: `record` for the ranked facts above, and `daylight`.

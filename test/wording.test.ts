@@ -10,10 +10,10 @@ const words = (fact: Partial<CandidateFact>, lead: Lead = "rank") =>
 describe("describeFact", () => {
   test.each([
     [{}, "the hottest day since records began in 1900"],
-    [{ rank: 2 }, "the 2nd hottest day since records began in 1900"],
+    [{ rank: 2 }, "the second hottest day since records began in 1900"],
     [
       { rank: 3, ties: 1 },
-      "the equal 3rd hottest day since records began in 1900",
+      "the equal third hottest day since records began in 1900",
     ],
     [{ ties: 2 }, "the equal hottest day since records began in 1900"],
     [{ comparison: "year" as const }, "the hottest day of the year so far"],
@@ -27,7 +27,7 @@ describe("describeFact", () => {
     ],
     [
       { comparison: "calendarDate" as const },
-      "the hottest 6 November since records began in 1900",
+      "the hottest 6\u00a0November since records began in 1900",
     ],
     [
       { comparison: "calendarDate" as const, measure: "minTemp" as const },
@@ -48,8 +48,8 @@ describe("describeFact", () => {
     ["minRelHum", "lowest", "the lowest humidity"],
     ["solar", "highest", "the sunniest day"],
     ["solar", "lowest", "the gloomiest day"],
-    ["temp9am", "lowest", "the coldest 9am"],
-    ["relHum3pm", "lowest", "the driest 3pm"],
+    ["temp9am", "lowest", "the coldest 9\u00a0am"],
+    ["relHum3pm", "lowest", "the driest 3\u00a0pm"],
   ] as const)("words %s %s as %s", (measure, direction, expected) => {
     expect(words({ measure, direction })).toBe(
       `${expected} since records began in 1900`,
@@ -67,7 +67,7 @@ describe("describeFact", () => {
       "minTempChange",
       "highest",
       { rank: 2 },
-      "the 2nd biggest day-to-day rise in minimum temperature since records began in 1900",
+      "the second biggest day-to-day rise in minimum temperature since records began in 1900",
     ],
     [
       "minTempChange",
@@ -91,7 +91,7 @@ describe("describeFact", () => {
       "maxTempChange",
       "highest",
       { comparison: "calendarDate" },
-      "the biggest day-to-day rise in maximum temperature on 6 November since records began in 1900",
+      "the biggest day-to-day rise in maximum temperature on 6\u00a0November since records began in 1900",
     ],
     [
       "rain",
@@ -121,7 +121,7 @@ describe("describeFact", () => {
     ],
     [
       { comparison: "calendarDate" as const },
-      "the coldest night on 6 November since records began in 1900",
+      "the coldest night on 6\u00a0November since records began in 1900",
     ],
   ])("names the night of a conditional minimum: %o", (fact, expected) => {
     expect(
@@ -145,7 +145,7 @@ describe("describeFact", () => {
         },
         "since",
       ),
-    ).toBe("the warmest night since 17 March");
+    ).toBe("the warmest night since 17\u00a0March");
   });
 
   test("words a change that leads with its since", () => {
@@ -192,9 +192,9 @@ describe("describeFact", () => {
   );
 
   test.each([
-    ["2026-11-02", "since 2 November"],
-    ["2026-02-08", "since 8 February"],
-    ["2025-12-20", "since 20 December 2025"],
+    ["2026-11-02", "since 2\u00a0November"],
+    ["2026-02-08", "since 8\u00a0February"],
+    ["2025-12-20", "since 20\u00a0December 2025"],
     ["2024-08-30", "since August 2024"],
     ["2018-10-20", "since 2018"],
   ])("words a since on %s", (date, expected) => {
@@ -251,7 +251,7 @@ describe("describeFact", () => {
         ],
       }),
     ).toBe(
-      "the 2nd most humid day since 2009 (no records from March 2018 to July 2020)",
+      "the second most humid day since 2009 (no records from March 2018 to July 2020)",
     );
   });
 
@@ -272,7 +272,7 @@ describe("describeFact", () => {
 
   test.each([
     [{}, "the wettest since records began in 1866"],
-    [{ rank: 3 }, "the 3rd wettest since records began in 1866"],
+    [{ rank: 3 }, "the third wettest since records began in 1866"],
     [
       { direction: "lowest" as const },
       "the driest since records began in 1866",
@@ -287,7 +287,7 @@ describe("describeFact", () => {
     ],
     [
       { measure: "minTemp" as const, rank: 2, ties: 1 },
-      "the equal 2nd warmest nights since records began in 1866",
+      "the equal second warmest nights since records began in 1866",
     ],
     [
       {
@@ -340,7 +340,7 @@ describe("describeFact", () => {
         measure: "maxTemp" as const,
         rank: 3,
       },
-      "so far the 3rd hottest year since records began in 1866",
+      "so far the third hottest year since records began in 1866",
     ],
     [
       {
@@ -358,7 +358,7 @@ describe("describeFact", () => {
     ],
     [
       { period: { kind: "rolling" as const, days: 7 }, rank: 2 },
-      "the 2nd wettest in October since records began in 1866",
+      "the second wettest in October since records began in 1866",
     ],
   ])("words a period: %o", (fact, expected) => {
     expect(describeFact(periodFact(fact), "rank")).toBe(expected);
@@ -387,7 +387,7 @@ describe("describeFact", () => {
         comparison: "all" as const,
       },
       "2026-02-08",
-      "the wettest since 8 February",
+      "the wettest since 8\u00a0February",
     ],
   ])("words a period's since: %o on %s", (fact, date, expected) => {
     expect(
@@ -407,10 +407,11 @@ describe("describeFact", () => {
 
 describe("ordinal", () => {
   test.each([
-    [1, "1st"],
-    [2, "2nd"],
-    [3, "3rd"],
-    [4, "4th"],
+    [1, "first"],
+    [2, "second"],
+    [3, "third"],
+    [9, "ninth"],
+    [10, "10th"],
     [11, "11th"],
     [12, "12th"],
     [13, "13th"],

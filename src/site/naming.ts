@@ -84,10 +84,9 @@ export function dayName(date: string, today: string): string {
 
   const parsed = parse(date);
   if (Math.abs(offset) <= 6) return weekday(parsed);
-  const dayAndMonth = `${String(parsed.day)} ${monthName(parsed.month)}`;
   return parsed.year === parse(today).year
-    ? dayAndMonth
-    : `${dayAndMonth} ${String(parsed.year)}`;
+    ? dayAndMonth(parsed)
+    : `${dayAndMonth(parsed)} ${String(parsed.year)}`;
 }
 
 function weekday(date: CalendarDate): string {
@@ -95,10 +94,19 @@ function weekday(date: CalendarDate): string {
   return weekdays[index] ?? "";
 }
 
+function dayAndMonth({ day, month }: CalendarDate): string {
+  return `${String(day)}\u00a0${monthName(month)}`;
+}
+
+/** A date with its weekday: "Monday 9 November". */
+export function weekdayDate(date: string): string {
+  const parsed = parse(date);
+  return `${weekday(parsed)} ${dayAndMonth(parsed)}`;
+}
+
 /** A date in full: "Monday 9 November 2026". */
 export function longDate(date: string): string {
-  const parsed = parse(date);
-  return `${weekday(parsed)} ${String(parsed.day)} ${monthName(parsed.month)} ${String(parsed.year)}`;
+  return `${weekdayDate(date)} ${String(parse(date).year)}`;
 }
 
 function seasonName(month: number): string {
@@ -122,7 +130,7 @@ export type Phrased = Named &
 
 /**
  * A night named by the evening it starts, mid-sentence: "last night", "tonight", "Thursday
- * night", "the night of 2 November". A minimum is for the 24 hours to 9am, so the night
+ * night", "the night of 2 November". A minimum is for the 24 hours to 9 am, so the night
  * that ends on `date`. A forecast for last night is for the night still under way, after
  * midnight, so it is named by its weekday.
  */
@@ -158,7 +166,7 @@ export function periodName(
         );
       }
       if (measure === "rain") {
-        return `the 24 hours to 9am ${dayName(date, today)}`;
+        return `the 24 hours to 9\u00a0am ${dayName(date, today)}`;
       }
       return dayName(date, today);
     case "rolling":
@@ -189,7 +197,7 @@ function capitalise(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-// A night, the rain to 9am and a 9am reading are over by the time the page names them.
+// A night, the rain to 9 am and a 9 am reading are over by the time the page names them.
 const overByMorning = new Set<FactMeasure>([
   "minTemp",
   "rain",
@@ -217,7 +225,7 @@ function verb(fact: Phrased, today: string): string {
   return plural ? "were" : "was";
 }
 
-// A day can be "the hottest day", but it has "the lowest peak humidity" or "the coldest 9am".
+// A day can be "the hottest day", but it has "the lowest peak humidity" or "the coldest 9 am".
 function isHad({ measure, direction, period }: Phrased): boolean {
   if (period.kind !== "day") return false;
   if (isChangeMeasure(measure)) return true;
@@ -255,11 +263,11 @@ const whole = new Intl.NumberFormat("en-AU", { maximumFractionDigits: 1 });
 const units: Record<FactMeasure, string> = {
   maxTemp: "°C",
   minTemp: "°C",
-  rain: " mm",
+  rain: "mm",
   range: "°C",
   maxRelHum: "%",
   minRelHum: "%",
-  solar: " MJ/m²",
+  solar: "MJ/m²",
   temp9am: "°C",
   relHum9am: "%",
   temp3pm: "°C",
@@ -270,14 +278,18 @@ const units: Record<FactMeasure, string> = {
 
 const isHumidity = (measure: FactMeasure) => units[measure] === "%";
 
-/** A value with its unit: "23.6°C", "49.6 mm", "79%". Forecasts are whole degrees, so they stay that way. */
+/**
+ * A value with its unit: "23.6 °C", "49.6 mm", "79%". Forecasts are whole degrees, so they
+ * stay that way. The Style Manual spaces every unit but the percentage sign.
+ */
 export function amount(
   measure: FactMeasure,
   value: number,
   forecast = false,
 ): string {
-  const format = forecast || isHumidity(measure) ? whole : decimal;
-  return `${format.format(Math.abs(value))}${units[measure]}`;
+  const humidity = isHumidity(measure);
+  const format = forecast || humidity ? whole : decimal;
+  return `${format.format(Math.abs(value))}${humidity ? "" : "\u00a0"}${units[measure]}`;
 }
 
 function valueClause({ measure, period, direction, status, why }: Phrased) {
@@ -302,8 +314,8 @@ function valueClause({ measure, period, direction, status, why }: Phrased) {
   return `at ${value}`;
 }
 
-// "A low of 10°C tonight (forecast 12°C) would make it…". BOM's rain range ends at the
-// amount with a 25% chance, which a rain day's fact is ranked at: "The 24 hours to 9am
+// "A low of 10 °C tonight (forecast 12 °C) would make it…". BOM's rain range ends at the
+// amount with a 25% chance, which a rain day's fact is ranked at: "The 24 hours to 9 am
 // Monday have a 25% chance of being the wettest since 4 November, with 20 mm or more".
 function conditional(fact: Phrased, today: string): Sentence {
   const { measure, why } = fact;
@@ -339,7 +351,7 @@ function conditional(fact: Phrased, today: string): Sentence {
 
 /**
  * A sentence in three parts, so the site can set the day or period apart: "Last night" +
- * " was the coldest night since 15 October, with a low of 11.6°C".
+ * " was the coldest night since 15 October, with a low of 11.6 °C".
  */
 export interface Sentence {
   before: string;
@@ -364,12 +376,16 @@ const clockFormat = new Intl.DateTimeFormat("en-AU", {
   hourCycle: "h12",
 });
 
-/** An instant as Sydney's clocks show it: "5:41am", "8:10pm". */
+/** An instant as Sydney's clocks show it: "5:41 am", "8:10 pm", "midday". */
 export function clockTime(instant: string): string {
   const parts = clockFormat.formatToParts(new Date(instant));
   const part = (type: Intl.DateTimeFormatPartTypes) =>
     parts.find((p) => p.type === type)?.value ?? "";
-  return `${part("hour")}:${part("minute")}${part("dayPeriod").toLowerCase()}`;
+  const period = part("dayPeriod").toLowerCase();
+  if (part("hour") === "12" && part("minute") === "00") {
+    return period === "am" ? "midnight" : "midday";
+  }
+  return `${part("hour")}:${part("minute")}\u00a0${period}`;
 }
 
 function count(n: number, unit: string): string {

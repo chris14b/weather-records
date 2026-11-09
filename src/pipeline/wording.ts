@@ -40,7 +40,7 @@ const phrases: Record<FactMeasure, Record<Direction, Phrase>> = {
     highest: { superlative: "hottest", noun: "day" },
     lowest: { superlative: "coldest", noun: "day" },
   },
-  // The site names the night ("last night") and a day's rain ("the 24 hours to 9am
+  // The site names the night ("last night") and a day's rain ("the 24 hours to 9 am
   // Friday"), so they need no noun.
   minTemp: {
     highest: { superlative: "warmest", noun: "", periodAfter: true },
@@ -67,20 +67,20 @@ const phrases: Record<FactMeasure, Record<Direction, Phrase>> = {
     lowest: { superlative: "gloomiest", noun: "day" },
   },
   temp9am: {
-    highest: { superlative: "warmest", noun: "9am" },
-    lowest: { superlative: "coldest", noun: "9am" },
+    highest: { superlative: "warmest", noun: "9\u00a0am" },
+    lowest: { superlative: "coldest", noun: "9\u00a0am" },
   },
   temp3pm: {
-    highest: { superlative: "warmest", noun: "3pm" },
-    lowest: { superlative: "coldest", noun: "3pm" },
+    highest: { superlative: "warmest", noun: "3\u00a0pm" },
+    lowest: { superlative: "coldest", noun: "3\u00a0pm" },
   },
   relHum9am: {
-    highest: { superlative: "most humid", noun: "9am" },
-    lowest: { superlative: "driest", noun: "9am" },
+    highest: { superlative: "most humid", noun: "9\u00a0am" },
+    lowest: { superlative: "driest", noun: "9\u00a0am" },
   },
   relHum3pm: {
-    highest: { superlative: "most humid", noun: "3pm" },
-    lowest: { superlative: "driest", noun: "3pm" },
+    highest: { superlative: "most humid", noun: "3\u00a0pm" },
+    lowest: { superlative: "driest", noun: "3\u00a0pm" },
   },
   maxTempChange: changePhrases("maxTemp"),
   minTempChange: changePhrases("minTemp"),
@@ -97,7 +97,7 @@ const periodSuperlatives: Partial<
 /**
  * What a fact's day or period was, without naming it, its value, its status or what beat
  * it: e.g. "the
- * 2nd hottest October day since records began in 1859" or "the wettest 7 days since 2022".
+ * second hottest October day since records began in 1859" or "the wettest 7 days since 2022".
  */
 export function describeFact(fact: CandidateFact, lead: Lead): string {
   const ranked = lead === "rank" ? rankWords(fact) : "";
@@ -129,8 +129,22 @@ export function describeDaylight({
   return `${daylightPhrases[event]} of ${of}`;
 }
 
-/** 1st, 2nd, 3rd, 4th… */
+const ordinalWords = [
+  "first",
+  "second",
+  "third",
+  "fourth",
+  "fifth",
+  "sixth",
+  "seventh",
+  "eighth",
+  "ninth",
+];
+
+/** "first" to "ninth" in words, then "10th", "11th", "21st"…, as the Style Manual has it. */
 export function ordinal(n: number): string {
+  const word = ordinalWords[n - 1];
+  if (word !== undefined) return word;
   const lastTwo = n % 100;
   const suffix =
     lastTwo >= 11 && lastTwo <= 13
@@ -139,7 +153,7 @@ export function ordinal(n: number): string {
   return `${String(n)}${suffix}`;
 }
 
-// A conditional fact names its night only in passing ("A low of 10°C tonight would make
+// A conditional fact names its night only in passing ("A low of 10 °C tonight would make
 // it…"), so it needs the noun.
 function dayPhrase({ measure, direction, status }: CandidateFact): Phrase {
   const phrase = phrases[measure][direction];
@@ -265,7 +279,7 @@ function sinceScope({
 function caveat(fact: CandidateFact): string {
   if (coverage(fact) >= minimumCoverage) return "";
   if (fact.period.kind !== "day") {
-    return ` (not counting ${String(fact.missingDays)} ${missingUnit(fact)} with gaps)`;
+    return ` (not counting ${counted(fact.missingDays, missingUnit(fact))} with gaps)`;
   }
   const longest = fact.gaps.reduce<DateRange | undefined>(
     (best, gap) =>
@@ -273,15 +287,21 @@ function caveat(fact: CandidateFact): string {
     undefined,
   );
   return longest === undefined
-    ? ` (with ${String(fact.missingDays)} days missing)`
+    ? ` (with ${counted(fact.missingDays, ["day", "days"])} missing)`
     : ` (no records from ${monthYear(longest.from)} to ${monthYear(longest.to)})`;
 }
 
-function missingUnit({ period, comparison }: CandidateFact): string {
-  if (period.kind === "day") return "days";
-  if (period.kind === "rolling") return "runs of days";
-  if (period.toDate || comparison !== "all") return "years";
-  return `${period.kind}s`;
+type Unit = readonly [singular: string, plural: string];
+
+function counted(n: number, [singular, plural]: Unit): string {
+  return `${String(n)} ${n === 1 ? singular : plural}`;
+}
+
+function missingUnit({ period, comparison }: CandidateFact): Unit {
+  if (period.kind === "day") return ["day", "days"];
+  if (period.kind === "rolling") return ["run of days", "runs of days"];
+  if (period.toDate || comparison !== "all") return ["year", "years"];
+  return [period.kind, `${period.kind}s`];
 }
 
 function length({ from, to }: DateRange): number {
@@ -307,7 +327,7 @@ function earlierMonth(earlier: string, date: string): string {
 }
 
 function dayMonth(date: string): string {
-  return format(date, { day: "numeric", month: "long" });
+  return `${String(Number(date.slice(8, 10)))}\u00a0${format(date, { month: "long" })}`;
 }
 
 function monthYear(date: string): string {

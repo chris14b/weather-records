@@ -55,7 +55,7 @@ A static website that shows obscure weather records for the current and recent w
 - Missed runs must never leave a permanent gap. We don't keep our own archive: store only data that BOM still offers, and no longer than BOM keeps it. Then anything missed can be fetched again, automatically where the feed allows, otherwise by hand (the ZIPs and the Daily Weather Observations).
 - Each run checks the code, downloads the BOM FTP feeds, updates `data/recent/` and `data/ftp-history/`, commits them if they changed, then builds `facts.json` into the site and deploys it. It runs on `main` only, and never overlaps another run (concurrency group `pages`). A push by the run's own `GITHUB_TOKEN` doesn't start another run. If BOM's FTP is down, the run fails and the site keeps its last deployment, so a code change waits for the next run that can reach BOM.
 - `npm run build:data` writes `facts.json` to `src/site/public/`, Vite's public directory, so `npm run dev` serves it and the site build copies it into `dist/`. It is a build output, ignored by git, so run `build:data` before `npm run dev`.
-- The footer says when the next update is due ("Next update due around 12:30pm"), and that it is running late once that time passes without a new `facts.json`. The page fetches `facts.json` again every 5 minutes to find out. The run times are `updateRunsSydney` in `src/shared/schedule.ts`, and a test fails if they don't match `deploy.yml`.
+- The footer says when the next update is due ("Next update due around 12:30 pm"), and that it is running late once that time passes without a new `facts.json`. The page fetches `facts.json` again every 5 minutes to find out. The run times are `updateRunsSydney` in `src/shared/schedule.ts`, and a test fails if they don't match `deploy.yml`.
 - There is no server, and nothing updates on demand.
 
 ## Locations
@@ -68,7 +68,7 @@ A static website that shows obscure weather records for the current and recent w
 
 - Use BOM's own names and identifiers. A location is named by its current station's `description` in the observations feed, and its forecast area is matched by AAC code. Never name a location after a nearby suburb, in code, docs or on the site.
 - The joins are defined in config, not by merging files. Joining is by fixed cutover date. Never fill one station's gaps with another station's values.
-- The Observatory Hill stations differ: the new one reads about 0.3°C warmer for maximums and cooler for minimums. The site carries a note about the 2020 station change.
+- The Observatory Hill stations differ: the new one reads about 0.3 °C warmer for maximums and cooler for minimums. The site carries a note about the 2020 station change.
 - The Olympic Park record starts in 2011. Facts from such a short record are worth less, and scoring must reflect that.
 
 ## Data sources
@@ -104,10 +104,11 @@ The build must **fail loudly** in any of these cases rather than publish wrong f
 How facts are made, ranked, chosen and worded is explained in [docs/facts.md](docs/facts.md). Keep it in step with the code.
 
 - **Comparisons:** against all records, this year, the same month in every year, the same calendar date, and the same season. Don't compare against the same weekday.
-- **Ranks:** a fact can give a rank, such as "the 2nd coldest" or "the equal 3rd wettest", not only "the coldest". Tied values share a rank.
+- **Ranks:** a fact can give a rank, such as "the second coldest" or "the equal third wettest", not only "the coldest". Tied values share a rank.
 - **Scoring:** narrow comparisons and short records score lower, because they make records easy to set. An outright all-time record always shows, however short the record. Show a small number of the best facts, without near-duplicates.
 - **Recent days:** facts cover the last 31 days, not just the latest, for the home page's Today, Past week and Past month sections. Each day is judged against the data as it stood on that day, and a fact that a later day has beaten isn't shown.
 - **Dates:** every fact carries the date it refers to. The page decides whether to say "today" or "yesterday", based on when it is viewed.
-- **Wording:** distinguish observed and forecast facts. The live feed is treated as fact: the page shows a provisional fact exactly like a confirmed one, as "Observed". `facts.json` keeps the `provisional` status. Sentences give the value with its unit, name a minimum by its night ("last night") and a day's rain as "the 24 hours to 9am", say "since records began in 1859" rather than "on record", and don't repeat what the subject already says ("Last night was the coldest since…", "October was the wettest since…").
+- **Wording:** distinguish observed and forecast facts. The live feed is treated as fact: the page shows a provisional fact exactly like a confirmed one, as "Observed". `facts.json` keeps the `provisional` status. Sentences give the value with its unit, name a minimum by its night ("last night") and a day's rain as "the 24 hours to 9 am", say "since records began in 1859" rather than "on record", and don't repeat what the subject already says ("Last night was the coldest since…", "October was the wettest since…").
+- **Style:** numbers, dates and times on the site follow the [Australian Government Style Manual](https://www.stylemanual.gov.au/grammar-punctuation-and-conventions/numbers-and-measurements). A non-breaking space (`\u00a0`) goes between a number and its unit ("23.6 °C", "49.6 mm", but "79%"), before "am" and "pm" ("9 am", "10:30 pm"), and between a day and its month ("9 November"). Times are "midday" and "midnight" rather than 12 pm and 12 am, and ordinals are words up to "ninth", then "10th". One deliberate exception: a sentence may start with a year ("2026 was the wettest year…").
 - **Daylight:** the earliest and latest sunrise and sunset and the longest and shortest day are facts of their own, from the year's curve rather than ranks. They have their own mark on the page, never a standout mark, and are "of the year" only if no other day of the year beats them on the clock, which daylight saving can do; otherwise they are "of" their season.
 - **Attribution:** the data is © Bureau of Meteorology, licensed under CC BY 4.0. The site must credit it.

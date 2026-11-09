@@ -47,10 +47,10 @@ describe("dayName", () => {
     ["2026-11-10", "tomorrow"],
     ["2026-11-07", "Saturday"],
     ["2026-11-03", "Tuesday"],
-    ["2026-11-02", "2 November"],
+    ["2026-11-02", "2\u00a0November"],
     ["2026-11-15", "Sunday"],
-    ["2026-11-16", "16 November"],
-    ["2025-12-31", "31 December 2025"],
+    ["2026-11-16", "16\u00a0November"],
+    ["2025-12-31", "31\u00a0December 2025"],
   ])("names %s", (date, expected) => {
     expect(dayName(date, today)).toBe(expected);
   });
@@ -64,8 +64,8 @@ describe("nightName", () => {
     ["2026-11-08", "Saturday night"],
     ["2026-11-06", "Thursday night"],
     ["2026-11-14", "Friday night"],
-    ["2026-11-03", "the night of 2 November"],
-    ["2026-01-01", "the night of 31 December 2025"],
+    ["2026-11-03", "the night of 2\u00a0November"],
+    ["2026-01-01", "the night of 31\u00a0December 2025"],
   ])("names the night that ends on %s", (date, expected) => {
     expect(nightName(date, today)).toBe(expected);
   });
@@ -73,13 +73,13 @@ describe("nightName", () => {
 
 describe("amount", () => {
   test.each([
-    ["maxTemp", 23, false, "23.0°C"],
-    ["minTemp", 11.6, false, "11.6°C"],
-    ["minTemp", 12, true, "12°C"],
-    ["rain", 1234.5, false, "1,234.5 mm"],
+    ["maxTemp", 23, false, "23.0\u00a0°C"],
+    ["minTemp", 11.6, false, "11.6\u00a0°C"],
+    ["minTemp", 12, true, "12\u00a0°C"],
+    ["rain", 1234.5, false, "1,234.5\u00a0mm"],
     ["relHum3pm", 31, false, "31%"],
-    ["solar", 27.54, false, "27.5 MJ/m²"],
-    ["maxTempChange", -14.9, false, "14.9°C"],
+    ["solar", 27.54, false, "27.5\u00a0MJ/m²"],
+    ["maxTempChange", -14.9, false, "14.9\u00a0°C"],
   ] as const)("writes %s %d", (measure, value, forecast, expected) => {
     expect(amount(measure, value, forecast)).toBe(expected);
   });
@@ -87,10 +87,10 @@ describe("amount", () => {
 
 describe("longDate", () => {
   test.each([
-    ["2026-11-09", "Monday 9 November 2026"],
-    ["2026-11-15", "Sunday 15 November 2026"],
-    ["1970-01-01", "Thursday 1 January 1970"],
-    ["1939-01-14", "Saturday 14 January 1939"],
+    ["2026-11-09", "Monday 9\u00a0November 2026"],
+    ["2026-11-15", "Sunday 15\u00a0November 2026"],
+    ["1970-01-01", "Thursday 1\u00a0January 1970"],
+    ["1939-01-14", "Saturday 14\u00a0January 1939"],
   ])("writes %s", (date, expected) => {
     expect(longDate(date)).toBe(expected);
   });
@@ -189,7 +189,7 @@ describe("periodName", () => {
         from: "2026-11-04",
         date: "2026-11-04",
       },
-      "the 24 hours to 9am Wednesday",
+      "the 24 hours to 9\u00a0am Wednesday",
     ],
   ] as const)("names %o", (named, expected) => {
     expect(periodName(named, today)).toBe(expected);
@@ -205,21 +205,24 @@ describe("sentence", () => {
   test.each([
     [
       fact(),
-      "[Today] is the hottest day since records began in 1859, with a top of 45.8°C",
+      "[Today] is the hottest day since records began in 1859, with a top of 45.8\u00a0°C",
     ],
     [
-      fact({ date: "2026-11-05", text: "the coldest day since 27 October" }),
-      "[Thursday] was the coldest day since 27 October, with a top of 45.8°C",
+      fact({
+        date: "2026-11-05",
+        text: "the coldest day since 27\u00a0October",
+      }),
+      "[Thursday] was the coldest day since 27\u00a0October, with a top of 45.8\u00a0°C",
     ],
     [
       fact({
         measure: "minTemp",
         direction: "lowest",
         status: "provisional",
-        text: "the coldest since 15 October",
+        text: "the coldest since 15\u00a0October",
         why: { value: 11.6 },
       }),
-      "[Last night] was the coldest since 15 October, with a low of 11.6°C",
+      "[Last night] was the coldest since 15\u00a0October, with a low of 11.6\u00a0°C",
     ],
     [
       fact({
@@ -229,15 +232,15 @@ describe("sentence", () => {
         text: "the coldest in November since 2024",
         why: { value: 14.3 },
       }),
-      "[Thursday night] was the coldest in November since 2024, with a low of 14.3°C",
+      "[Thursday night] was the coldest in November since 2024, with a low of 14.3\u00a0°C",
     ],
     [
       fact({
         measure: "rain",
-        text: "the wettest since 16 October",
+        text: "the wettest since 16\u00a0October",
         why: { value: 22.4 },
       }),
-      "[The 24 hours to 9am today] were the wettest since 16 October, with 22.4 mm",
+      "[The 24 hours to 9\u00a0am today] were the wettest since 16\u00a0October, with 22.4\u00a0mm",
     ],
     [
       fact({
@@ -246,15 +249,15 @@ describe("sentence", () => {
         text: "the biggest day-to-day rise in maximum temperature in November since 2024",
         why: { value: 6.7 },
       }),
-      "[Saturday] had the biggest day-to-day rise in maximum temperature in November since 2024, up 6.7°C",
+      "[Saturday] had the biggest day-to-day rise in maximum temperature in November since 2024, up 6.7\u00a0°C",
     ],
     [
       fact({
         measure: "minRelHum",
-        text: "the most humid day since 3 March",
+        text: "the most humid day since 3\u00a0March",
         why: { value: 82 },
       }),
-      "[Today] is the most humid day since 3 March, never below 82%",
+      "[Today] is the most humid day since 3\u00a0March, never below 82%",
     ],
     [
       fact({
@@ -264,7 +267,7 @@ describe("sentence", () => {
         text: "the coldest November day since 2022",
         why: { value: 20 },
       }),
-      "[Tomorrow] is forecast to be the coldest November day since 2022, with a top of 20°C",
+      "[Tomorrow] is forecast to be the coldest November day since 2022, with a top of 20\u00a0°C",
     ],
     [
       fact({
@@ -275,7 +278,7 @@ describe("sentence", () => {
         text: "the coldest night in November since 2006",
         why: { value: 10, forecast: 12 },
       }),
-      "A low of 10°C [tonight] (forecast 12°C) would make it the coldest night in November since 2006",
+      "A low of 10\u00a0°C [tonight] (forecast 12\u00a0°C) would make it the coldest night in November since 2006",
     ],
     [
       fact({
@@ -285,7 +288,7 @@ describe("sentence", () => {
         text: "the warmest in November since 2014",
         why: { value: 23 },
       }),
-      "[Sunday night] is forecast to be the warmest in November since 2014, with a low of 23°C",
+      "[Sunday night] is forecast to be the warmest in November since 2014, with a low of 23\u00a0°C",
     ],
     [
       fact({
@@ -294,7 +297,7 @@ describe("sentence", () => {
         text: "the hottest November day since records began in 1859",
         why: { value: 36.6, forecast: 35 },
       }),
-      "A top of 36.6°C on [Thursday] (forecast 35°C) would make it the hottest November day since records began in 1859",
+      "A top of 36.6\u00a0°C on [Thursday] (forecast 35\u00a0°C) would make it the hottest November day since records began in 1859",
     ],
     [
       fact({
@@ -306,17 +309,17 @@ describe("sentence", () => {
         text: "the wettest since 2022",
         why: { value: 90.1, forecast: 70 },
       }),
-      "90.1 mm in [the 7 days to 16 November] (forecast 70 mm) would make them the wettest since 2022",
+      "90.1\u00a0mm in [the 7 days to 16\u00a0November] (forecast 70\u00a0mm) would make them the wettest since 2022",
     ],
     [
       fact({
         date: "2026-11-10",
         measure: "rain",
         status: "forecast",
-        text: "the wettest since 14 October",
+        text: "the wettest since 14\u00a0October",
         why: { value: 24 },
       }),
-      "[The 24 hours to 9am tomorrow] are forecast to be the wettest since 14 October, with 24 mm",
+      "[The 24 hours to 9\u00a0am tomorrow] are forecast to be the wettest since 14\u00a0October, with 24\u00a0mm",
     ],
     [
       fact({
@@ -326,7 +329,7 @@ describe("sentence", () => {
         text: "the wettest in November since 2022",
         why: { value: 30, forecast: 20 },
       }),
-      "[The 24 hours to 9am tomorrow] have a 25% chance of being the wettest in November since 2022, with 30 mm or more",
+      "[The 24 hours to 9\u00a0am tomorrow] have a 25% chance of being the wettest in November since 2022, with 30\u00a0mm or more",
     ],
     [
       fact({
@@ -337,7 +340,7 @@ describe("sentence", () => {
         text: "the wettest since records began in 1859",
         why: { value: 120.4 },
       }),
-      "[The 3 days to Saturday] were the wettest since records began in 1859, with 120.4 mm",
+      "[The 3 days to Saturday] were the wettest since records began in 1859, with 120.4\u00a0mm",
     ],
     [
       fact({
@@ -348,17 +351,17 @@ describe("sentence", () => {
         text: "the wettest since records began in 1859",
         why: { value: 300 },
       }),
-      "[October] was the wettest since records began in 1859, with 300.0 mm",
+      "[October] was the wettest since records began in 1859, with 300.0\u00a0mm",
     ],
     [
       fact({
         period: { kind: "year", toDate: true },
         from: "2026-01-01",
         date: "2026-11-07",
-        text: "so far the 3rd hottest year since records began in 1859",
+        text: "so far the third hottest year since records began in 1859",
         why: { value: 23.6 },
       }),
-      "[2026] is so far the 3rd hottest year since records began in 1859, with an average top of 23.6°C",
+      "[2026] is so far the third hottest year since records began in 1859, with an average top of 23.6\u00a0°C",
     ],
     [
       fact({
@@ -370,7 +373,7 @@ describe("sentence", () => {
         text: "the warmest nights since 2009",
         why: { value: 17.2 },
       }),
-      "[November so far] has had the warmest nights since 2009, with an average low of 17.2°C",
+      "[November so far] has had the warmest nights since 2009, with an average low of 17.2\u00a0°C",
     ],
     [
       fact({
@@ -381,7 +384,7 @@ describe("sentence", () => {
         text: "the warmest nights since records began in 1859",
         why: { value: 15 },
       }),
-      "[2026] has so far had the warmest nights since records began in 1859, with an average low of 15.0°C",
+      "[2026] has so far had the warmest nights since records began in 1859, with an average low of 15.0\u00a0°C",
     ],
     [
       fact({
@@ -394,26 +397,26 @@ describe("sentence", () => {
         text: "the month with the coldest nights since July 2024",
         why: { value: 6.1 },
       }),
-      "[July] was the month with the coldest nights since July 2024, with an average low of 6.1°C",
+      "[July] was the month with the coldest nights since July 2024, with an average low of 6.1\u00a0°C",
     ],
     [
       fact({
         date: "2026-11-05",
         measure: "maxRelHum",
         direction: "lowest",
-        text: "the lowest peak humidity since 27 October",
+        text: "the lowest peak humidity since 27\u00a0October",
         why: { value: 78 },
       }),
-      "[Thursday] had the lowest peak humidity since 27 October, at 78%",
+      "[Thursday] had the lowest peak humidity since 27\u00a0October, at 78%",
     ],
     [
       fact({
         measure: "range",
         direction: "lowest",
-        text: "the smallest temperature range since 8 February",
+        text: "the smallest temperature range since 8\u00a0February",
         why: { value: 1.3 },
       }),
-      "[Today] has the smallest temperature range since 8 February, at 1.3°C",
+      "[Today] has the smallest temperature range since 8\u00a0February, at 1.3\u00a0°C",
     ],
   ])("phrases %#", (phrased, expected) => {
     expect(says(phrased)).toBe(expected);
@@ -422,10 +425,12 @@ describe("sentence", () => {
 
 describe("clockTime", () => {
   test.each([
-    ["2026-12-21T18:41:00Z", "5:41am"],
-    ["2027-01-07T09:10:00Z", "8:10pm"],
-    ["2026-06-21T06:54:00Z", "4:54pm"],
-    ["2026-06-21T02:00:00Z", "12:00pm"],
+    ["2026-12-21T18:41:00Z", "5:41\u00a0am"],
+    ["2027-01-07T09:10:00Z", "8:10\u00a0pm"],
+    ["2026-06-21T06:54:00Z", "4:54\u00a0pm"],
+    ["2026-06-21T02:00:00Z", "midday"],
+    ["2026-06-20T14:00:00Z", "midnight"],
+    ["2026-06-20T14:01:00Z", "12:01\u00a0am"],
   ])("shows %s on Sydney's clocks as %s", (instant, expected) => {
     expect(clockTime(instant)).toBe(expected);
   });
@@ -487,10 +492,10 @@ describe("daylightSentence", () => {
     });
 
     expect(words(fact, "2026-12-06")).toBe(
-      "Today has the earliest sunrise of summer, at 5:37am",
+      "Today has the earliest sunrise of summer, at 5:37\u00a0am",
     );
     expect(words(fact, "2026-12-07")).toBe(
-      "Yesterday had the earliest sunrise of summer, at 5:37am",
+      "Yesterday had the earliest sunrise of summer, at 5:37\u00a0am",
     );
   });
 
@@ -504,7 +509,7 @@ describe("daylightSentence", () => {
     });
 
     expect(words(fact, "2027-01-04")).toBe(
-      "Thursday has the latest sunset of the year, at 8:10pm",
+      "Thursday has the latest sunset of the year, at 8:10\u00a0pm",
     );
   });
 });
