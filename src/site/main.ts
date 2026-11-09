@@ -57,7 +57,10 @@ function isFactsFile(value: unknown): value is FactsFile {
 }
 
 async function loadFacts(): Promise<FactsFile> {
-  const response = await fetch(`${import.meta.env.BASE_URL}facts.json`);
+  // Pages lets browsers reuse the file for 10 minutes; revalidating finds an update sooner.
+  const response = await fetch(`${import.meta.env.BASE_URL}facts.json`, {
+    cache: "no-cache",
+  });
   if (!response.ok) {
     throw new Error(`facts.json: ${String(response.status)}`);
   }
@@ -66,7 +69,8 @@ async function loadFacts(): Promise<FactsFile> {
   return file;
 }
 
-async function start(root: HTMLElement, file: FactsFile): Promise<void> {
+async function start(root: HTMLElement, loaded: FactsFile): Promise<void> {
+  let file = loaded;
   const address = startingAddress(new URL(window.location.href), locations);
   replaceAddress(address);
   let location = startingLocation(address, rememberedId(), locations);
@@ -102,8 +106,17 @@ async function start(root: HTMLElement, file: FactsFile): Promise<void> {
     });
     paintSky();
   };
+  const refresh = async () => {
+    try {
+      file = await loadFacts();
+    } catch (error) {
+      // The page already has facts, so it keeps them until a later refresh succeeds.
+      console.error(error);
+    }
+    show();
+  };
   show();
-  setInterval(show, refreshEvery);
+  setInterval(() => void refresh(), refreshEvery);
   setInterval(paintSky, skyEvery);
 
   // A panel for trying the sky at any time and in any weather, only with `npm run dev`.

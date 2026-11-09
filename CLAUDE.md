@@ -53,6 +53,7 @@ A static website that shows obscure weather records for the current and recent w
 - Missed runs must never leave a permanent gap. We don't keep our own archive: store only data that BOM still offers, and no longer than BOM keeps it. Then anything missed can be fetched again, automatically where the feed allows, otherwise by hand (the ZIPs and the Daily Weather Observations).
 - Each run downloads the BOM FTP feeds, updates `data/recent/`, regenerates `facts.json`, commits the data and deploys the site. It runs on `main` only, by schedule or by hand, and never overlaps another run (its concurrency group is `update`, not the deploy's `pages`). It pushes with its own `GITHUB_TOKEN`, which doesn't trigger the push deploy, so it calls `deploy.yml` with the commit it made. To run it by hand: Actions → Update → Run workflow, on `main`.
 - `npm run build:data` writes `facts.json` to `src/site/public/`, Vite's public directory, so `npm run dev` serves it and the site build copies it into `dist/`. It is committed with the data, so the deploy needs no data step.
+- The footer says when the next update is due ("Next update due around 10:30pm"), and that it is running late once that time passes without a new `facts.json`. The page fetches `facts.json` again every 5 minutes to find out. The run times are `updateRunsUtc` in `src/shared/schedule.ts`, and a test fails if they don't match `update.yml`.
 - There is no server, and nothing updates on demand.
 
 ## Locations

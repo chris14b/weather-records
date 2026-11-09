@@ -8,6 +8,7 @@ import {
   type Standout,
 } from "./arrange.ts";
 import { daylightSentence, longDate, sentence, sydneyDate } from "./naming.ts";
+import { updateNote } from "./updates.ts";
 
 export type Children = (Node | string)[];
 
@@ -178,16 +179,11 @@ function legend(): HTMLElement {
   );
 }
 
-const generatedFormat = new Intl.DateTimeFormat("en-AU", {
-  timeZone: "Australia/Sydney",
-  weekday: "long",
-  day: "numeric",
-  month: "long",
-  hour: "numeric",
-  minute: "2-digit",
-});
-
-function footer(location: Location, generatedAt: string): HTMLElement {
+function footer(
+  location: Location,
+  generatedAt: string,
+  now: Date,
+): HTMLElement {
   const notes: Children = [];
   if (location.id === "sydney-observatory-hill") {
     notes.push(
@@ -199,7 +195,7 @@ function footer(location: Location, generatedAt: string): HTMLElement {
   }
   notes.push(
     element("p", {}, [
-      `Updated ${generatedFormat.format(new Date(generatedAt))}. Data © `,
+      `${updateNote(generatedAt, now)} Data © `,
       element("a", { href: "https://www.bom.gov.au/" }, [
         "Bureau of Meteorology",
       ]),
@@ -285,6 +281,6 @@ export function render(
         ),
       ]),
     ]),
-    footer(location, file.generatedAt),
+    footer(location, file.generatedAt, now),
   );
 }

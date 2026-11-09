@@ -44,7 +44,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 **Goal:** The site handles every location, state and screen well.
 
 - Scope: default to the nearest location using browser geolocation. Coordinates are never sent anywhere. The location in the address wins, then one the user chose, which is already remembered, then the nearest. The order is `startingLocation` in `src/site/address.ts`.
-- Scope: a banner when the data is stale, from `generatedAt`. Runs are twice a day, so decide how old is too old.
+- Scope: a banner when the data is stale, from `generatedAt`. Runs are twice a day, so decide how old is too old. The footer already says when the next update is due, then that it is running late, then that updates are running late once a second run is due (`updateNote` in `src/site/updates.ts`), so the banner is for data too old to trust, such as a day or more, not for one late run.
 - Scope: empty and error states: `facts.json` missing or malformed, a section with no facts, a quiet day with nothing in Today.
 - Scope: dark mode, and accessibility, including the charts.
 - Scope: a pass at phone widths. Desktop stays the main design, but the page must be easy to read and use on a phone.
@@ -120,25 +120,13 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 - Evening: Claude's suggestion was 06:30 UTC (5:30pm with daylight saving, 4:30pm without), after the 3pm reading and the 05:00 UTC forecast. What it costs:
   - The maximum must be saved while its window is still open, with a cutoff such as 4pm Sydney time. Without one, the morning run, or any manual run, saves a mid-morning value that stands for two days if the evening run is skipped, giving bogus facts such as "the coldest maximum since…". A rise after the run is missed until the daily file, two days later.
   - `forecastStart` switches to tomorrow at 9pm (`maxWindowCloses`). It would switch at the cutoff instead.
-  - The gaps between runs become about 7 and 17 hours instead of 12 and 12, and the page overnight has the 4pm forecast rather than the 10pm one. T34 and T27's stale-data banner must allow for 17 hours.
+  - The gaps between runs become about 7 and 17 hours instead of 12 and 12, and the page overnight has the 4pm forecast rather than the 10pm one. T27's stale-data banner must allow for 17 hours. The footer's next-update line needs no change beyond the schedule.
   - It never meets the 11:00 UTC forecast issue whose day 0 has nothing left in it, which T38 worries the parser may reject.
 - Morning: now 23:30 UTC (10:30am with daylight saving, 9:30am without). It waits for the 9am reading (22:00 or 23:00 UTC), the daily files (22:34 UTC) and the 23:00 UTC forecast (out at 22:45 UTC on 2026-11-09).
   - Earlier, such as 22:15 UTC (9:15am with daylight saving), gets last night's minimum, the rain to 9am and the 9am reading, but not that morning's daily files or the 23:00 UTC forecast, which then wait for the evening run. Check whether that matters: the daily files run behind anyway, and the 17:00 UTC (4am) forecast is usually close.
   - Without daylight saving, 22:15 UTC is 8:15am, before the 9am reading, so the run would save no minimum or rain. A cron is fixed in UTC, so no single time sits just after 9am all year. Options: accept the hour's shift, two schedules where each run checks the Sydney time and stops if it isn't its turn, or a schedule with a time zone, if GitHub Actions supports one.
-- Scope, once the user has chosen: `update.yml`, the maximum's cutoff and `forecastStart`, CLAUDE.md's Hosting and updates section (a settled decision), [pipeline.md](pipeline.md), [facts.md](facts.md), and the run times in T34 and T38.
+- Scope, once the user has chosen: `update.yml`, the maximum's cutoff and `forecastStart`, CLAUDE.md's Hosting and updates section (a settled decision), [pipeline.md](pipeline.md), [facts.md](facts.md), `updateRunsUtc` in `src/shared/schedule.ts` (a test checks it against `update.yml`), and the run times in T38.
 - Done when: the user has chosen the times, tests cover the cutoff and `forecastStart` either side of it, and a scheduled run at each new time has been checked to get its data, as in T38.
-
----
-
-## T34: When the next update is due
-
-**Status:** todo
-
-**Goal:** Beside "Updated…", the page says when the next update is due.
-
-- Scope: work out the next run in the browser from the schedule in CLAUDE.md (10:30am and 10:30pm with daylight saving, 9:30am and 9:30pm without; the times are fixed in UTC). Keep the schedule in one place that the page and the workflow both use, or test that they match.
-- Scope: GitHub often starts scheduled runs late, so say "next update due around 10:30pm", and once that time has passed without a new `facts.json`, say it is running late rather than giving a time in the past. Decide how this fits T27's stale-data banner.
-- Done when: tests cover the next time either side of each run and across a daylight saving change, and it has been checked in the browser.
 
 ---
 
