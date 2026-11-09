@@ -72,6 +72,8 @@ function hindcast(
       rainChance: rain === null ? null : rain > 0 ? 80 : 0,
       rain50: rain,
       rain25: rain === null ? null : Math.round(rain * 15) / 10,
+      iconCode: null,
+      precis: null,
     };
   });
   const before = series.map((s) => ({

@@ -105,10 +105,8 @@ async function buildLocationFacts({
     ftpHistory,
     readings: snapshot.readings,
   });
-  const forecast = {
-    days: parseForecast(feeds.forecast, location.forecastArea).days,
-    from: forecastStart(now),
-  };
+  const { days } = parseForecast(feeds.forecast, location.forecastArea);
+  const forecast = { days, from: forecastStart(now) };
   const facts = generateCandidates({
     locationId: location.id,
     series,
@@ -116,7 +114,14 @@ async function buildLocationFacts({
     offsets: stationOffsets(location),
     forecast,
   });
-  return selectFacts({ locationId: location.id, facts, series, forecast });
+  return {
+    ...selectFacts({ locationId: location.id, facts, series, forecast }),
+    forecast: days.map(({ date, iconCode, precis }) => ({
+      date,
+      iconCode,
+      precis,
+    })),
+  };
 }
 
 /** Writes the file whole or not at all, so a failed run leaves the last one in place. */

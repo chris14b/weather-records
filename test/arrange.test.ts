@@ -1,7 +1,6 @@
 import { describe, expect, test } from "vitest";
 import type { Fact, LocationFacts } from "../src/shared/facts.ts";
 import { arrange, headlineSize } from "../src/site/arrange.ts";
-import { skyPhase, sydneyHour } from "../src/site/sky.ts";
 
 const fact = (changes: Partial<Fact>): Fact => ({
   date: "2026-11-09",
@@ -36,6 +35,7 @@ const location = (sections: Partial<LocationFacts>): LocationFacts => ({
   thisWeek: [],
   thisMonth: [],
   comingWeek: [],
+  forecast: [],
   ...sections,
 });
 
@@ -106,26 +106,5 @@ describe("headlineSize", () => {
     [9, 5.5],
   ])("sizes a score of %d at %drem", (score, size) => {
     expect(headlineSize(score)).toBe(size);
-  });
-});
-
-describe("sky", () => {
-  test.each([
-    ["2026-11-08T18:30:00Z", 5],
-    ["2026-07-08T18:30:00Z", 4],
-    ["2026-11-09T13:00:00Z", 0],
-  ])("gives Sydney's hour at %s", (instant, hour) => {
-    expect(sydneyHour(new Date(instant))).toBe(hour);
-  });
-
-  test.each([
-    [0, "night"],
-    [5, "dawn"],
-    [7, "day"],
-    [16, "day"],
-    [17, "dusk"],
-    [20, "night"],
-  ])("shows hour %d as %s", (hour, phase) => {
-    expect(skyPhase(hour)).toBe(phase);
   });
 });

@@ -1,4 +1,5 @@
 import type { ForecastArea } from "../shared/locations.ts";
+import { weatherForIcon } from "../shared/weather.ts";
 import { addDays } from "./dates.ts";
 import { inContext } from "./errors.ts";
 import {
@@ -23,6 +24,9 @@ export interface ForecastDay {
   /** Rain amounts in mm with a 50% and a 25% chance of being exceeded: the forecast's range. */
   rain50: number | null;
   rain25: number | null;
+  iconCode: number | null;
+  /** BOM's short summary, such as "Shower or two." */
+  precis: string | null;
 }
 
 export interface Forecast {
@@ -112,6 +116,8 @@ function parseDays(periods: readonly XmlElement[]): ForecastDay[] {
         rainChance: chance === undefined ? null : Number(chance[1]),
         rain50: range === undefined ? null : Number(range[1]),
         rain25: range === undefined ? null : Number(range[2]),
+        iconCode: iconCode(period),
+        precis: optionalText(period, "text", "precis") ?? null,
       };
     }),
   );
@@ -124,6 +130,16 @@ function temperature(period: XmlElement, type: string): number | null {
     type,
   );
   return value === undefined ? null : Number(value[0]);
+}
+
+function iconCode(period: XmlElement): number | null {
+  const value = optionalText(period, "element", "forecast_icon_code");
+  if (value === undefined) return null;
+  const code = Number(value);
+  if (!integerPattern.test(value) || weatherForIcon(code) === undefined) {
+    throw new Error(`unknown forecast icon code ${value}`);
+  }
+  return code;
 }
 
 function matchOptional(

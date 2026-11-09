@@ -2,7 +2,7 @@ import type { Fact, FactsFile, ValueStatus } from "../shared/facts.ts";
 import { locations, type Location } from "../shared/locations.ts";
 import { arrange, headlineSize } from "./arrange.ts";
 import { longDate, sentence, sydneyDate } from "./naming.ts";
-import { skyPhase, sydneyHour } from "./sky.ts";
+import { forecastWeather, skyPhase, sydneyHour } from "./sky.ts";
 
 type Children = (Node | string)[];
 
@@ -174,10 +174,15 @@ export function render(
   root: HTMLElement,
   { file, location, now, onSelect }: View,
 ): void {
-  document.documentElement.dataset.sky = skyPhase(sydneyHour(now));
-
   const today = sydneyDate(now);
   const facts = file.locations.find((l) => l.locationId === location.id);
+
+  const { dataset } = document.documentElement;
+  dataset.sky = skyPhase(sydneyHour(now));
+  const weather =
+    facts === undefined ? undefined : forecastWeather(facts.forecast, today);
+  if (weather === undefined) delete dataset.weather;
+  else dataset.weather = weather;
   const page = facts === undefined ? undefined : arrange(facts, today);
 
   const header = element("header", { class: "top" }, [

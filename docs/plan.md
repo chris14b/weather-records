@@ -5,7 +5,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 ## How to use this plan
 
 - Each task has a permanent ID, such as `T15`. An ID is never reused or renumbered, and never has a letter after it (no `T5b`). A new task, including one split off another, takes the next ID, and goes where its priority puts it. Its place in the list, not its ID, sets its priority.
-- **Next ID:** T37
+- **Next ID:** T38
 - **Depends on** lists the tasks that must be finished first. A task that is no longer in this plan is finished. Keep every task below the tasks it depends on.
 - The next task is the first one that isn't deferred or blocked and whose dependencies are all finished.
 - Statuses: `todo`, `in progress`, `blocked` (say on what), `deferred` (skip until the user says otherwise). An open task can have **Notes** for whatever a later session needs.
@@ -107,7 +107,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 **Goal:** Today shows BOM's forecast for the day, and the latest reading the run saw, clearly labelled with its time.
 
 - Background: the user asked for the current temperature. The site can't show a truly current one: `facts.json` is written twice a day, there is no server, the browser can't reach BOM's FTP, and code must never fetch from BOM's website or app API. The honest version is the latest reading at the time of the run, such as "18.4°C at 10:30am", from IDN60920, which the pipeline already downloads. It goes stale within hours, so decide with the user whether it is worth showing, or only the forecast.
-- Scope: pass each location's forecast for today and the coming days through `facts.json` from IDN11060: minimum, maximum, chance of rain, rain range and précis. T30 needs the précis and icon too, so share the field.
+- Scope: add each day's minimum, maximum, chance of rain and rain range to the `forecast` field of each location in `facts.json`, which already gives each day's icon code and précis.
 - Scope: show today's forecast in Today, near the headline, and decide whether the Coming week shows each day's forecast beside its facts.
 - Scope: after 9pm the day's forecast is spent, so show tomorrow's, as `forecastStart` does.
 - Done when: tests cover the new fields, and it has been checked in the browser for a morning and an evening `facts.json`.
@@ -174,7 +174,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 - Options to put to the user:
   1. **A frequent static run**, Claude's suggestion: a second GitHub Actions workflow every 30 minutes that downloads only IDN60920 and IDN60910, rebuilds `facts.json` and deploys, without committing. The twice-daily runs still commit the data, so nothing is lost if the frequent ones fail. It stays free on a public repository and needs no server. But GitHub often starts scheduled runs 10 to 30 minutes late or skips them at busy times, so the page must show the reading's time.
   2. **A small server**, such as a scheduled serverless function (e.g. a Cloudflare Worker with a cron trigger) that fetches the feeds and writes the latest facts to storage the page reads. It is more reliable and timely than option 1, but it is a second system to deploy, monitor and secure, and the fact pipeline would have to run there too or be split.
-- Scope, once chosen: a "latest reading" with its time in Today (which takes over T33's latest reading), Today's facts recomputed from the running maximum and the rain since 9am, and the background (T30) still never claiming more than the data shows.
+- Scope, once chosen: a "latest reading" with its time in Today (which takes over T33's latest reading), Today's facts recomputed from the running maximum and the rain since 9am, and the weather sky still never claiming more than the data shows.
 - Scope: decide how a fact during the day is worded, since the day isn't over: "Today is so far the hottest day since February".
 - Done when: the approach is agreed, and the live site has updated through a day.
 
@@ -198,12 +198,32 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 **Status:** todo
 
-**Goal:** Facts about daylight, such as the latest sunset of the year or the day the days start getting longer.
+**Goal:** Facts about daylight, such as the latest sunset of the year or the day the days start getting longer, and a sky that follows the sun.
 
-- Scope: sunrise and sunset calculated from each station's latitude and longitude, with no API.
+- Scope: sunrise and sunset calculated from each station's latitude and longitude, with no API. Put the solar position calculation in `src/shared/`, since the sky needs it in the browser.
 - Scope: facts for the latest sunset, the earliest sunrise, the longest and shortest day, and the point where days start getting longer or shorter. These come from the year's own curve, not from ranks against past years, so they need their own wording and scoring within the selection (the Selection section of [facts.md](facts.md)).
 - Scope: show them on the site.
-- Done when: tests pass, including a check of the calculation against published sunrise and sunset times for a few dates at each location.
+- Scope: replace the fixed hours in `skyPhase` (`src/site/sky.ts`), which switch the sky at set hours, with a sky that changes gradually with the sun's height at the selected location, worked out in the browser from the viewer's clock.
+  - Blend the sky's colours between a few points by the sun's height, such as night, twilight, sunrise or sunset glow, low sun and midday, updated every minute. Using the sun's height rather than the clock makes twilight longer in summer than in winter without special cases.
+  - Blend the weather colours (`--overcast`, `--fog`, `--mist`, `--cloud` and `--drop` in `style.css`) the same way, so an overcast evening fades to grey rather than orange, and mute the sunset glow under heavy cloud.
+  - Put the glow on the side of the sky where the sun is: east in the morning, west in the evening.
+  - Out of scope: moon phases, and a sun that moves across the sky.
+- Done when: tests pass, including a check of the calculation against published sunrise and sunset times for a few dates at each location, and the sky has been checked in the browser through a summer and a winter day, under clear and overcast skies.
+
+---
+
+## T37: More forecast icon looks
+
+**Status:** todo
+
+**Goal:** The weather sky tells apart the forecasts Sydney actually gets that now share a look.
+
+- Background: `weatherForIcon` (`src/shared/weather.ts`) maps BOM's 17 icon codes onto 8 kinds of sky. Light showers, showers and heavy showers look the same, and haze and dust borrow the grey fog.
+- Scope: light, ordinary and heavy rain, by the density of the rain layer, for showers (codes 17, 11 and 18) and rain (8 and 12).
+- Scope: a brownish-orange tint for haze and dust (codes 6 and 13), since bushfire smoke haze is common in Sydney, separate from fog (10).
+- Out of scope: snow (15), tropical cyclone (19) and frost (14), which Sydney almost never gets. Their current looks stay.
+- Scope: once the site is deployed (T25), check the rain and storm skies on a real phone. The glass panels re-blur everything moving behind them on every frame, which headless measurement doesn't capture. If they stutter or drain the battery, slow or thin the rain on small screens.
+- Done when: each new look has been checked in the browser by day and night, and with reduced motion.
 
 ---
 
@@ -218,20 +238,6 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 - Scope: selection rules of its own in `selection.ts`, within the Selection section of [facts.md](facts.md), so a strong month stays for the year but doesn't crowd the section.
 - Scope: a This year panel on the page, after This month, with its periods named as the site names the others.
 - Done when: tests and the selection snapshots cover the section, and it has been checked in the browser.
-
----
-
-## T30: Weather sky
-
-**Status:** todo
-
-**Goal:** The page's background shows the day's weather as well as the time of day.
-
-- Background: the page's sky is a gradient for the time of day, chosen in the browser by the hour in Sydney (`skyPhase` in `src/site/sky.ts`). `facts.json` updates only twice a day, so the sky must show today's forecast, never the current weather, which would often be wrong.
-- Scope: pass each day's forecast icon code and précis from IDN11060 through `facts.json`, for each location's forecast area. Check the codes BOM uses and map them to a few kinds of sky (clear, cloudy, showers, rain, storm, fog, windy).
-- Scope: an animated background for each kind, kept light: CSS or a small canvas, no large images. It pauses when the tab is hidden or the browser asks for reduced motion, and the glass panels stay easy to read over every kind.
-- Scope: once T14 has the sunrise and sunset calculation, use it for the time of day instead of fixed hours.
-- Done when: every kind of sky has been checked in the browser by day and night, and with reduced motion.
 
 ---
 

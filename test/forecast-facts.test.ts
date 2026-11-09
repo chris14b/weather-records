@@ -41,6 +41,8 @@ function forecastDays(
     rainChance: 0,
     rain50: null,
     rain25: null,
+    iconCode: null,
+    precis: null,
     ...changes[index],
   }));
 }

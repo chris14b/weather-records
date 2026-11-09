@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-08T23:28:51.269Z",
+  "generatedAt": "2026-11-08T23:54:05.543Z",
   "locations": [
     {
       "locationId": "sydney-observatory-hill",
@@ -1327,6 +1327,43 @@
             ]
           }
         }
+      ],
+      "forecast": [
+        {
+          "date": "2026-11-09",
+          "iconCode": 3,
+          "precis": "Cloud clearing."
+        },
+        {
+          "date": "2026-11-10",
+          "iconCode": 1,
+          "precis": "Sunny."
+        },
+        {
+          "date": "2026-11-11",
+          "iconCode": 16,
+          "precis": "Possible shower or storm."
+        },
+        {
+          "date": "2026-11-12",
+          "iconCode": 3,
+          "precis": "Partly cloudy."
+        },
+        {
+          "date": "2026-11-13",
+          "iconCode": 4,
+          "precis": "Cloudy."
+        },
+        {
+          "date": "2026-11-14",
+          "iconCode": 11,
+          "precis": "Shower or two."
+        },
+        {
+          "date": "2026-11-15",
+          "iconCode": 11,
+          "precis": "Showers increasing."
+        }
       ]
     },
     {
@@ -2494,6 +2531,43 @@
             ]
           }
         }
+      ],
+      "forecast": [
+        {
+          "date": "2026-11-09",
+          "iconCode": 3,
+          "precis": "Cloud clearing."
+        },
+        {
+          "date": "2026-11-10",
+          "iconCode": 1,
+          "precis": "Sunny."
+        },
+        {
+          "date": "2026-11-11",
+          "iconCode": 16,
+          "precis": "Possible shower or storm."
+        },
+        {
+          "date": "2026-11-12",
+          "iconCode": 3,
+          "precis": "Partly cloudy."
+        },
+        {
+          "date": "2026-11-13",
+          "iconCode": 4,
+          "precis": "Cloudy."
+        },
+        {
+          "date": "2026-11-14",
+          "iconCode": 11,
+          "precis": "Shower or two."
+        },
+        {
+          "date": "2026-11-15",
+          "iconCode": 11,
+          "precis": "Showers increasing."
+        }
       ]
     },
     {
@@ -3354,6 +3428,43 @@
               }
             ]
           }
+        }
+      ],
+      "forecast": [
+        {
+          "date": "2026-11-09",
+          "iconCode": 3,
+          "precis": "Cloud clearing."
+        },
+        {
+          "date": "2026-11-10",
+          "iconCode": 1,
+          "precis": "Sunny."
+        },
+        {
+          "date": "2026-11-11",
+          "iconCode": 16,
+          "precis": "Shower or two. Possible storm."
+        },
+        {
+          "date": "2026-11-12",
+          "iconCode": 17,
+          "precis": "Possible shower."
+        },
+        {
+          "date": "2026-11-13",
+          "iconCode": 4,
+          "precis": "Cloudy."
+        },
+        {
+          "date": "2026-11-14",
+          "iconCode": 11,
+          "precis": "Shower or two."
+        },
+        {
+          "date": "2026-11-15",
+          "iconCode": 11,
+          "precis": "Showers increasing."
         }
       ]
     }

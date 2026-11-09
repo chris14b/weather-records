@@ -60,6 +60,366 @@ body {
   background-attachment: fixed;
 }
 
+/* The forecast's weather, drawn over the time of day. Every layer is hidden until a kind of sky shows it. */
+
+:root {
+  --overcast: #2a2c3a;
+  --fog: #3a3f4e;
+  --mist: rgb(150 160 190 / 0.3);
+  --cloud: rgb(190 195 215 / 0.32);
+  --drop: rgb(190 205 240 / 0.4);
+  --veil: 0;
+  --far-clouds: 0;
+  --near-clouds: 0;
+  --far-drift: 240s;
+  --near-drift: 150s;
+}
+
+:root[data-sky="dawn"] {
+  --overcast: #5e5568;
+  --fog: #a79aa6;
+  --mist: rgb(255 225 215 / 0.35);
+  --cloud: rgb(255 215 215 / 0.55);
+}
+
+:root[data-sky="day"] {
+  --overcast: #74808f;
+  --fog: #b4bcc6;
+  --mist: rgb(255 255 255 / 0.4);
+  --cloud: rgb(255 255 255 / 0.8);
+  --drop: rgb(225 235 250 / 0.5);
+}
+
+:root[data-sky="dusk"] {
+  --overcast: #463f58;
+  --fog: #7d7088;
+  --mist: rgb(255 210 190 / 0.3);
+  --cloud: rgb(255 200 185 / 0.45);
+}
+
+:root[data-weather="partlyCloudy"] {
+  --far-clouds: 0.7;
+  --near-clouds: 0.55;
+}
+
+:root[data-weather="cloudy"] {
+  --veil: 0.6;
+  --far-clouds: 1;
+  --near-clouds: 0.9;
+}
+
+:root[data-weather="showers"] {
+  --veil: 0.55;
+  --far-clouds: 1;
+  --near-clouds: 0.9;
+}
+
+:root[data-weather="rain"] {
+  --veil: 0.75;
+  --far-clouds: 1;
+  --near-clouds: 1;
+}
+
+:root[data-weather="storm"] {
+  --overcast: #10131c;
+  --veil: 0.8;
+  --far-clouds: 0.8;
+  --near-clouds: 0.8;
+  --near-drift: 80s;
+}
+
+:root[data-weather="fog"] {
+  --veil: 0.75;
+  --overcast: var(--fog);
+}
+
+:root[data-sky="day"]:is(
+    [data-weather="cloudy"],
+    [data-weather="showers"],
+    [data-weather="rain"],
+    [data-weather="fog"]
+  ) {
+  --glass: rgb(12 18 40 / 0.4);
+}
+
+:root[data-weather="windy"] {
+  --far-clouds: 0.6;
+  --near-clouds: 0.5;
+  --far-drift: 60s;
+  --near-drift: 32s;
+}
+
+.weather,
+.weather > * {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Hidden layers are left out of the page altogether, so they don't animate. */
+.weather > * {
+  display: none;
+}
+
+:root:is(
+    [data-weather="cloudy"],
+    [data-weather="showers"],
+    [data-weather="rain"],
+    [data-weather="storm"],
+    [data-weather="fog"]
+  )
+  .veil,
+:root:is(
+    [data-weather="partlyCloudy"],
+    [data-weather="cloudy"],
+    [data-weather="showers"],
+    [data-weather="rain"],
+    [data-weather="storm"],
+    [data-weather="windy"]
+  )
+  .clouds,
+:root[data-sky="night"]:is(
+    [data-weather="clear"],
+    [data-weather="partlyCloudy"],
+    [data-weather="windy"]
+  )
+  .stars,
+:root[data-weather="fog"] .fog,
+:root:is(
+    [data-weather="showers"],
+    [data-weather="rain"],
+    [data-weather="storm"]
+  )
+  .rain,
+:root[data-weather="windy"] .wind,
+:root[data-weather="storm"] .flash {
+  display: block;
+}
+
+#app {
+  position: relative;
+}
+
+.veil {
+  background: var(--overcast);
+  opacity: var(--veil);
+}
+
+.stars {
+  background:
+    radial-gradient(1px 1px at 12% 18%, #fff, transparent),
+    radial-gradient(1px 1px at 37% 72%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 64% 31%, #fff, transparent),
+    radial-gradient(1px 1px at 81% 86%, #fff, transparent),
+    radial-gradient(1px 1px at 93% 9%, rgb(255 255 255 / 0.7), transparent),
+    radial-gradient(1px 1px at 23% 41%, rgb(255 255 255 / 0.8), transparent),
+    radial-gradient(1.5px 1.5px at 71% 77%, #fff, transparent),
+    radial-gradient(1px 1px at 48% 6%, rgb(255 255 255 / 0.6), transparent);
+  background-size:
+    230px 190px,
+    230px 190px,
+    230px 190px,
+    230px 190px,
+    230px 190px,
+    410px 330px,
+    410px 330px,
+    410px 330px;
+}
+
+:root[data-sky="night"]:is(
+    [data-weather="clear"],
+    [data-weather="partlyCloudy"],
+    [data-weather="windy"]
+  )
+  .stars {
+  opacity: 0.8;
+}
+
+/* Twice the viewport wide, repeating every viewport width, so drifting by half loops without a seam. */
+.clouds,
+.fog,
+.wind {
+  right: -100%;
+  background-repeat: repeat-x;
+  background-size: 50% 100%;
+  animation: drift linear infinite;
+}
+
+.clouds {
+  bottom: 35%;
+  filter: blur(14px);
+}
+
+.far {
+  opacity: var(--far-clouds);
+  animation-duration: var(--far-drift);
+  background-image:
+    radial-gradient(ellipse 9% 7% at 8% 22%, var(--cloud), transparent 70%),
+    radial-gradient(ellipse 7% 5% at 13% 17%, var(--cloud), transparent 70%),
+    radial-gradient(ellipse 11% 6% at 44% 12%, var(--cloud), transparent 70%),
+    radial-gradient(ellipse 6% 5% at 49% 8%, var(--cloud), transparent 70%),
+    radial-gradient(ellipse 10% 7% at 76% 30%, var(--cloud), transparent 70%),
+    radial-gradient(ellipse 7% 6% at 82% 24%, var(--cloud), transparent 70%);
+}
+
+.near {
+  bottom: 15%;
+  opacity: var(--near-clouds);
+  animation-duration: var(--near-drift);
+  background-image:
+    radial-gradient(ellipse 16% 10% at 22% 52%, var(--cloud), transparent 70%),
+    radial-gradient(ellipse 10% 9% at 30% 44%, var(--cloud), transparent 70%),
+    radial-gradient(ellipse 18% 11% at 68% 66%, var(--cloud), transparent 70%),
+    radial-gradient(ellipse 11% 9% at 74% 57%, var(--cloud), transparent 70%);
+}
+
+:root:is([data-weather="cloudy"], [data-weather="rain"]) .near {
+  background-image:
+    radial-gradient(ellipse 22% 14% at 10% 40%, var(--cloud), transparent 70%),
+    radial-gradient(ellipse 20% 12% at 38% 55%, var(--cloud), transparent 70%),
+    radial-gradient(ellipse 24% 14% at 66% 38%, var(--cloud), transparent 70%),
+    radial-gradient(ellipse 18% 12% at 90% 60%, var(--cloud), transparent 70%);
+}
+
+.fog {
+  filter: blur(24px);
+  animation-duration: 110s;
+  background-image:
+    radial-gradient(ellipse 40% 12% at 20% 35%, var(--mist), transparent 70%),
+    radial-gradient(ellipse 45% 14% at 70% 60%, var(--mist), transparent 70%),
+    radial-gradient(ellipse 35% 10% at 40% 85%, var(--mist), transparent 70%);
+}
+
+/* Tiles are all 160px tall, so falling 160px loops without a seam. */
+.rain {
+  inset: -10%;
+  transform: rotate(10deg);
+}
+
+.rain::before,
+.rain::after {
+  content: "";
+  position: absolute;
+  inset: -160px 0 0;
+  animation: fall 0.55s linear infinite;
+  background:
+    radial-gradient(1.2px 13px at 20% 30%, var(--drop), transparent) 0 0 / 97px
+      160px,
+    radial-gradient(1.2px 16px at 60% 70%, var(--drop), transparent) 0 0 / 131px
+      160px,
+    radial-gradient(1px 10px at 40% 10%, var(--drop), transparent) 0 0 / 61px
+      80px;
+}
+
+.rain::after {
+  display: none;
+  animation-duration: 0.4s;
+  background:
+    radial-gradient(1.5px 18px at 80% 50%, var(--drop), transparent) 0 0 / 73px
+      160px,
+    radial-gradient(1.2px 14px at 30% 85%, var(--drop), transparent) 0 0 / 47px
+      160px;
+}
+
+:root[data-weather="showers"] .rain {
+  opacity: 0.6;
+  animation: passing-showers 16s ease-in-out infinite;
+}
+
+:root[data-weather="rain"] .rain {
+  opacity: 0.85;
+}
+
+:root:is([data-weather="rain"], [data-weather="storm"]) .rain::after {
+  display: block;
+}
+
+.wind {
+  animation-duration: 7s;
+  background-image:
+    radial-gradient(70px 1.5px at 15% 20%, rgb(255 255 255 / 0.6), transparent),
+    radial-gradient(
+      100px 1.5px at 55% 45%,
+      rgb(255 255 255 / 0.5),
+      transparent
+    ),
+    radial-gradient(
+      80px 1.5px at 80% 70%,
+      rgb(255 255 255 / 0.55),
+      transparent
+    ),
+    radial-gradient(60px 1.5px at 35% 85%, rgb(255 255 255 / 0.45), transparent);
+}
+
+.flash {
+  opacity: 0;
+  background: radial-gradient(
+    circle at 70% 15%,
+    rgb(230 235 255 / 0.9),
+    rgb(200 210 255 / 0.3) 60%
+  );
+}
+
+:root[data-weather="storm"] .flash {
+  animation: lightning 11s infinite;
+}
+
+@keyframes drift {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes fall {
+  to {
+    transform: translateY(160px);
+  }
+}
+
+@keyframes passing-showers {
+  0%,
+  100% {
+    opacity: 0.05;
+  }
+
+  30%,
+  60% {
+    opacity: 0.8;
+  }
+}
+
+/* Two quick flashes, well under three a second. */
+@keyframes lightning {
+  0%,
+  61%,
+  63.5%,
+  100% {
+    opacity: 0;
+  }
+
+  61.5% {
+    opacity: 0.45;
+  }
+
+  62.5% {
+    opacity: 0.25;
+  }
+}
+
+:root[data-paused] .weather *,
+:root[data-paused] .weather *::before,
+:root[data-paused] .weather *::after {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .weather *,
+  .weather *::before,
+  .weather *::after {
+    animation: none !important;
+  }
+}
+
 a {
   color: inherit;
 }

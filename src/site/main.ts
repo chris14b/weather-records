@@ -68,6 +68,10 @@ function start(root: HTMLElement, file: FactsFile): void {
   setInterval(show, refreshEvery);
 }
 
+document.addEventListener("visibilitychange", () => {
+  document.documentElement.toggleAttribute("data-paused", document.hidden);
+});
+
 const root = document.querySelector<HTMLElement>("#app");
 if (root !== null) {
   try {

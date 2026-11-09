@@ -9,8 +9,11 @@ const parse = (xml: string, location = observatoryHill) =>
   parseForecast(Buffer.from(xml), location.forecastArea);
 
 /** The fixture with its first match of `from` in the Sydney area replaced. */
-function editSydney(from: string, to: string): string {
-  const xml = fixture("IDN11060.xml");
+function editSydney(
+  from: string,
+  to: string,
+  xml = fixture("IDN11060.xml"),
+): string {
   const area = xml.indexOf('aac="NSW_PT131"');
   return xml.slice(0, area) + xml.slice(area).replace(from, to);
 }
@@ -29,6 +32,8 @@ describe("parseForecast", () => {
         rainChance: 0,
         rain50: null,
         rain25: null,
+        iconCode: 3,
+        precis: "Mostly sunny.",
       },
       {
         date: "2026-10-31",
@@ -37,6 +42,8 @@ describe("parseForecast", () => {
         rainChance: 80,
         rain50: 0,
         rain25: 8,
+        iconCode: 16,
+        precis: "Showers. Possible storm.",
       },
     ]);
     expect(forecast.days.at(-1)?.date).toBe("2026-11-05");
@@ -49,6 +56,16 @@ describe("parseForecast", () => {
     );
 
     expect(parse(xml).days[1]).toMatchObject({ rain50: 1, rain25: 15 });
+  });
+
+  test("gives null for a day without an icon or précis", () => {
+    const xml = editSydney(
+      '<element type="forecast_icon_code">3</element>',
+      "",
+      editSydney('<text type="precis">Mostly sunny.</text>', ""),
+    );
+
+    expect(parse(xml).days[0]).toMatchObject({ iconCode: null, precis: null });
   });
 
   test.each([
@@ -81,6 +98,16 @@ describe("parseForecast", () => {
       problem: "a temperature isn't a whole number",
       xml: () => editSydney('Celsius">28<', 'Celsius">28.5<'),
       error: "invalid air_temperature_maximum 28.5",
+    },
+    {
+      problem: "the icon code is one BOM doesn't use",
+      xml: () => editSydney('icon_code">3<', 'icon_code">5<'),
+      error: "forecast period 0: unknown forecast icon code 5",
+    },
+    {
+      problem: "the icon code isn't a number",
+      xml: () => editSydney('icon_code">3<', 'icon_code">sunny<'),
+      error: "unknown forecast icon code sunny",
     },
     {
       problem: "a day is skipped",

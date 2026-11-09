@@ -8,8 +8,12 @@ try {
   await writeFactsFile(factsPath, file);
 
   console.log(`Wrote ${factsPath} at ${file.generatedAt}`);
-  for (const { locationId, ...sections } of file.locations) {
+  for (const { locationId, forecast, ...sections } of file.locations) {
     console.log(`\n${locationById(locationId).name}`);
+    const [today] = forecast;
+    if (today !== undefined) {
+      console.log(`  forecast ${today.date}: ${today.precis ?? "no précis"}`);
+    }
     for (const [section, facts] of Object.entries(sections)) {
       console.log(`  ${section}:`);
       for (const { from, date, status, score, text } of facts) {

@@ -136,6 +136,15 @@ export interface LocationFacts {
   thisMonth: Fact[];
   /** Forecast and conditional facts about the coming days, soonest first. */
   comingWeek: Fact[];
+  /** BOM's forecast for the location's area, from the day of the run. */
+  forecast: DayForecast[];
+}
+
+export interface DayForecast {
+  date: string;
+  /** BOM's forecast icon code, which `weatherForIcon` turns into a kind of sky. */
+  iconCode: number | null;
+  precis: string | null;
 }
 
 export interface FactsFile {

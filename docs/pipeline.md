@@ -4,7 +4,7 @@ This explains how the pipeline gets each location's daily data from BOM, what it
 
 ## Modules
 
-All in `src/pipeline/`, except the config and the `facts.json` types in `src/shared/`.
+All in `src/pipeline/`, except the config, the `facts.json` types and the forecast icon codes in `src/shared/`.
 
 | Area                   | Modules                                                                                                                                                                                                                                              |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -103,6 +103,8 @@ Every error from a file names the file and the line or element (`inContext`).
 - Each `forecast-period` is one local day, checked to be consecutive and to end at midnight. Temperatures must be whole numbers, the chance must look like `80%`, and the rain range like `0 to 8 mm`; any other format fails the build.
 - Day 0 has no minimum. An afternoon issue has no maximum for today either: at 4:40pm on 2026-11-06, the feed had today with a 0% chance and no temperatures, then 7 more days.
 - Days with a low chance often have no `precipitation_range`, so `rain50` and `rain25` are null. The Forecasts section of [facts.md](facts.md) says when that counts as 0 mm.
+- Every day had a `forecast_icon_code` and a `precis` on 2026-11-09, but either can be missing, and is then null. An icon code BOM doesn't use (`weatherForIcon` in `src/shared/weather.ts`, which maps the codes to the site's kinds of sky) fails the build. The codes seen that day were 1, 3, 4, 9, 11, 16 and 17, and code 16 covers every précis that mentions a storm, including "Possible storm".
+- Each location's `forecast` in `facts.json` gives each day's date, icon code and précis, from the day of the run.
 - The forecast isn't saved.
 
 ## Layering

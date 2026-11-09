@@ -3,10 +3,10 @@ import { generateCandidates } from "../src/pipeline/candidates.ts";
 import { generateDailyFacts } from "../src/pipeline/daily-facts.ts";
 import { addDays, daysBetween } from "../src/pipeline/dates.ts";
 import { readSavedSeries } from "../src/pipeline/saved-series.ts";
-import { selectFacts } from "../src/pipeline/selection.ts";
+import { type SelectedFacts, selectFacts } from "../src/pipeline/selection.ts";
 import type { ForecastDay } from "../src/pipeline/forecast.ts";
 import { changeSeries, type Series } from "../src/pipeline/series.ts";
-import type { Fact, FactMeasure, LocationFacts } from "../src/shared/facts.ts";
+import type { Fact, FactMeasure } from "../src/shared/facts.ts";
 import {
   type Location,
   locations,
@@ -67,7 +67,7 @@ const selected = selectFacts({
 const summary = (facts: readonly Fact[]) =>
   facts.map(({ date, measure, text }) => ({ date, measure, text }));
 
-function selectAll(allSeries: readonly Series[]): LocationFacts {
+function selectAll(allSeries: readonly Series[]): SelectedFacts {
   return selectFacts({
     locationId: "test",
     facts: generateCandidates({
@@ -257,12 +257,14 @@ describe("selectFacts with a forecast", () => {
       rainChance: 0,
       rain50: null,
       rain25: null,
+      iconCode: null,
+      precis: null,
     }));
 
   function selectWithForecast(
     values: Readonly<Record<string, number>>,
     maxTemp: number,
-  ): LocationFacts {
+  ): SelectedFacts {
     const allSeries = [
       series(
         "maxTemp",
@@ -379,7 +381,7 @@ describe("selectFacts on real data", () => {
       }),
     }));
 
-  const sections = (facts: LocationFacts) =>
+  const sections = (facts: SelectedFacts) =>
     Object.fromEntries(
       (["today", "thisWeek", "thisMonth"] as const).map((section) => [
         section,

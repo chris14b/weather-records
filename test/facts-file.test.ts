@@ -101,6 +101,12 @@ describe("buildFactsFile", () => {
     expect(facts?.comingWeek.every(({ date }) => date >= "2026-10-30")).toBe(
       true,
     );
+    expect(facts?.forecast).toHaveLength(7);
+    expect(facts?.forecast[0]).toEqual({
+      date: "2026-10-30",
+      iconCode: 3,
+      precis: "Mostly sunny.",
+    });
     expect(Object.keys(await savedFiles(root)).sort()).toEqual([
       "ftp-history/066037.csv",
       "ftp-history/066062.csv",

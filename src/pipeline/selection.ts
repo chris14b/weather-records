@@ -17,7 +17,10 @@ import { scoreFact, type ScoredFact } from "./scoring.ts";
 import type { Series } from "./series.ts";
 import { describeFact } from "./wording.ts";
 
-type Section = Exclude<keyof LocationFacts, "locationId">;
+/** A location's chosen facts, before its forecast is added. */
+export type SelectedFacts = Omit<LocationFacts, "forecast">;
+
+type Section = Exclude<keyof SelectedFacts, "locationId">;
 
 interface SectionRule {
   minimumScore: number;
@@ -132,7 +135,7 @@ export function selectFacts({
   facts,
   series,
   forecast,
-}: SelectionRequest): LocationFacts {
+}: SelectionRequest): SelectedFacts {
   const latest = facts.reduce(
     (last, { date, status }) =>
       date > last && !isForecastStatus(status) ? date : last,
