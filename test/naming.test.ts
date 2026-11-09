@@ -324,9 +324,9 @@ describe("sentence", () => {
         measure: "rain",
         status: "conditional",
         text: "the wettest in November since 2022",
-        why: { value: 30.1, forecast: 20 },
+        why: { value: 30, forecast: 20 },
       }),
-      "30.1 mm in [the 24 hours to 9am tomorrow] (forecast 20 mm) would make them the wettest in November since 2022",
+      "[The 24 hours to 9am tomorrow] have a 25% chance of being the wettest in November since 2022, with 30 mm or more",
     ],
     [
       fact({

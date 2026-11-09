@@ -5,7 +5,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 ## How to use this plan
 
 - Each task has a permanent ID, such as `T15`. An ID is never reused or renumbered, and never has a letter after it (no `T5b`). A new task, including one split off another, takes the next ID, and goes where its priority puts it. Its place in the list, not its ID, sets its priority.
-- **Next ID:** T40
+- **Next ID:** T41
 - **Depends on** lists the tasks that must be finished first. A task that is no longer in this plan is finished. Keep every task below the tasks it depends on.
 - The next task is the first one that isn't deferred or blocked and whose dependencies are all finished.
 - Statuses: `todo`, `in progress`, `blocked` (say on what), `deferred` (skip until the user says otherwise). An open task can have **Notes** for whatever a later session needs.
@@ -72,6 +72,24 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 ---
 
+## T40: Rain since 9am in Today
+
+**Status:** todo
+
+**Goal:** On a wet day, Today says how the rain so far compares, such as "12.4 mm has fallen since 9am, already the wettest since 4 November".
+
+- Background, from 2026-11-09: BOM's forecast gives each day's rain from midnight to midnight, and doesn't say how much is left, so the rain so far can't be added to the rest of the day's forecast without counting some twice. The rain since 9am is a floor for the 24 hours to 9am tomorrow, so a fact about it is always true. IDN60920 already has it, but the pipeline doesn't read it yet.
+- Scope: read the rain since 9am for each station in the live snapshot, keeping to the rules for live data in CLAUDE.md. It is never saved as a day's value, since the 9am total replaces it the next morning.
+- Scope: rank it against the observed rain days as the 24 hours to 9am tomorrow so far. Only the evening run covers enough of the day for it to matter, and the morning run's reading is 90 minutes old. Decide with the user whether the morning run shows it at all.
+- Scope: wording that says it is a floor and when it was read, and how it sits beside the forecast for the same 24 hours ("The 24 hours to 9am Tuesday are forecast to be…") without repeating it.
+- Done when: tests cover the ranking and wording, and it has been checked in the browser on a wet evening's `facts.json`.
+
+**Notes:**
+
+- If T36 is done first, its recomputed Today takes this over.
+
+---
+
 ## T38: Check the update runs' timings
 
 **Status:** todo
@@ -79,7 +97,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 **Goal:** Each scheduled run gets the data it is timed for.
 
 - Scope: from the first scheduled runs' logs and commits, check that the evening run (11:30 UTC, first on 2026-11-09) had BOM's 11:00 UTC forecast and today's maximum, and that the morning run (23:30 UTC) had the 23:00 UTC forecast, last night's minimum and rain, and that morning's daily files. If the logs can't show it, have `build:data` print each feed's issue or observation time.
-- Scope: check that an evening run handles the 11:00 UTC (10pm) forecast issue, whose day 0 is today with nothing left in it. No such issue had been seen by 2026-11-09. If the parser rejects it, every evening run fails.
+- Scope: check that an evening run handles the 11:00 UTC (10pm) forecast issue, whose day 0 is today with nothing left in it. No such issue had been seen by 2026-11-09. If the parser rejects it, every evening run fails. If day 0 has a low chance and no rain range there, `forecastRain` counts it as 0 mm, so the evening run's 7-day total treats the rest of today as dry; decide whether to leave day 0 out of an evening issue's rain.
 - Scope: without daylight saving, from April 2027, the 9:30am run is 25 minutes after the 9am reading and the 9:30pm run 25 minutes after the 9pm reading. Check one of each then. If everything else is done before that, defer this part rather than holding the task open.
 - Done when: the runs are shown to get their data, or the times or the pipeline are changed so they do.
 

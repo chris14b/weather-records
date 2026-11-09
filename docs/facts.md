@@ -105,21 +105,23 @@ Each forecast maximum and minimum is ranked like an observed day, with the same 
 
 #### Rain on each day
 
-Each day's rain with a 50% chance is ranked like an observed day's rain, against the observed days and the forecast's earlier days, with the same crediting and the same treatment of a missing range as the 7 days below. Its "what it would take" reaches up to the day's amount with a 25% chance. It starts from the day after the last observed rain, whatever day the temperatures start from, so an evening run can still give the rain to 9am tomorrow if BOM gives today's.
+Each day's rain with a 50% chance is ranked like an observed day's rain, against the observed days and the forecast's earlier days, with the same crediting and the same treatment of a missing range as the 7 days below. It starts from the day after the last observed rain, whatever day the temperatures start from, so an evening run can still give the rain to 9am tomorrow if BOM gives today's.
+
+Its conditional fact is a **chance** (`rainChances`): BOM's range ends at the amount with a 25% chance, so the day is ranked at exactly that amount, against the observed days and the forecast's earlier days at their 50% amounts. There is one whenever that amount does better than the 50% amount, even if the 50% amount is 0 mm and the day has no forecast fact of its own, as on most showery days: "The 24 hours to 9am Monday have a 25% chance of being the wettest since 4 November, with 20 mm or more". On 9 November 2026, a showery week, the best of these scored about 3.1, below the 4 a conditional fact needs, so none was shown.
 
 #### Rain over the next 7 days
 
 The rain amounts with a 50% chance are totalled over the forecast's first 7 days, and ranked as a run of 7 days, against all runs, the same season and the same month.
 
 - **Crediting:** observed rain is the 24 hours to 9am, but a forecast day is midnight to midnight. Most of a forecast day's rain falls before 9am the next day, so each day's amount counts towards the next day. The run then starts the day after the last observed rain, with no overlap.
-- **No range:** BOM gives no rain range on days with a low chance of rain. Below a 25% chance, the amount with a 25% chance must be 0 mm, so both amounts count as 0 mm. A day with no range and a higher chance, or no chance either, leaves the total unknown, and there is no fact.
+- **No range:** BOM gives no rain range on days with a low chance of rain. Below a 50% chance, the amount with a 50% chance must be 0 mm, and below 25% so must the amount with a 25% chance. So a day with a chance from 25% to 49% counts as 0 mm towards the total, but leaves what it would take unknown, and there is no conditional fact. A day with no range and a chance of 50% or more, or no chance either, leaves the total unknown, and there is no fact.
 - **No spell rules:** the forecast's run has no spell rules (see Runs of days), since which of its days are wet is too uncertain. A dry forecast gets no fact.
 
 #### What it would take
 
 For every forecast fact, a **conditional** fact gives the most notable rank and since within reach, at the least value that gets them: "a top of 36.6°C would make it the hottest November day since records began in 1859".
 
-- **Within reach:** 2°C beyond the forecast temperature, either way, and for rain up to the total of the amounts with a 25% chance.
+- **Within reach:** 2°C beyond the forecast temperature, either way, and for the 7 days' rain up to the total of the amounts with a 25% chance. That total is much less likely than 1 in 4, so the fact never says 25%. A single day's rain is a chance instead (see Rain on each day).
 - **Least value:** `boundariesBetween` in `thresholds.ts` gives the earlier values that the forecast doesn't beat but the limit does. A value 0.1 beyond the furthest of them gets the same rank and since as the limit itself. T12's near misses can use the same function to find the nearest one.
 - If nothing within reach beats what the forecast already gets, there is no conditional fact.
 
@@ -226,7 +228,7 @@ Past week and Past month run strongest first, and so do Today's observed and day
 - **Verb:** "is" or "was" by whether the day is over. A night, the rain to 9am and the 9am readings are over by the time the page shows them. Rain days and runs of days take "were". Measures that aren't a kind of day take "had": changes, ranges, humidity and the 9am and 3pm readings ("Thursday had the lowest peak humidity"). A period's nights take "had", "has had" or, for the year so far, "has so far had". Forecasts are "is forecast to be".
 - **Value**, with its unit from the measure: "with a top of 23.6°C", "with a low of 11.6°C", "with 49.6 mm", "up 6.7°C" for a change, "at 79%", "with an average top of 23.6°C" for a period. Observed values show one decimal, forecasts whole degrees as BOM gives them.
 - **Provisional:** shown exactly like a confirmed fact, with no words and the same dot ("Observed" in the legend). The live feed is treated as fact.
-- **Conditional:** built around what it needs: "A low of 10°C tonight (forecast 12°C) would make it the coldest November night since 2006", "A top of 36.6°C on Thursday (forecast 35°C) would make it…", "90.1 mm in the 7 days to Sunday (forecast 70 mm) would make them…".
+- **Conditional:** built around what it needs: "A low of 10°C tonight (forecast 12°C) would make it the coldest November night since 2006", "A top of 36.6°C on Thursday (forecast 35°C) would make it…", "90.1 mm in the 7 days to Sunday (forecast 70 mm) would make them…". A single day's rain is a chance: "The 24 hours to 9am Monday have a 25% chance of being the wettest since 4 November, with 20 mm or more".
 
 ### Standout marks
 

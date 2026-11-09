@@ -282,8 +282,17 @@ describe("generateForecastFacts", () => {
       expect(find(runs(factsFor([observed], days)), {})?.value).toBe(60);
     });
 
+    test("counts a day with a chance below 50% and no rain range as 0 mm, with nothing it could reach", () => {
+      const facts = runs(
+        factsFor([observed], wetWeek({ 3: { ...noRange, rainChance: 40 } })),
+      );
+
+      expect(find(facts, {})?.value).toBe(60);
+      expect(find(facts, { status: "conditional" })).toBeUndefined();
+    });
+
     test.each([
-      ["no rain range and a higher chance", { rainChance: 40 }],
+      ["no rain range and a chance of 50% or more", { rainChance: 60 }],
       ["no chance of rain either", { rainChance: null }],
     ])("gives no total when a day has %s", (_, change) => {
       const days = wetWeek({ 3: { ...noRange, ...change } });
@@ -319,17 +328,38 @@ describe("generateForecastFacts", () => {
       });
     });
 
-    test("finds what it would take, up to the amount with a 25% chance", () => {
+    test("ranks the amount with a 25% chance when it does better than the forecast", () => {
       const facts = days(
         factsFor([observed], wetDay({ rain50: 20, rain25: 35 })),
       );
 
       expect(find(facts, { status: "conditional" })).toMatchObject({
         date: "2026-11-09",
-        value: 30.1,
+        value: 35,
         forecast: 20,
         rank: 1,
       });
+    });
+
+    test("ranks the amount with a 25% chance on a day forecast 0 mm", () => {
+      const facts = days(
+        factsFor([observed], wetDay({ rain50: 0, rain25: 35 })),
+      );
+
+      expect(find(facts, {})).toBeUndefined();
+      expect(find(facts, { status: "conditional" })).toMatchObject({
+        value: 35,
+        forecast: 0,
+        rank: 1,
+      });
+    });
+
+    test("gives no chance when the amount with a 25% chance does no better", () => {
+      const facts = days(
+        factsFor([observed], wetDay({ rain50: 20, rain25: 20 })),
+      );
+
+      expect(find(facts, { status: "conditional" })).toBeUndefined();
     });
 
     test("starts from the day after the observed rain, whatever day the temperatures start from", () => {
@@ -344,10 +374,10 @@ describe("generateForecastFacts", () => {
       );
     });
 
-    test("leaves out a day with no rain range and a higher chance", () => {
+    test("leaves out a day with no rain range and a chance of 50% or more", () => {
       const facts = factsFor(
         [observed],
-        wetDay({ rain50: null, rain25: null, rainChance: 40 }),
+        wetDay({ rain50: null, rain25: null, rainChance: 60 }),
       );
 
       expect(days(facts)).toEqual([]);

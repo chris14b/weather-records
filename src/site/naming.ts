@@ -302,9 +302,18 @@ function valueClause({ measure, period, direction, status, why }: Phrased) {
   return `at ${value}`;
 }
 
-// "A low of 10°C tonight (forecast 12°C) would make it…", "30.0 mm in the 24 hours to 9am tomorrow (forecast 12.0 mm) would make them…"
+// "A low of 10°C tonight (forecast 12°C) would make it…". BOM's rain range ends at the
+// amount with a 25% chance, which a rain day's fact is ranked at: "The 24 hours to 9am
+// Monday have a 25% chance of being the wettest since 4 November, with 20 mm or more".
 function conditional(fact: Phrased, today: string): Sentence {
   const { measure, why } = fact;
+  if (isRainDay(fact)) {
+    return {
+      before: "",
+      subject: capitalise(periodName(fact, today)),
+      after: ` have a 25% chance of being ${fact.text}, with ${amount(measure, why.value, true)} or more`,
+    };
+  }
   const forecast = why.forecast ?? why.value;
   const needs = amount(measure, why.value, true);
   const what =
@@ -314,13 +323,13 @@ function conditional(fact: Phrased, today: string): Sentence {
         ? `A low of ${needs}`
         : needs;
   const when = periodName(fact, today);
-  const plural = fact.period.kind === "rolling" || isRainDay(fact);
-  const preposition = plural
+  const rolling = fact.period.kind === "rolling";
+  const preposition = rolling
     ? "in "
     : /^(today|tomorrow|tonight|last night|tomorrow night)$/.test(when)
       ? ""
       : "on ";
-  const them = plural ? "them" : "it";
+  const them = rolling ? "them" : "it";
   return {
     before: `${what} ${preposition}`,
     subject: when,

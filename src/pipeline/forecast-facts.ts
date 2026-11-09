@@ -103,18 +103,6 @@ function creditRain(day: ForecastDay, value: number): DayValue {
   return { date: addDays(day.date, 1), value };
 }
 
-/** How far beyond its forecast value a day's conditional fact may reach. */
-function reachLimit(
-  fact: CandidateFact,
-  days: readonly ForecastDay[],
-): number | undefined {
-  if (fact.measure !== "rain") {
-    return reach(fact.value, temperatureReach, fact.direction);
-  }
-  const day = days.find((d) => creditRain(d, 0).date === fact.date);
-  return day === undefined ? undefined : forecastRain(day)?.rain25;
-}
-
 function dayFacts(
   locationId: string,
   source: Series,
@@ -122,30 +110,21 @@ function dayFacts(
 ): CandidateFact[] {
   // Each day is compared with the forecast's earlier days too, as if they come true.
   const extended = forecastSeries(source, forecast);
-  const forecastDays = extended.days.slice(source.days.length);
-  const [first, last] = [forecastDays[0], forecastDays.at(-1)];
-  if (first === undefined || last === undefined) return [];
-  return generateDailyFacts({
-    locationId,
-    series: [extended],
-    windowEnd: last.date,
-    windowDays: daysBetween(first.date, last.date) + 1,
-  }).flatMap((fact) => {
-    const key = comparisonKey(fact.date, fact.comparison);
-    const earlier = extended.days.filter(
-      ({ date }) =>
-        date < fact.date && comparisonKey(date, fact.comparison) === key,
+  const facts = forecastDayFacts(locationId, extended, source.days.length);
+  if (source.measure === "rain") {
+    return [
+      ...facts,
+      ...rainChances(locationId, extended, source.days.length, forecast.days),
+    ];
+  }
+  return facts.flatMap((fact) => {
+    const earlier = comparableEarlier(extended, fact);
+    const value = conditionalValue(
+      earlier.map((day) => day.value),
+      fact.value,
+      reach(fact.value, temperatureReach, fact.direction),
+      fact.direction,
     );
-    const limit = reachLimit(fact, forecast.days);
-    const value =
-      limit === undefined
-        ? undefined
-        : conditionalValue(
-            earlier.map((day) => day.value),
-            fact.value,
-            limit,
-            fact.direction,
-          );
     if (value === undefined) return [fact];
     return [
       fact,
@@ -156,6 +135,86 @@ function dayFacts(
         status: "conditional",
         beatenBy: null,
         forecast: fact.value,
+      },
+    ];
+  });
+}
+
+/** The facts about the days a series has from the forecast, after its observed ones. */
+function forecastDayFacts(
+  locationId: string,
+  series: Series,
+  observedDays: number,
+): CandidateFact[] {
+  const forecastDays = series.days.slice(observedDays);
+  const [first, last] = [forecastDays[0], forecastDays.at(-1)];
+  if (first === undefined || last === undefined) return [];
+  return generateDailyFacts({
+    locationId,
+    series: [series],
+    windowEnd: last.date,
+    windowDays: daysBetween(first.date, last.date) + 1,
+  });
+}
+
+function comparableEarlier(
+  series: Series,
+  { date, comparison }: CandidateFact,
+): SeriesDay[] {
+  const key = comparisonKey(date, comparison);
+  return series.days.filter(
+    (day) => day.date < date && comparisonKey(day.date, comparison) === key,
+  );
+}
+
+/**
+ * BOM's rain range ends at the amount with a 25% chance, so each day's chance of doing
+ * better than its forecast is ranked at that amount, even when the amount with a 50%
+ * chance is 0 mm. Earlier days are compared at what they're forecast.
+ */
+function rainChances(
+  locationId: string,
+  extended: Series,
+  observedDays: number,
+  days: readonly ForecastDay[],
+): CandidateFact[] {
+  const upper = new Map(
+    days.flatMap((day) => {
+      const rain25 = forecastRain(day)?.rain25;
+      return rain25 === undefined || rain25 === null
+        ? []
+        : [[creditRain(day, rain25).date, rain25] as const];
+    }),
+  );
+  const atUpper: Series = {
+    ...extended,
+    days: extended.days.flatMap((day, index) => {
+      if (index < observedDays) return [day];
+      const value = upper.get(day.date);
+      return value === undefined ? [] : [{ ...day, value }];
+    }),
+  };
+  const forecastValues = new Map(
+    extended.days.slice(observedDays).map(({ date, value }) => [date, value]),
+  );
+  return forecastDayFacts(locationId, atUpper, observedDays).flatMap((fact) => {
+    const forecastValue = forecastValues.get(fact.date);
+    if (forecastValue === undefined) return [];
+    const earlier = comparableEarlier(extended, fact);
+    const values = earlier.map((day) => day.value);
+    if (
+      boundariesBetween(values, forecastValue, fact.value, "highest").length ===
+      0
+    ) {
+      return [];
+    }
+    return [
+      {
+        ...fact,
+        ...rank({ date: fact.date, value: fact.value }, earlier, "highest"),
+        status: "conditional",
+        beatenBy: null,
+        forecast: forecastValue,
       },
     ];
   });
@@ -183,6 +242,10 @@ function rainFacts(
     return [];
   const total = sum(amounts.map(({ rain50 }) => rain50));
   if (total === 0) return [];
+  const uppers = amounts.flatMap(({ rain25 }) =>
+    rain25 === null ? [] : [rain25],
+  );
+  const upperTotal = uppers.length === amounts.length ? sum(uppers) : undefined;
 
   const ranker = runRanker(source, runDays);
   const run = {
@@ -207,12 +270,15 @@ function rainFacts(
       recordStart: first.date,
       fullRecord: source.fullRecord,
     };
-    const value = conditionalValue(
-      ranker.earlierValues(run.date, comparison),
-      total,
-      sum(amounts.map(({ rain25 }) => rain25)),
-      "highest",
-    );
+    const value =
+      upperTotal === undefined
+        ? undefined
+        : conditionalValue(
+            ranker.earlierValues(run.date, comparison),
+            total,
+            upperTotal,
+            "highest",
+          );
     const conditional =
       value === undefined
         ? undefined
@@ -231,15 +297,18 @@ function rainFacts(
   });
 }
 
+/**
+ * A day's rain with a 50% and a 25% chance. Without a range, a chance below 25% makes both
+ * 0 mm, and one below 50% makes the amount with a 50% chance 0 mm.
+ */
 function forecastRain({
   rain50,
   rain25,
   rainChance,
-}: ForecastDay): { rain50: number; rain25: number } | undefined {
+}: ForecastDay): { rain50: number; rain25: number | null } | undefined {
   if (rain50 !== null && rain25 !== null) return { rain50, rain25 };
-  return rainChance !== null && rainChance < noRangeChance
-    ? { rain50: 0, rain25: 0 }
-    : undefined;
+  if (rainChance === null || rainChance >= 50) return undefined;
+  return { rain50: 0, rain25: rainChance < noRangeChance ? 0 : null };
 }
 
 /**
