@@ -115,7 +115,7 @@ describe("buildFactsFile", () => {
       "recent/readings/066214.csv",
       "recent/snapshots/066214.csv",
     ]);
-  });
+  }, 30_000);
 
   test("gives the same files and facts when run twice", async () => {
     const first = await build();

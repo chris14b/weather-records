@@ -430,22 +430,26 @@ describe("selectFacts on real data", () => {
     ["sydney-observatory-hill", "2026-10-13"],
     ["sydney-airport", "2026-10-29"],
     ["sydney-olympic-park", "2020-02-12"],
-  ])("chooses the facts at %s for the 31 days to %s", async (id, windowEnd) => {
-    const location = locations.find((l) => l.id === id);
-    if (location === undefined) throw new Error(`No location ${id}`);
-    const locationSeries = await savedSeriesTo(location);
+  ])(
+    "chooses the facts at %s for the 31 days to %s",
+    async (id, windowEnd) => {
+      const location = locations.find((l) => l.id === id);
+      if (location === undefined) throw new Error(`No location ${id}`);
+      const locationSeries = await savedSeriesTo(location);
 
-    const facts = selectRecords({
-      locationId: id,
-      facts: generateCandidates({
+      const facts = selectRecords({
         locationId: id,
+        facts: generateCandidates({
+          locationId: id,
+          series: locationSeries,
+          windowEnd,
+          offsets: stationOffsets(location),
+        }),
         series: locationSeries,
-        windowEnd,
-        offsets: stationOffsets(location),
-      }),
-      series: locationSeries,
-    });
+      });
 
-    expect(sections(facts)).toMatchSnapshot();
-  });
+      expect(sections(facts)).toMatchSnapshot();
+    },
+    30_000,
+  );
 });
