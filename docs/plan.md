@@ -5,7 +5,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 ## How to use this plan
 
 - Each task has a permanent ID, such as `T15`. An ID is never reused or renumbered, and never has a letter after it (no `T5b`). A new task, including one split off another, takes the next ID, and goes where its priority puts it. Its place in the list, not its ID, sets its priority.
-- **Next ID:** T38
+- **Next ID:** T39
 - **Depends on** lists the tasks that must be finished first. A task that is no longer in this plan is finished. Keep every task below the tasks it depends on.
 - The next task is the first one that isn't deferred or blocked and whose dependencies are all finished.
 - Statuses: `todo`, `in progress`, `blocked` (say on what), `deferred` (skip until the user says otherwise). An open task can have **Notes** for whatever a later session needs.
@@ -96,30 +96,26 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 ---
 
-## T17: Scheduled updates
+## T38: Check the update runs' timings
 
-**Status:** in progress (`.github/workflows/update.yml` is written; it needs runs on GitHub)
+**Status:** todo
 
-**Goal:** The site updates itself every morning and evening.
+**Goal:** Each scheduled run gets the data it is timed for.
 
-- Scope: check that FTP works from GitHub's servers, in the first manual run's `build:data` step.
-- Scope: check the timings in the first scheduled runs' logs: that the morning run had the 23:00 UTC forecast and the 9am values, and the evening run the 11:00 UTC forecast and today's maximum. The 9:30pm winter run, 25 minutes after the 9pm reading, can only be checked once daylight saving ends in April 2027; if it is still unchecked once everything else is done, split it off as its own task.
-- Scope: check that an evening run handles the 11:00 UTC (10pm) forecast issue, whose day 0 is today with nothing left in it. No such issue has been seen yet.
-- Done when: a manual run deploys successfully, the live site shows the current facts, and a scheduled run has done the same.
+- Scope: from the first scheduled runs' logs and commits, check that the evening run (11:30 UTC, first on 2026-11-09) had BOM's 11:00 UTC forecast and today's maximum, and that the morning run (23:30 UTC) had the 23:00 UTC forecast, last night's minimum and rain, and that morning's daily files. If the logs can't show it, have `build:data` print each feed's issue or observation time.
+- Scope: check that an evening run handles the 11:00 UTC (10pm) forecast issue, whose day 0 is today with nothing left in it. No such issue had been seen by 2026-11-09. If the parser rejects it, every evening run fails.
+- Scope: without daylight saving, from April 2027, the 9:30am run is 25 minutes after the 9am reading and the 9:30pm run 25 minutes after the 9pm reading. Check one of each then. If everything else is done before that, defer this part rather than holding the task open.
+- Done when: the runs are shown to get their data, or the times or the pipeline are changed so they do.
 
 **Notes:**
 
-- The workflow runs `npm test` and `build:data`, commits `data/recent/`, `data/ftp-history/` and `facts.json`, rebases onto `main` in case it moved during the run, pushes, and calls `deploy.yml` with the commit it pushed. A run started by hand on any branch other than `main` does nothing.
-- A manual run: Actions → Update → Run workflow, on `main`. The push needs `main` to accept pushes from `github-actions[bot]`; if branch protection blocks it, the commit step fails.
-- The run times and why are in CLAUDE.md. BOM's forecast schedule there comes from search results quoting its announcement (its site refuses automated requests), and matched the feed on 2026-11-09.
+- The run times and their reasons are in CLAUDE.md. BOM's forecast schedule there comes from search results quoting its announcement (its site refuses automated requests), and matched the feed on 2026-11-09. The latest observations appeared about 5 minutes after the half-hour then.
 
 ---
 
 ## T34: When the next update is due
 
 **Status:** todo
-
-**Depends on:** T17
 
 **Goal:** Beside "Updated…", the page says when the next update is due.
 
@@ -132,8 +128,6 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 ## T36: Live updates through the day
 
 **Status:** todo
-
-**Depends on:** T17
 
 **Goal:** Today follows the day as it happens: the latest temperature, and facts such as "the hottest day since February" as soon as the running maximum gets there.
 
@@ -200,8 +194,6 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 ## T18: README and retuning
 
 **Status:** todo
-
-**Depends on:** T17
 
 **Goal:** Document the project, and tune the facts against real output.
 
