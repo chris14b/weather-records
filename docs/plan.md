@@ -5,7 +5,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 ## How to use this plan
 
 - Each task has a permanent ID, such as `T15`. An ID is never reused or renumbered, and never has a letter after it (no `T5b`). A new task, including one split off another, takes the next ID, and goes where its priority puts it. Its place in the list, not its ID, sets its priority.
-- **Next ID:** T41
+- **Next ID:** T42
 - **Depends on** lists the tasks that must be finished first. A task that is no longer in this plan is finished. Keep every task below the tasks it depends on.
 - The next task is the first one that isn't deferred or blocked and whose dependencies are all finished.
 - Statuses: `todo`, `in progress`, `blocked` (say on what), `deferred` (skip until the user says otherwise). An open task can have **Notes** for whatever a later session needs.
@@ -15,6 +15,118 @@ The open tasks, in order of priority. Background and settled decisions are in [C
   - decisions go into [CLAUDE.md](../CLAUDE.md)
   - history, such as what was tried and dropped, goes in the commit message. Git keeps the old plan (`git log -p --follow -- docs/plan.md`).
 - Refer to tasks by ID, and never to a finished one.
+
+---
+
+## T20: Backfill the 9am and 3pm readings
+
+**Status:** todo
+
+**Goal:** Give the 9am and 3pm facts about a year of history, from BOM's Daily Weather Observations (DWO), and make DWO the way to fill any gap that missed runs leave.
+
+- Background:
+  - DWO keeps the current month and the 12 before it, one CSV per station per month, at `https://www.bom.gov.au/climate/dwo/YYYYMM/text/<product>.YYYYMM.csv`. The CSV columns include 9am and 3pm temperature and relative humidity.
+  - These are on BOM's website, so the user downloads them by hand in a browser. Code must never fetch them.
+  - `IDCJDW2124` is Sydney, and its temperature and humidity come from Observatory Hill (066214). The user also found `IDCJDW2125`. Find the products for Sydney Airport and Sydney Olympic Park, and check which station each file's header names.
+  - Use only the temperature and humidity columns. The Sydney file takes its cloud and pressure from Sydney Airport and its wind from Fort Denison.
+- Scope: give the user the list of files to download, and add it to [refreshing-history.md](refreshing-history.md).
+- Scope: a parser for the DWO CSVs, which checks that the header names the expected station.
+- Scope: adding the downloaded readings to the saved readings in `data/recent/readings/`, for any date in the last 13 months that is missing: before saving began, or in a gap left by missed runs. On overlapping dates the two must agree, or the build fails. The pruning to 13 months (`readingsKeptFrom`) applies to these readings too.
+- Scope: a way to see which dates the saved readings are missing, so the user knows which months to download. Add the steps to [refreshing-history.md](refreshing-history.md).
+- Done when: tests cover parsing, the station check, the overlap check and filling a gap, and the 9am and 3pm records start about a year earlier.
+
+---
+
+## T28: This year
+
+**Status:** todo
+
+**Goal:** A This year section with the standout months and seasons of the past 12 months, such as "February was the hottest February since 2012".
+
+- Background: the pipeline already ranks complete months, seasons and years, and the current ones so far (the Periods section of [facts.md](facts.md)). It drops a complete period once it ended more than 31 days ago, and shows the rest in Past month under `calendarRule`.
+- Scope: a `thisYear` section in `PageFacts` for the complete months and seasons that ended in the last 12 months, and the year so far. Decide whether calendar periods leave Past month for it, or Past month keeps the latest complete month.
+- Scope: selection rules of its own in `selection.ts`, within the Selection section of [facts.md](facts.md), so a strong month stays for the year but doesn't crowd the section.
+- Scope: a This year panel on the page, after Past month, with its periods named as the site names the others.
+- Done when: tests and the selection snapshots cover the section, and it has been checked in the browser.
+
+---
+
+## T37: More forecast icon looks
+
+**Status:** todo
+
+**Goal:** The weather sky tells apart the forecasts Sydney actually gets that now share a look.
+
+- Background: `weatherForIcon` (`src/shared/weather.ts`) maps BOM's 17 icon codes onto 8 kinds of sky. Light showers, showers and heavy showers look the same, and haze and dust borrow the grey fog.
+- Scope: light, ordinary and heavy rain, by the density of the rain layer, for showers (codes 17, 11 and 18) and rain (8 and 12).
+- Scope: a brownish-orange tint for haze and dust (codes 6 and 13), since bushfire smoke haze is common in Sydney, separate from fog (10).
+- Out of scope: snow (15), tropical cyclone (19) and frost (14), which Sydney almost never gets. Their current looks stay.
+- Scope: check the rain and storm skies on a real phone. The glass panels re-blur everything moving behind them on every frame, which headless measurement doesn't capture. If they stutter or drain the battery, slow or thin the rain on small screens.
+- Done when: each new look has been checked in the browser by day and night, and with reduced motion.
+
+**Notes:**
+
+- With `npm run dev`, `/?sky` opens a panel that sets the sky to any date, time and kind of weather. Add the new looks to its weather list (`weathers` in `src/shared/weather.ts`).
+
+---
+
+## T19: Wind
+
+**Status:** todo
+
+**Goal:** Wind facts such as "the 8th windiest day this year", for the locations where BOM's feeds allow them.
+
+- Background, checked on 2026-10-30:
+  - The FTP daily files have a column for the day's average 10 m wind speed (m/s). It holds real values for Sydney Airport (files from 2009) and Sydney Olympic Park (from 2011).
+  - Observatory Hill reports `0.00` every day because it has no wind instrument: BOM measures Sydney's harbour wind at Fort Denison instead. Treat those zeros as missing, never as calm, so there are no wind facts for Observatory Hill.
+  - The ZIPs don't include wind, and no allowed source has a history of gusts.
+- Scope: a one-off backfill of the wind column from every FTP daily file since each station's first file, saved in a committed file per station (e.g. `data/wind/<station>.csv`), or as a column in `data/ftp-history/`. Keep it up to date from the files the daily run already downloads. It is never pruned, because no ZIP replaces it.
+- Scope: wind measures for the fact generator, with every comparison that has enough history, within the ranking, scoring and wording in [facts.md](facts.md) ("windiest", "calmest").
+- Scope: update the data sources section of CLAUDE.md.
+- Out of scope, so ask the user first: saving each day's maximum gust from the live feed. Its records would only begin on the day saving starts.
+- Done when: tests cover the parsing, the backfill, and the rule that Observatory Hill's zeros count as missing.
+
+---
+
+## T12: Near-miss facts
+
+**Status:** todo
+
+**Goal:** Facts about observed days that fell just short of a notable rank, such as "yesterday came within 0.2°C of the hottest October day since records began".
+
+- Scope: for each observed day and comparison, find the nearest rank or "since" boundary above its value, and how far away it is, using the Ranking section of [facts.md](facts.md).
+  - The function exists: `boundariesBetween` in `thresholds.ts` gives the earlier values between two values, nearest first, and `justBeyond` the value 0.1 past one. The nearest boundary above a day's value is `boundariesBetween(values, value, Infinity, direction)[0]`.
+  - Decide what counts as near: a gap in the measure's own units, or a share of the spread of the comparison's values.
+- Scope: scoring and wording within the existing ones (the Scoring, Selection and Wording sections of [facts.md](facts.md)), so a near miss never outscores a real fact for the same day, and isn't shown beside it for the same measure.
+- Done when: tests pass for a near miss against a record, against a "since" year, and against a gap in the data, and the real data gives a near miss on a chosen day.
+
+---
+
+## T41: README
+
+**Status:** todo
+
+**Goal:** Document the project.
+
+- Scope: a README covering what the site is, how to refresh the ZIPs once a year (link to [refreshing-history.md](refreshing-history.md)), how to run the site locally, and the attribution.
+- Done when: the README is written.
+
+---
+
+## T18: Retuning
+
+**Status:** blocked (on a couple of weeks of output from the scheduled runs, which started on 2026-11-10, so not before about 2026-11-24)
+
+**Goal:** Tune the facts against real output.
+
+- Scope: a pass over scoring, selection and wording, using the output of the scheduled runs. The constants are `sectionRules`, `calendarRule` and `conditionalRule` in `selection.ts`, and the weights in `scoring.ts`. Weak spots found so far:
+  - Past week is often filled by short sinces such as "the coldest night since 20 October". These are true, but much alike from day to day.
+  - Year-so-far ranks such as "the 9th wettest day of the year so far" or "the 7th biggest day-to-day drop in maximum temperature of the year so far" still get in at around 2.4.
+  - Quiet days give Today nothing at all, as on 2026-10-30, whose only data is a minimum and rain.
+  - Observatory Hill's year so far leaves out 9 to 16 years between 1864 and 1948, each with a month or so missing, so its records carry "(not counting 16 years with gaps)". That is still long for a headline. Allowing a missing month in a year so far might be fairer.
+  - A period so far shows every day until the period ends, so it can sit in Past month for months.
+  - The coming week's fallback (`forecastFloor`) can pick a conditional fact over a plainer forecast one, such as "A top of 18°C on Friday (forecast 20°C) would make it the coldest day since 3 November". Decide whether a fallback should prefer forecast facts.
+- Done when: the retuning is reviewed with the user and the snapshot tests updated.
 
 ---
 
@@ -93,90 +205,6 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 ---
 
-## T12: Near-miss facts
-
-**Status:** todo
-
-**Goal:** Facts about observed days that fell just short of a notable rank, such as "yesterday came within 0.2°C of the hottest October day since records began".
-
-- Scope: for each observed day and comparison, find the nearest rank or "since" boundary above its value, and how far away it is, using the Ranking section of [facts.md](facts.md).
-  - The function exists: `boundariesBetween` in `thresholds.ts` gives the earlier values between two values, nearest first, and `justBeyond` the value 0.1 past one. The nearest boundary above a day's value is `boundariesBetween(values, value, Infinity, direction)[0]`.
-  - Decide what counts as near: a gap in the measure's own units, or a share of the spread of the comparison's values.
-- Scope: scoring and wording within the existing ones (the Scoring, Selection and Wording sections of [facts.md](facts.md)), so a near miss never outscores a real fact for the same day, and isn't shown beside it for the same measure.
-- Done when: tests pass for a near miss against a record, against a "since" year, and against a gap in the data, and the real data gives a near miss on a chosen day.
-
----
-
-## T37: More forecast icon looks
-
-**Status:** todo
-
-**Goal:** The weather sky tells apart the forecasts Sydney actually gets that now share a look.
-
-- Background: `weatherForIcon` (`src/shared/weather.ts`) maps BOM's 17 icon codes onto 8 kinds of sky. Light showers, showers and heavy showers look the same, and haze and dust borrow the grey fog.
-- Scope: light, ordinary and heavy rain, by the density of the rain layer, for showers (codes 17, 11 and 18) and rain (8 and 12).
-- Scope: a brownish-orange tint for haze and dust (codes 6 and 13), since bushfire smoke haze is common in Sydney, separate from fog (10).
-- Out of scope: snow (15), tropical cyclone (19) and frost (14), which Sydney almost never gets. Their current looks stay.
-- Scope: check the rain and storm skies on a real phone. The glass panels re-blur everything moving behind them on every frame, which headless measurement doesn't capture. If they stutter or drain the battery, slow or thin the rain on small screens.
-- Done when: each new look has been checked in the browser by day and night, and with reduced motion.
-
-**Notes:**
-
-- With `npm run dev`, `/?sky` opens a panel that sets the sky to any date, time and kind of weather. Add the new looks to its weather list (`weathers` in `src/shared/weather.ts`).
-
----
-
-## T28: This year
-
-**Status:** todo
-
-**Goal:** A This year section with the standout months and seasons of the past 12 months, such as "February was the hottest February since 2012".
-
-- Background: the pipeline already ranks complete months, seasons and years, and the current ones so far (the Periods section of [facts.md](facts.md)). It drops a complete period once it ended more than 31 days ago, and shows the rest in Past month under `calendarRule`.
-- Scope: a `thisYear` section in `PageFacts` for the complete months and seasons that ended in the last 12 months, and the year so far. Decide whether calendar periods leave Past month for it, or Past month keeps the latest complete month.
-- Scope: selection rules of its own in `selection.ts`, within the Selection section of [facts.md](facts.md), so a strong month stays for the year but doesn't crowd the section.
-- Scope: a This year panel on the page, after Past month, with its periods named as the site names the others.
-- Done when: tests and the selection snapshots cover the section, and it has been checked in the browser.
-
----
-
-## T18: README and retuning
-
-**Status:** todo
-
-**Goal:** Document the project, and tune the facts against real output.
-
-- Scope: a README covering what the site is, how to refresh the ZIPs once a year (link to [refreshing-history.md](refreshing-history.md)), how to run the site locally, and the attribution.
-- Scope: a pass over scoring, selection and wording once the scheduled runs have produced a couple of weeks of output. The constants are `sectionRules`, `calendarRule` and `conditionalRule` in `selection.ts`, and the weights in `scoring.ts`. Weak spots found so far:
-  - Past week is often filled by short sinces such as "the coldest night since 20 October". These are true, but much alike from day to day.
-  - Year-so-far ranks such as "the 9th wettest day of the year so far" or "the 7th biggest day-to-day drop in maximum temperature of the year so far" still get in at around 2.4.
-  - Quiet days give Today nothing at all, as on 2026-10-30, whose only data is a minimum and rain.
-  - Observatory Hill's year so far leaves out 9 to 16 years between 1864 and 1948, each with a month or so missing, so its records carry "(not counting 16 years with gaps)". That is still long for a headline. Allowing a missing month in a year so far might be fairer.
-  - A period so far shows every day until the period ends, so it can sit in Past month for months.
-  - The coming week's fallback (`forecastFloor`) can pick a conditional fact over a plainer forecast one, such as "A top of 18°C on Friday (forecast 20°C) would make it the coldest day since 3 November". Decide whether a fallback should prefer forecast facts.
-- Done when: the README is written, and the retuning is reviewed with the user and the snapshot tests updated.
-
----
-
-## T20: Backfill the 9am and 3pm readings
-
-**Status:** todo
-
-**Goal:** Give the 9am and 3pm facts about a year of history, from BOM's Daily Weather Observations (DWO), and make DWO the way to fill any gap that missed runs leave. The user wants this done after the site is live.
-
-- Background:
-  - DWO keeps the current month and the 12 before it, one CSV per station per month, at `https://www.bom.gov.au/climate/dwo/YYYYMM/text/<product>.YYYYMM.csv`. The CSV columns include 9am and 3pm temperature and relative humidity.
-  - These are on BOM's website, so the user downloads them by hand in a browser. Code must never fetch them.
-  - `IDCJDW2124` is Sydney, and its temperature and humidity come from Observatory Hill (066214). The user also found `IDCJDW2125`. Find the products for Sydney Airport and Sydney Olympic Park, and check which station each file's header names.
-  - Use only the temperature and humidity columns. The Sydney file takes its cloud and pressure from Sydney Airport and its wind from Fort Denison.
-- Scope: give the user the list of files to download, and add it to [refreshing-history.md](refreshing-history.md).
-- Scope: a parser for the DWO CSVs, which checks that the header names the expected station.
-- Scope: adding the downloaded readings to the saved readings in `data/recent/readings/`, for any date in the last 13 months that is missing: before saving began, or in a gap left by missed runs. On overlapping dates the two must agree, or the build fails. The pruning to 13 months (`readingsKeptFrom`) applies to these readings too.
-- Scope: a way to see which dates the saved readings are missing, so the user knows which months to download. Add the steps to [refreshing-history.md](refreshing-history.md).
-- Done when: tests cover parsing, the station check, the overlap check and filling a gap, and the 9am and 3pm records start about a year earlier.
-
----
-
 ## T21: Longer solar history from the IDCJAC0016 ZIPs
 
 **Status:** todo
@@ -219,24 +247,6 @@ The open tasks, in order of priority. Background and settled decisions are in [C
   - Claude's suggestion on 2026-11-06 was the October 2017 cutover, if BOM confirms the date and the FTP check is clean, with option 2. Option 3 is the alternative if the site should never depend on an offset.
 - Scope, once decided: the config, and a test that recomputes any offsets from the overlap in the ZIPs, so a yearly refresh flags drift. Update CLAUDE.md's Locations section, [facts.md](facts.md) and the snapshot tests.
 - Done when: the research is recorded, the user has chosen, and tests cover the chosen handling.
-
----
-
-## T19: Wind
-
-**Status:** deferred (the user shelved wind on 2026-10-30)
-
-**Goal:** Wind facts such as "the 8th windiest day this year", for the locations where BOM's feeds allow them.
-
-- Background, checked on 2026-10-30:
-  - The FTP daily files have a column for the day's average 10 m wind speed (m/s). It holds real values for Sydney Airport (files from 2009) and Sydney Olympic Park (from 2011).
-  - Observatory Hill reports `0.00` every day because it has no wind instrument: BOM measures Sydney's harbour wind at Fort Denison instead. Treat those zeros as missing, never as calm, so there are no wind facts for Observatory Hill.
-  - The ZIPs don't include wind, and no allowed source has a history of gusts.
-- Scope: a one-off backfill of the wind column from every FTP daily file since each station's first file, saved in a committed file per station (e.g. `data/wind/<station>.csv`), or as a column in `data/ftp-history/`. Keep it up to date from the files the daily run already downloads. It is never pruned, because no ZIP replaces it.
-- Scope: wind measures for the fact generator, with every comparison that has enough history, within the ranking, scoring and wording in [facts.md](facts.md) ("windiest", "calmest").
-- Scope: update the data sources section of CLAUDE.md.
-- Out of scope, so ask the user first: saving each day's maximum gust from the live feed. Its records would only begin on the day saving starts.
-- Done when: tests cover the parsing, the backfill, and the rule that Observatory Hill's zeros count as missing.
 
 ---
 
