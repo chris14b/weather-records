@@ -304,9 +304,9 @@ function observationDay(date: string, measure: FactMeasure): string {
 
 /**
  * Today has the newest observations, from `latest`, the last date with any. After
- * midnight, until the morning run, that is the day before: its daytime values stay, but
- * its night and its rain to 9am, over before the page's date began, go to Past week. A
- * run of days goes in the section its first day falls in.
+ * midnight, until the first run after 9am, that is the day before: its daytime values
+ * stay, but its night and its rain to 9am, over before the page's date began, go to Past
+ * week. A run of days goes in the section its first day falls in.
  */
 function candidateSection(
   fact: CandidateFact,

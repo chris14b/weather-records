@@ -10,7 +10,7 @@ import { readSavedSeries } from "./saved-series.ts";
 import { selectFacts } from "./selection.ts";
 import type { Series } from "./series.ts";
 
-// With a date, the week from it is "forecast" from what was observed, as a morning run
+// With a date, the week from it is "forecast" from what was observed, as a 10:30am run
 // that day would have seen it, and the data stops the day before.
 const [locationId = "sydney-observatory-hill", date] = process.argv.slice(2);
 const location = locationById(locationId);

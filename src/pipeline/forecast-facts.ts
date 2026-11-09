@@ -3,6 +3,7 @@ import type { CandidateFact } from "./candidates.ts";
 import { comparisonKey, generateDailyFacts, rank } from "./daily-facts.ts";
 import { addDays, daysBetween, sydneyDate, sydneyHour } from "./dates.ts";
 import type { ForecastDay } from "./forecast.ts";
+import { maxSavedFromHour } from "./observations.ts";
 import { rollingComparisons, runRanker } from "./period-facts.ts";
 import type { Series, SeriesDay } from "./series.ts";
 import { boundariesBetween, justBeyond } from "./thresholds.ts";
@@ -31,13 +32,13 @@ const runDays = 7;
  */
 const noRangeChance = 25;
 
-/** The live maximum's window closes at 9pm, so a run after that is too late for today's. */
-const maxWindowCloses = 21;
-
-/** The first day of the forecast to give temperature facts about: today until 9pm, then tomorrow. */
+/**
+ * The first day of the forecast to give temperature facts about: today until the live
+ * maximum is saved, then tomorrow.
+ */
 export function forecastStart(now: Date): string {
   const today = sydneyDate(now);
-  return sydneyHour(now) < maxWindowCloses ? today : addDays(today, 1);
+  return sydneyHour(now) < maxSavedFromHour ? today : addDays(today, 1);
 }
 
 /**

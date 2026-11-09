@@ -44,7 +44,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 **Goal:** The site handles every location, state and screen well.
 
 - Scope: default to the nearest location using browser geolocation. Coordinates are never sent anywhere. The location in the address wins, then one the user chose, which is already remembered, then the nearest. The order is `startingLocation` in `src/site/address.ts`.
-- Scope: a banner when the data is stale, from `generatedAt`. Runs are twice a day, so decide how old is too old. The footer already says when the next update is due, then that it is running late, then that updates are running late once a second run is due (`updateNote` in `src/site/updates.ts`), so the banner is for data too old to trust, such as a day or more, not for one late run.
+- Scope: a banner when the data is stale, from `generatedAt`. Runs are every 2 hours from 6:30am to 10:30pm, so the longest gap is 8 hours overnight. Decide how old is too old. The footer already says when the next update is due, then that it is running late, then that updates are running late once a second run is due (`updateNote` in `src/site/updates.ts`), so the banner is for data too old to trust, such as a day or more, not for one late run.
 - Scope: empty and error states: `facts.json` missing or malformed, a section with no facts, a quiet day with nothing in Today.
 - Scope: dark mode, and accessibility, including the charts.
 - Scope: a pass at phone widths. Desktop stays the main design, but the page must be easy to read and use on a phone.
@@ -64,7 +64,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 **Goal:** Today shows BOM's forecast for the day, and the latest reading the run saw, clearly labelled with its time.
 
-- Background: the user asked for the current temperature. The site can't show a truly current one: `facts.json` is written twice a day, there is no server, the browser can't reach BOM's FTP, and code must never fetch from BOM's website or app API. The honest version is the latest reading at the time of the run, such as "18.4°C at 10:30am", from IDN60920, which the pipeline already downloads. It goes stale within hours, so decide with the user whether it is worth showing, or only the forecast.
+- Background: the user asked for the current temperature. The site can't show a truly current one: `facts.json` is written every 2 hours from 6:30am to 10:30pm, there is no server, the browser can't reach BOM's FTP, and code must never fetch from BOM's website or app API. The honest version is the latest reading at the time of the run, such as "18.4°C at 10:30am", from IDN60920, which the pipeline already downloads. It is up to about 2 hours old by day and 8 hours old overnight, so decide with the user whether it is worth showing, and whether to hide it after the last run.
 - Scope: add each day's minimum, maximum, chance of rain and rain range to the `forecast` field of each location in `facts.json`, which already gives each day's icon code and précis.
 - Scope: show today's forecast in Today, near the headline, and decide whether the Coming week shows each day's forecast beside its facts.
 - Scope: after 9pm the day's forecast is spent, so show tomorrow's, as `forecastStart` does.
@@ -80,72 +80,51 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 - Background, from 2026-11-09: BOM's forecast gives each day's rain from midnight to midnight, and doesn't say how much is left, so the rain so far can't be added to the rest of the day's forecast without counting some twice. The rain since 9am is a floor for the 24 hours to 9am tomorrow, so a fact about it is always true. IDN60920 already has it, but the pipeline doesn't read it yet.
 - Scope: read the rain since 9am for each station in the live snapshot, keeping to the rules for live data in CLAUDE.md. It is never saved as a day's value, since the 9am total replaces it the next morning.
-- Scope: rank it against the observed rain days as the 24 hours to 9am tomorrow so far. Only the evening run covers enough of the day for it to matter, and the morning run's reading is 90 minutes old. Decide with the user whether the morning run shows it at all.
+- Scope: rank it against the observed rain days as the 24 hours to 9am tomorrow so far. The runs from 10:30am to 10:30pm each read it. At 6:30am and 8:30am it covers nearly the 24 hours to 9am that the 10:30am run brings as observed, so decide whether those runs show it.
 - Scope: wording that says it is a floor and when it was read, and how it sits beside the forecast for the same 24 hours ("The 24 hours to 9am Tuesday are forecast to be…") without repeating it.
-- Done when: tests cover the ranking and wording, and it has been checked in the browser on a wet evening's `facts.json`.
+- Done when: tests cover the ranking and wording, and it has been checked in the browser on a wet afternoon's `facts.json`.
 
 **Notes:**
 
-- If T36 is done first, its recomputed Today takes this over.
+- T36 does the same for the running maximum, so share the "so far" wording with it, whichever is done first.
 
 ---
 
-## T38: Check the update runs' timings
+## T38: Check the update runs
 
 **Status:** todo
 
-**Goal:** Each scheduled run gets the data it is timed for.
+**Goal:** Each scheduled run starts on time and gets the data it is timed for.
 
-- Scope: from the first scheduled runs' logs and commits, check that the evening run (11:30 UTC, first on 2026-11-09) had BOM's 11:00 UTC forecast and today's maximum, and that the morning run (23:30 UTC) had the 23:00 UTC forecast, last night's minimum and rain, and that morning's daily files. If the logs can't show it, have `build:data` print each feed's issue or observation time.
-- Scope: check that an evening run handles the 11:00 UTC (10pm) forecast issue, whose day 0 is today with nothing left in it. No such issue had been seen by 2026-11-09. If the parser rejects it, every evening run fails. If day 0 has a low chance and no rain range there, `forecastRain` counts it as 0 mm, so the evening run's 7-day total treats the rest of today as dry; decide whether to leave day 0 out of an evening issue's rain.
-- Scope: without daylight saving, from April 2027, the 9:30am run is 25 minutes after the 9am reading and the 9:30pm run 25 minutes after the 9pm reading. Check one of each then. If everything else is done before that, defer this part rather than holding the task open.
+- Scope: the schedule in `deploy.yml` first ran on 2026-11-10, using GitHub's `timezone` field (added in March 2026). Check from the run history that the runs start at 6:30am to 10:30pm Sydney time, not UTC, and how late they start.
+- Scope: check that a scheduled run commits only when the data changed, and that a push run, which also builds the data, still deploys and commits cleanly when the scheduled run has moved `main` on.
+- Scope: from the commits and logs, check that the 10:30am run had last night's minimum, the rain to 9am, the 9am reading and that morning's daily files, that the 4:30pm run saved today's maximum and the 3pm reading, that the later runs overwrote the maximum, and that the 10:30pm run had the maximum from its closed window and BOM's 10pm (11:00 UTC) forecast. If the logs can't show it, have `build:data` print each feed's issue or observation time.
+- Scope: check that the 10:30pm run handles the 11:00 UTC forecast issue, whose day 0 is today with nothing left in it. No such issue had been seen by 2026-11-09. If the parser rejects it, every 10:30pm run fails. If day 0 has a low chance and no rain range there, `forecastRain` counts it as 0 mm, so the 7-day total treats the rest of today as dry; decide whether to leave day 0 out of that issue's rain.
+- Scope: without daylight saving, from April 2027, BOM's schedules come an hour earlier by Sydney's clock. Check one 10:30am run then. If everything else is done before that, defer this part rather than holding the task open.
 - Done when: the runs are shown to get their data, or the times or the pipeline are changed so they do.
 
 **Notes:**
 
 - The run times and their reasons are in CLAUDE.md. BOM's forecast schedule there comes from search results quoting its announcement (its site refuses automated requests), and matched the feed on 2026-11-09. The latest observations appeared about 5 minutes after the half-hour then.
+- GitHub's docs say a run in an hour skipped by daylight saving moves to the next valid time. No run is between 2am and 3am, so it shouldn't matter.
 
 ---
 
-## T39: Earlier update runs
+## T36: Facts through the day
 
 **Status:** todo
 
-**Goal:** Each run comes as soon as the news it brings is useful: the evening run near the end of the afternoon rather than at 10:30pm, and the morning run as soon as last night's values are in.
+**Goal:** Today follows the day as it happens: the latest temperature, and facts such as "Today is so far the hottest day since February" as soon as the running maximum gets there.
 
-- Background, from 2026-11-09:
-  - The user felt the 10:30pm run was too late, and wanted the trade-offs written up rather than decided then. Put them to the user in plain terms, with a recommendation, before changing anything.
-  - The evening run is at 11:30 UTC mainly because `parseObservations` saves the maximum only once its 6am–9pm window has closed (the 9pm reading is at 10:00 UTC with daylight saving). The 11:00 UTC forecast is the other reason, but the 05:00 UTC issue already has tomorrow. The 3pm reading is in by about 3:05pm.
-  - Sydney's maximum usually comes between about 1pm and 4pm, but it can still be rising after 5pm ahead of a change. 9pm isn't final either, since the official maximum runs 9am to 9am.
-- Evening: Claude's suggestion was 06:30 UTC (5:30pm with daylight saving, 4:30pm without), after the 3pm reading and the 05:00 UTC forecast. What it costs:
-  - The maximum must be saved while its window is still open, with a cutoff such as 4pm Sydney time. Without one, the morning run, or any manual run, saves a mid-morning value that stands for two days if the evening run is skipped, giving bogus facts such as "the coldest maximum since…". A rise after the run is missed until the daily file, two days later.
-  - `forecastStart` switches to tomorrow at 9pm (`maxWindowCloses`). It would switch at the cutoff instead.
-  - The gaps between runs become about 7 and 17 hours instead of 12 and 12, and the page overnight has the 4pm forecast rather than the 10pm one. T27's stale-data banner must allow for 17 hours. The footer's next-update line needs no change beyond the schedule.
-  - It never meets the 11:00 UTC forecast issue whose day 0 has nothing left in it, which T38 worries the parser may reject.
-- Morning: now 23:30 UTC (10:30am with daylight saving, 9:30am without). It waits for the 9am reading (22:00 or 23:00 UTC), the daily files (22:34 UTC) and the 23:00 UTC forecast (out at 22:45 UTC on 2026-11-09).
-  - Earlier, such as 22:15 UTC (9:15am with daylight saving), gets last night's minimum, the rain to 9am and the 9am reading, but not that morning's daily files or the 23:00 UTC forecast, which then wait for the evening run. Check whether that matters: the daily files run behind anyway, and the 17:00 UTC (4am) forecast is usually close.
-  - Without daylight saving, 22:15 UTC is 8:15am, before the 9am reading, so the run would save no minimum or rain. A cron is fixed in UTC, so no single time sits just after 9am all year. Options: accept the hour's shift, two schedules where each run checks the Sydney time and stops if it isn't its turn, or a schedule with a time zone, if GitHub Actions supports one.
-- Scope, once the user has chosen: `update.yml`, the maximum's cutoff and `forecastStart`, CLAUDE.md's Hosting and updates section (a settled decision), [pipeline.md](pipeline.md), [facts.md](facts.md), `updateRunsUtc` in `src/shared/schedule.ts` (a test checks it against `update.yml`), and the run times in T38.
-- Done when: the user has chosen the times, tests cover the cutoff and `forecastStart` either side of it, and a scheduled run at each new time has been checked to get its data, as in T38.
+- Background, from 2026-11-09: the site now updates every 2 hours from 6:30am to 10:30pm Sydney time (the user chose 2-hourly over half-hourly), and the running maximum is saved from 4pm (`maxSavedFromHour`). So the 4:30pm run already says "Today is the hottest day since…". Before 4pm, the running maximum isn't used at all, and the runs give only "if today reaches…" forecast facts.
+- Scope: facts from the running maximum before 4pm, ranked like a day's maximum but never saved, since a later run would overwrite it anyway and a value from the morning isn't the day's. It is a floor: the day has reached at least that.
+- Scope: wording for a fact while the day isn't over: "Today is so far the hottest day since February". Decide whether the 4pm-to-9pm maximum keeps the plain wording, and how a "so far" fact sits beside the "if today reaches…" fact for the same day without repeating it.
+- Scope: the weather sky still never claims more than the data shows.
+- Done when: tests cover the ranking and wording, and it has been checked in the browser on `facts.json` from a morning and an afternoon run.
 
----
+**Notes:**
 
-## T36: Live updates through the day
-
-**Status:** todo
-
-**Goal:** Today follows the day as it happens: the latest temperature, and facts such as "the hottest day since February" as soon as the running maximum gets there.
-
-- Background, from 2026-11-09:
-  - The browser can't fetch the data itself. BOM's feeds are FTP, which browsers can't open, and code must never fetch BOM's website or app API. So something must fetch the feeds for the page.
-  - IDN60920 refreshes about every 30 minutes, so "live" means at best half-hourly. Its running maximum and the rain since 9am are already there.
-  - This changes a settled decision in CLAUDE.md (twice-daily runs, no server, `facts.json` up to 12 hours old), so agree the approach with the user first.
-- Options to put to the user:
-  1. **A frequent static run**, Claude's suggestion: a second GitHub Actions workflow every 30 minutes that downloads only IDN60920 and IDN60910, rebuilds `facts.json` and deploys, without committing. The twice-daily runs still commit the data, so nothing is lost if the frequent ones fail. It stays free on a public repository and needs no server. But GitHub often starts scheduled runs 10 to 30 minutes late or skips them at busy times, so the page must show the reading's time.
-  2. **A small server**, such as a scheduled serverless function (e.g. a Cloudflare Worker with a cron trigger) that fetches the feeds and writes the latest facts to storage the page reads. It is more reliable and timely than option 1, but it is a second system to deploy, monitor and secure, and the fact pipeline would have to run there too or be split.
-- Scope, once chosen: a "latest reading" with its time in Today (which takes over T33's latest reading), Today's facts recomputed from the running maximum and the rain since 9am, and the weather sky still never claiming more than the data shows.
-- Scope: decide how a fact during the day is worded, since the day isn't over: "Today is so far the hottest day since February".
-- Done when: the approach is agreed, and the live site has updated through a day.
+- IDN60920's `maximum_air_temperature` element is the running maximum since 6am, with its own `time-utc`. `parseObservations` reads it in `settledValue`; a "so far" value needs it before `savedFrom`.
 
 ---
 

@@ -1,29 +1,53 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, test } from "vitest";
-import { nextUpdate, updateRunsUtc } from "../src/shared/schedule.ts";
+import { nextUpdate, updateRunsSydney } from "../src/shared/schedule.ts";
 
-describe("updateRunsUtc", () => {
-  test("matches the update workflow's schedule", async () => {
-    const workflow = await readFile(".github/workflows/update.yml", "utf8");
-    const crons = [...workflow.matchAll(/cron: "(\d+) (\d+) \* \* \*"/g)].map(
-      ([, minute, hour]) => Number(hour) * 60 + Number(minute),
-    );
+describe("updateRunsSydney", () => {
+  test("matches the deploy workflow's schedule", async () => {
+    const workflow = await readFile(".github/workflows/deploy.yml", "utf8");
+    const schedules = [
+      ...workflow.matchAll(
+        /- cron: "(\d+) ([\d,]+) \* \* \*"\n\s+timezone: "([^"]+)"/g,
+      ),
+    ];
+    const runs = schedules.flatMap(([, minute, hours, timezone]) => {
+      expect(timezone).toBe("Australia/Sydney");
+      return (hours ?? "")
+        .split(",")
+        .map((hour) => Number(hour) * 60 + Number(minute));
+    });
 
-    expect(crons.toSorted((a, b) => a - b)).toEqual(updateRunsUtc);
+    expect(schedules).not.toHaveLength(0);
+    expect(runs.toSorted((a, b) => a - b)).toEqual(updateRunsSydney);
   });
 });
 
 describe("nextUpdate", () => {
   test.each([
-    ["2026-11-09T00:00:00Z", "2026-11-09T11:30:00.000Z"],
-    ["2026-11-09T11:29:59Z", "2026-11-09T11:30:00.000Z"],
-    ["2026-11-09T11:30:00Z", "2026-11-09T23:30:00.000Z"],
-    ["2026-11-09T11:41:00Z", "2026-11-09T23:30:00.000Z"],
-    ["2026-11-09T23:29:00Z", "2026-11-09T23:30:00.000Z"],
-    ["2026-11-09T23:30:00Z", "2026-11-10T11:30:00.000Z"],
-    ["2026-11-09T23:45:00Z", "2026-11-10T11:30:00.000Z"],
-    ["2026-12-31T23:59:00Z", "2027-01-01T11:30:00.000Z"],
-  ])("after %s is %s", (instant, expected) => {
+    ["11am", "2026-11-09T00:00:00Z", "2026-11-09T01:30:00.000Z"],
+    ["just before 12:30pm", "2026-11-09T01:29:59Z", "2026-11-09T01:30:00.000Z"],
+    ["12:30pm", "2026-11-09T01:30:00Z", "2026-11-09T03:30:00.000Z"],
+    ["8:30pm", "2026-11-09T09:30:00Z", "2026-11-09T11:30:00.000Z"],
+    ["10:30pm", "2026-11-09T11:30:00Z", "2026-11-09T19:30:00.000Z"],
+    ["midnight", "2026-11-09T13:00:00Z", "2026-11-09T19:30:00.000Z"],
+    ["6:30am", "2026-11-09T19:30:00Z", "2026-11-09T21:30:00.000Z"],
+    ["new year's eve", "2026-12-31T12:59:00Z", "2026-12-31T19:30:00.000Z"],
+    [
+      "10am without daylight saving",
+      "2026-06-15T00:00:00Z",
+      "2026-06-15T00:30:00.000Z",
+    ],
+    [
+      "the night daylight saving starts",
+      "2026-10-03T13:00:00Z",
+      "2026-10-03T19:30:00.000Z",
+    ],
+    [
+      "the night daylight saving ends",
+      "2027-04-03T12:00:00Z",
+      "2027-04-03T20:30:00.000Z",
+    ],
+  ])("after %s (%s) is %s", (_, instant, expected) => {
     expect(nextUpdate(new Date(instant)).toISOString()).toBe(expected);
   });
 });

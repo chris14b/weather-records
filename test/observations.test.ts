@@ -45,12 +45,27 @@ describe("parseObservations", () => {
     ]);
   });
 
-  test("gives the maximum once its window closes at 9pm", () => {
-    expect(parse(observationsAt("2026-10-30T10:00:00+00:00"))).toEqual([
+  test.each([
+    ["at 4pm", "2026-10-30T05:00:00+00:00"],
+    ["once its window closes at 9pm", "2026-10-30T10:00:00+00:00"],
+  ])("gives the maximum so far %s", (_, utc) => {
+    expect(parse(observationsAt(utc))).toEqual([
       {
         date: "2026-10-30",
         rain: 0,
         maxTemp: 23.9,
+        minTemp: 16.8,
+        station: "066214",
+      },
+    ]);
+  });
+
+  test("leaves out the maximum before 4pm", () => {
+    expect(parse(observationsAt("2026-10-30T04:59:00+00:00"))).toEqual([
+      {
+        date: "2026-10-30",
+        rain: 0,
+        maxTemp: null,
         minTemp: 16.8,
         station: "066214",
       },

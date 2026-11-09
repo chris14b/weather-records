@@ -24,7 +24,15 @@ interface Window {
   end: string;
   /** Whether the value is credited to the day the window starts on, rather than ends on. */
   creditStart: boolean;
+  /** The local hour on the start date from which the value is saved, if before the window closes. */
+  savedFromHour?: number;
 }
+
+/**
+ * The maximum's window runs to 9pm, after the day's last run, so the running maximum is
+ * saved from 4pm, when the day's maximum has usually come. Later runs overwrite it.
+ */
+export const maxSavedFromHour = 16;
 
 const windows: Record<Measure, Window> = {
   rain: {
@@ -44,15 +52,16 @@ const windows: Record<Measure, Window> = {
     start: "06:00",
     end: "21:00",
     creditStart: true,
+    savedFromHour: maxSavedFromHour,
   },
 };
 
 const valuePattern = /^-?\d+(\.\d+)?$/;
 
 /**
- * Reads a location's current station from the latest observations: the rain to 9am, the
- * overnight minimum and the daytime maximum, each only once its window has closed by the
- * time of the observation. A value still accumulating is left out.
+ * Reads a location's current station from the latest observations: the rain to 9am and the
+ * overnight minimum once their windows have closed by the time of the observation, and the
+ * daytime maximum from `maxSavedFromHour`. A value read earlier is left out.
  */
 export function parseObservations(
   bytes: Uint8Array,
@@ -89,7 +98,7 @@ export function parseObservations(
         Measure,
         Window,
       ][]) {
-        const closed = closedValue(
+        const closed = settledValue(
           children(surface, "element"),
           window,
           observedAt,
@@ -122,7 +131,7 @@ function findStation(observations: XmlElement, bomId: string): XmlElement {
   return only;
 }
 
-function closedValue(
+function settledValue(
   elements: readonly XmlElement[],
   window: Window,
   observedAt: number,
@@ -149,9 +158,11 @@ function closedValue(
         `expected a window from ${window.start} to ${window.end}, found ${start} to ${end}`,
       );
     }
-    if (Date.parse(attribute(element, "end-time-utc")) > observedAt) {
-      return undefined;
-    }
+    const savedFrom =
+      window.savedFromHour === undefined
+        ? attribute(element, "end-time-utc")
+        : `${startDate}T${String(window.savedFromHour).padStart(2, "0")}:00:00${start.slice(19)}`;
+    if (Date.parse(savedFrom) > observedAt) return undefined;
     const value = text(element);
     if (!valuePattern.test(value)) throw new Error(`invalid value ${value}`);
     return {

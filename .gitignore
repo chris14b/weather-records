@@ -5,3 +5,4 @@ dist/
 .env*
 coverage/
 *.partial
+src/site/public/facts.json

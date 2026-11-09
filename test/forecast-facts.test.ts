@@ -85,27 +85,13 @@ const maxTemps = (values: Readonly<Record<string, number>> = {}) =>
 
 describe("forecastStart", () => {
   test.each([
-    [
-      "the morning run, with daylight saving",
-      "2026-11-05T23:30:00Z",
-      "2026-11-06",
-    ],
-    [
-      "the evening run, with daylight saving",
-      "2026-11-06T11:30:00Z",
-      "2026-11-07",
-    ],
-    [
-      "the morning run, without daylight saving",
-      "2026-06-05T23:30:00Z",
-      "2026-06-06",
-    ],
-    [
-      "the evening run, without daylight saving",
-      "2026-06-06T11:30:00Z",
-      "2026-06-07",
-    ],
-  ])("starts %s at %s on %s", (_, now, expected) => {
+    ["8:30am, with daylight saving", "2026-11-05T21:30:00Z", "2026-11-06"],
+    ["3:59pm, with daylight saving", "2026-11-06T04:59:00Z", "2026-11-06"],
+    ["4pm, with daylight saving", "2026-11-06T05:00:00Z", "2026-11-07"],
+    ["10:30pm, with daylight saving", "2026-11-06T11:30:00Z", "2026-11-07"],
+    ["3:59pm, without daylight saving", "2026-06-06T05:59:00Z", "2026-06-06"],
+    ["4pm, without daylight saving", "2026-06-06T06:00:00Z", "2026-06-07"],
+  ])("at %s (%s) is %s", (_, now, expected) => {
     expect(forecastStart(new Date(now))).toBe(expected);
   });
 });
@@ -157,7 +143,7 @@ describe("generateForecastFacts", () => {
     });
   });
 
-  test("starts at today in the morning run and at tomorrow in the evening run", () => {
+  test("gives temperature facts from the day it starts at", () => {
     const days = forecastDays();
     const dates = (from: string) =>
       new Set(

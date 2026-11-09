@@ -86,8 +86,8 @@ Every error from a file names the file and the line or element (`inContext`).
 
 - The station is found by `bom-id`, and its `stn-name`, `description` and `wmo-id` are checked.
 - `rainfall_24hr` must run 9am to 9am, `minimum_air_temperature` 6pm to 9am and `maximum_air_temperature` 6am to 9pm, or the build fails.
-- A value is used only once its window's `end-time-utc` is at or before the observation's time. Rain and the minimum are credited to the day the window ends, the maximum to the day it starts. This relies only on each element's own times, not on when BOM rolls them over.
-- So a morning run never saves or overwrites a maximum, and an evening run never saves a minimum, because by then the minimum's window runs to tomorrow's 9am. A skipped run leaves its value to the daily file, two days later.
+- Rain and the minimum are used only once their window's `end-time-utc` is at or before the observation's time. The maximum is used from 4pm on its window's start date (`maxSavedFromHour`), so the afternoon runs can use it before its window closes at 9pm. Each run from then overwrites it, up to the 10:30pm run's final value. Rain and the minimum are credited to the day the window ends, the maximum to the day it starts. This relies only on each element's own times, not on when BOM rolls them over.
+- So a run before 4pm never saves or overwrites a maximum, and a run after 6pm never saves a minimum, because by then the minimum's window runs to tomorrow's 9am. If no run reads a value, it is left to the daily file, two days later.
 - The snapshot minimum covers 6pm–9am, not the official 9am–9am, so like the maximum it is provisional.
 
 ### Readings (IDN60910)
@@ -117,12 +117,12 @@ The gap check fails when the first recent date after the history's end isn't the
 
 `npm run build:data` runs `buildFactsFile` with a connection to BOM and the time now, then `writeFactsFile`. It takes about 15 s.
 
-- It downloads the live feeds once, then takes the locations one at a time over the same connection, wrapped in `withDownloadCache`. For each, it loads the ZIP history (`loadHistories`, `historyEnd`), runs `updateDailyFiles`, `updateFtpHistory` and `updateSnapshot` with today in Sydney, builds the series with `seriesFromSources`, and generates the facts with the window ending today and the forecast from `forecastStart(now)`. It selects them twice, into a page for today and a page for tomorrow, so the site can turn over at midnight before the morning run.
+- It downloads the live feeds once, then takes the locations one at a time over the same connection, wrapped in `withDownloadCache`. For each, it loads the ZIP history (`loadHistories`, `historyEnd`), runs `updateDailyFiles`, `updateFtpHistory` and `updateSnapshot` with today in Sydney, builds the series with `seriesFromSources`, and generates the facts with the window ending today and the forecast from `forecastStart(now)`. It selects them twice, into a page for today and a page for tomorrow, so the site can turn over at midnight before the first run of the day.
 - Every check in the steps above throws, so a bad file stops the run before `facts.json` is written. `writeFactsFile` writes to `facts.json.partial` and renames it, so a failed write leaves the last file in place. The data files a failed run has already updated are fine to keep: each holds only checked values that BOM still offers.
-- A second run gives the same data files and the same facts. Only `generatedAt` changes, so `facts.json` changes on every run.
+- A second run gives the same data files and the same facts. Only `generatedAt` changes. `facts.json` isn't committed, so only the data files' changes are.
 - `generatedAt` is the time the run started, before anything is downloaded, not when BOM published the data. The observations are from the latest half-hourly reading before then, the forecast from BOM's latest issue, and the daily files run two days behind.
-- To update by hand, pull first, since the scheduled workflow commits to `main` twice a day. Then run `build:data` and commit the data files and `facts.json` on their own, apart from any code change. Your push triggers the deploy. If `facts.json` conflicts, run `build:data` again.
-- `facts.json` is indented, for readable diffs. It was about 90 kB on 2026-11-09.
+- To update by hand, run the Deploy workflow (Actions → Deploy → Run workflow, on `main`). Locally, `build:data` also updates `data/recent/`. Pull before committing that, since the workflow commits the data every 2 hours.
+- `facts.json` is indented, so it is easy to read. It was about 90 kB on 2026-11-09.
 - The first run, on 2026-11-09, left 2026-11-08 with no rain, maximum or minimum: the daily files ran to 11-07, and there was no snapshot from the day before. The next daily file fills it.
 
 ## Tests and trying things out
