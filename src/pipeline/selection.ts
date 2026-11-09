@@ -321,9 +321,26 @@ function isPartOfSpell(
         : spell.score > score ||
           (spell.score === score && spell.fact.date > fact.date)) &&
       section !== undefined &&
-      spell.score >= sectionRules[section].minimumScore
+      meetsMinimum(spell, sectionRules[section].minimumScore)
     );
   });
+}
+
+// A calendar period over a short record scores little even as a record, but is still news.
+function meetsMinimum({ fact, score }: ScoredFact, minimum: number): boolean {
+  return score >= minimum || isAllTimeRecord(fact);
+}
+
+/** The outright record among all days, or among its own kind of month, season or year. */
+function isAllTimeRecord({
+  comparison,
+  period,
+  rank,
+  ties,
+}: CandidateFact): boolean {
+  return (
+    rank === 1 && ties === 0 && (comparison === "all" || isCalendar(period))
+  );
 }
 
 function stronger(best: ScoredFact, other: ScoredFact): ScoredFact {
@@ -350,7 +367,7 @@ function pick(
     const family = `${families[measure]} ${direction}`;
     const count = perDate.get(date) ?? 0;
     const minimum = count === 0 ? minimumScore : minimumExtraScore;
-    if (count === perDay || candidate.score < minimum) continue;
+    if (count === perDay || !meetsMinimum(candidate, minimum)) continue;
     if (oncePerFamily && familiesPicked.has(family)) continue;
     perDate.set(date, count + 1);
     familiesPicked.add(family);

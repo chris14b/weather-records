@@ -97,6 +97,7 @@ exports[`selectFacts on real data > chooses the facts at sydney-olympic-park for
 {
   "thisMonth": [
     "2020-02-02 6.99 minTemp the warmest since February 2017",
+    "2020-01-01..2020-02-12 1.21 rain so far the wettest year since records began in 2011 (not counting 1 years with gaps)",
   ],
   "thisWeek": [
     "2020-02-09 5.89 solar the gloomiest day since March 2018",

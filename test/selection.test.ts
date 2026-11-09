@@ -262,7 +262,50 @@ describe("selectFacts", () => {
         date: "2026-10-31",
         text: "the wettest month since records began in 2016",
       },
+      {
+        from: "2026-01-01",
+        date: "2026-11-06",
+        text: "so far the wettest year since records began in 2016",
+      },
+      {
+        from: "2026-09-01",
+        date: "2026-11-06",
+        text: "the hottest since records began in 2016",
+      },
     ]);
+  });
+
+  describe("over a short record", () => {
+    // Only the year so far stands out: no 2026 month, season or day beats an earlier one.
+    const hotStart = (hotYear: string, otherHotYear?: string) =>
+      series(
+        "maxTemp",
+        (date) => {
+          const isHotStart = (year: string) =>
+            date >= `${year}-01-01` && date <= `${year}-02-28`;
+          if (isHotStart(hotYear)) return 30;
+          return otherHotYear !== undefined && isHotStart(otherHotYear)
+            ? 31
+            : 20;
+        },
+        {},
+      );
+
+    test("shows an all-time record however little it scores", () => {
+      const { thisMonth } = selectAll([hotStart("2026")]);
+
+      expect(thisMonth.map(({ text, score }) => ({ text, score }))).toEqual([
+        {
+          text: "so far the hottest year since records began in 2016",
+          score: expect.any(Number) as number,
+        },
+      ]);
+      expect(thisMonth[0]?.score).toBeLessThan(3);
+    });
+
+    test("leaves out a lesser rank that scores too little", () => {
+      expect(selectAll([hotStart("2026", "2020")]).thisMonth).toEqual([]);
+    });
   });
 
   test("has empty sections when there are no facts", () => {

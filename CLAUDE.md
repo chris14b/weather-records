@@ -97,7 +97,7 @@ How facts are made, ranked, chosen and worded is explained in [docs/facts.md](do
 
 - **Comparisons:** against all records, this year, the same month in every year, the same calendar date, and the same season. Don't compare against the same weekday.
 - **Ranks:** a fact can give a rank, such as "the 2nd coldest" or "the equal 3rd wettest", not only "the coldest". Tied values share a rank.
-- **Scoring:** narrow comparisons and short records score lower, because they make records easy to set. Show a small number of the best facts, without near-duplicates.
+- **Scoring:** narrow comparisons and short records score lower, because they make records easy to set. An outright all-time record always shows, however short the record. Show a small number of the best facts, without near-duplicates.
 - **Recent days:** facts cover the last 31 days, not just the latest, for the home page's Today, This week and This month sections. Each day is judged against the data as it stood on that day, and a fact that a later day has beaten isn't shown.
 - **Dates:** every fact carries the date it refers to. The page decides whether to say "today" or "yesterday", based on when it is viewed.
 - **Wording:** distinguish observed and forecast facts. The live feed is treated as fact: the page shows a provisional fact exactly like a confirmed one, as "Observed". `facts.json` keeps the `provisional` status. Sentences give the value with its unit, name a minimum by its night ("last night") and a day's rain as "the 24 hours to 9am", say "since records began in 1859" rather than "on record", and don't repeat what the subject already says ("Last night was the coldest since…", "October was the wettest since…").

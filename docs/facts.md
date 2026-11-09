@@ -177,6 +177,8 @@ A score of 1.75 is a since of about 6 days, so "the warmest day since last Tuesd
 
 The latest complete month, season and year, and the current ones so far, go in This month as well, with an allowance of their own so they never crowd out its days (`calendarRule`): up to 3, each scoring at least 3, about a once-in-20-years period.
 
+An **all-time record** meets any section's minimum score, however little it scores (`isAllTimeRecord`), though it still counts towards the section's limits. It is an outright record, with no ties, among all days or runs, or for a calendar period among its own comparison: "the wettest spring since records began", "the hottest November so far". In practice this only matters for calendar periods over a short record. Olympic Park's 15 springs or years make even a record score log(15) × 0.79, about 2.2, so on 9 November 2026 its "warmest nights since records began in 2011" would otherwise be left out. A day's record among all days scores well above any minimum anyway, and records for a calendar date or the year so far, which some measure sets nearly every day, keep to their scores.
+
 Forecast and conditional facts go in a fourth section, the **coming week**. Neither is used to find the latest day, so they never move Today. Forecast, conditional and observed facts are kept apart when choosing the strongest per family, and a spell only stands for facts of its own kind.
 
 - **Forecast facts:** up to 2 a day and 7 in all, the first scoring at least 3.5 (a since of about a month) and the second at least 4.5.
