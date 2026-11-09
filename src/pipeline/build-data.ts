@@ -1,6 +1,7 @@
 import { locationById } from "../shared/locations.ts";
 import { buildFactsFile, factsPath, writeFactsFile } from "./facts-file.ts";
 import { connectToBom } from "./ftp.ts";
+import { factLine } from "./print.ts";
 
 const ftp = connectToBom();
 try {
@@ -16,12 +17,7 @@ try {
     }
     for (const [section, facts] of Object.entries(sections)) {
       console.log(`  ${section}:`);
-      for (const { from, date, status, score, text } of facts) {
-        const dates = from === date ? date : `${from}..${date}`;
-        console.log(
-          `    ${dates.padEnd(22)} ${status.padEnd(11)} ${score.toFixed(2).padStart(5)}  ${text}`,
-        );
-      }
+      for (const fact of facts) console.log(`    ${factLine(fact)}`);
     }
   }
 } finally {

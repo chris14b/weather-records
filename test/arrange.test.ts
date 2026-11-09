@@ -1,8 +1,13 @@
 import { describe, expect, test } from "vitest";
-import type { Fact, LocationFacts } from "../src/shared/facts.ts";
+import type {
+  DaylightFact,
+  LocationFacts,
+  RecordFact,
+} from "../src/shared/facts.ts";
 import { arrange, headlineSize, standout } from "../src/site/arrange.ts";
 
-const fact = (changes: Partial<Fact>): Fact => ({
+const fact = (changes: Partial<RecordFact>): RecordFact => ({
+  kind: "record",
   date: "2026-11-09",
   from: changes.date ?? "2026-11-09",
   period: { kind: "day" },
@@ -28,6 +33,17 @@ const fact = (changes: Partial<Fact>): Fact => ({
   },
   ...changes,
 });
+
+const longestDay: DaylightFact = {
+  kind: "daylight",
+  date: "2026-12-22",
+  event: "longestDay",
+  scope: "year",
+  sunrise: "2026-12-21T18:41:00.000Z",
+  sunset: "2026-12-22T09:06:00.000Z",
+  score: 4.11,
+  text: "the longest day of the year",
+};
 
 const location = (sections: Partial<LocationFacts>): LocationFacts => ({
   locationId: "sydney-airport",
@@ -88,6 +104,24 @@ describe("arrange", () => {
     expect(page.today).toEqual([conditional]);
   });
 
+  test("can lead with a turning point in the daylight", () => {
+    const ordinary = fact({ date: "2026-12-22", score: 2 });
+    const page = arrange(
+      location({ today: [ordinary, longestDay] }),
+      "2026-12-22",
+    );
+
+    expect(page.headline).toBe(longestDay);
+    expect(page.today).toEqual([ordinary]);
+  });
+
+  test("never leads with a daylight fact from the coming week", () => {
+    const page = arrange(location({ comingWeek: [longestDay] }), "2026-12-21");
+
+    expect(page.headline).toBeUndefined();
+    expect(page.comingWeek).toEqual([longestDay]);
+  });
+
   test("names the viewer's today when Today is empty", () => {
     expect(arrange(location({}), "2026-11-10")).toMatchObject({
       date: "2026-11-10",
@@ -117,6 +151,10 @@ describe("standout", () => {
     [9, "exceptional"],
   ])("marks a day scoring %d as %s", (score, level) => {
     expect(standout(fact({ score }))).toBe(level);
+  });
+
+  test("never marks daylight, which comes round every year", () => {
+    expect(standout({ ...longestDay, score: 10 })).toBeUndefined();
   });
 
   test("judges a run of days on the days' scale", () => {

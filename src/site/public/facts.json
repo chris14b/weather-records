@@ -1,10 +1,11 @@
 {
-  "generatedAt": "2026-11-08T23:54:05.543Z",
+  "generatedAt": "2026-11-09T00:36:23.141Z",
   "locations": [
     {
       "locationId": "sydney-observatory-hill",
       "today": [
         {
+          "kind": "record",
           "date": "2026-11-09",
           "from": "2026-11-09",
           "period": {
@@ -144,6 +145,7 @@
       ],
       "thisWeek": [
         {
+          "kind": "record",
           "date": "2026-11-04",
           "from": "2026-11-04",
           "period": {
@@ -228,6 +230,7 @@
           }
         },
         {
+          "kind": "record",
           "date": "2026-11-03",
           "from": "2026-11-03",
           "period": {
@@ -365,6 +368,7 @@
           }
         },
         {
+          "kind": "record",
           "date": "2026-11-07",
           "from": "2026-11-07",
           "period": {
@@ -449,6 +453,7 @@
           }
         },
         {
+          "kind": "record",
           "date": "2026-11-06",
           "from": "2026-11-06",
           "period": {
@@ -550,6 +555,7 @@
           }
         },
         {
+          "kind": "record",
           "date": "2026-11-05",
           "from": "2026-11-05",
           "period": {
@@ -641,6 +647,7 @@
       ],
       "thisMonth": [
         {
+          "kind": "record",
           "date": "2026-10-12",
           "from": "2026-10-12",
           "period": {
@@ -742,6 +749,7 @@
           }
         },
         {
+          "kind": "record",
           "date": "2026-10-14",
           "from": "2026-10-14",
           "period": {
@@ -826,6 +834,7 @@
           }
         },
         {
+          "kind": "record",
           "date": "2026-10-29",
           "from": "2026-10-29",
           "period": {
@@ -919,6 +928,7 @@
           }
         },
         {
+          "kind": "record",
           "date": "2026-11-09",
           "from": "2026-01-01",
           "period": {
@@ -1066,6 +1076,7 @@
           }
         },
         {
+          "kind": "record",
           "date": "2026-11-07",
           "from": "2026-01-01",
           "period": {
@@ -1190,6 +1201,7 @@
       ],
       "comingWeek": [
         {
+          "kind": "record",
           "date": "2026-11-15",
           "from": "2026-11-15",
           "period": {
@@ -1370,6 +1382,7 @@
       "locationId": "sydney-airport",
       "today": [
         {
+          "kind": "record",
           "date": "2026-11-09",
           "from": "2026-11-09",
           "period": {
@@ -1461,6 +1474,7 @@
       ],
       "thisWeek": [
         {
+          "kind": "record",
           "date": "2026-11-07",
           "from": "2026-11-07",
           "period": {
@@ -1545,6 +1559,7 @@
           }
         },
         {
+          "kind": "record",
           "date": "2026-11-04",
           "from": "2026-11-04",
           "period": {
@@ -1642,6 +1657,7 @@
           }
         },
         {
+          "kind": "record",
           "date": "2026-11-03",
           "from": "2026-11-03",
           "period": {
@@ -1731,6 +1747,7 @@
           }
         },
         {
+          "kind": "record",
           "date": "2026-11-05",
           "from": "2026-11-05",
           "period": {
@@ -1817,6 +1834,7 @@
       ],
       "thisMonth": [
         {
+          "kind": "record",
           "date": "2026-10-14",
           "from": "2026-10-14",
           "period": {
@@ -1914,6 +1932,7 @@
           }
         },
         {
+          "kind": "record",
           "date": "2026-10-12",
           "from": "2026-10-12",
           "period": {
@@ -1998,6 +2017,7 @@
           }
         },
         {
+          "kind": "record",
           "date": "2026-10-25",
           "from": "2026-10-25",
           "period": {
@@ -2087,6 +2107,7 @@
           }
         },
         {
+          "kind": "record",
           "date": "2026-10-29",
           "from": "2026-10-29",
           "period": {
@@ -2176,6 +2197,7 @@
           }
         },
         {
+          "kind": "record",
           "date": "2026-11-09",
           "from": "2026-01-01",
           "period": {
@@ -2273,6 +2295,7 @@
       ],
       "comingWeek": [
         {
+          "kind": "record",
           "date": "2026-11-09",
           "from": "2026-11-09",
           "period": {
@@ -2357,6 +2380,7 @@
           }
         },
         {
+          "kind": "record",
           "date": "2026-11-10",
           "from": "2026-11-10",
           "period": {
@@ -2442,6 +2466,7 @@
           }
         },
         {
+          "kind": "record",
           "date": "2026-11-15",
           "from": "2026-11-15",
           "period": {
@@ -2574,6 +2599,7 @@
       "locationId": "sydney-olympic-park",
       "today": [
         {
+          "kind": "record",
           "date": "2026-11-09",
           "from": "2026-11-09",
           "period": {
@@ -2660,6 +2686,7 @@
       ],
       "thisWeek": [
         {
+          "kind": "record",
           "date": "2026-11-03",
           "from": "2026-11-03",
           "period": {
@@ -2744,6 +2771,7 @@
           }
         },
         {
+          "kind": "record",
           "date": "2026-11-04",
           "from": "2026-11-04",
           "period": {
@@ -2828,6 +2856,7 @@
           }
         },
         {
+          "kind": "record",
           "date": "2026-11-07",
           "from": "2026-11-07",
           "period": {
@@ -2912,6 +2941,7 @@
           }
         },
         {
+          "kind": "record",
           "date": "2026-11-06",
           "from": "2026-11-06",
           "period": {
@@ -2998,6 +3028,7 @@
       ],
       "thisMonth": [
         {
+          "kind": "record",
           "date": "2026-10-12",
           "from": "2026-10-12",
           "period": {
@@ -3082,6 +3113,7 @@
           }
         },
         {
+          "kind": "record",
           "date": "2026-10-14",
           "from": "2026-10-14",
           "period": {
@@ -3175,6 +3207,7 @@
           }
         },
         {
+          "kind": "record",
           "date": "2026-10-13",
           "from": "2026-10-13",
           "period": {
@@ -3259,6 +3292,7 @@
           }
         },
         {
+          "kind": "record",
           "date": "2026-10-29",
           "from": "2026-10-29",
           "period": {
@@ -3345,6 +3379,7 @@
       ],
       "comingWeek": [
         {
+          "kind": "record",
           "date": "2026-11-15",
           "from": "2026-11-15",
           "period": {

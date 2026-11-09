@@ -1,9 +1,11 @@
 import { locationById, stationOffsets } from "../shared/locations.ts";
 import { generateCandidates } from "./candidates.ts";
 import { addDays } from "./dates.ts";
+import { daylightAround } from "./daylight-facts.ts";
 import { forecastPath, parseForecast, type ForecastDay } from "./forecast.ts";
 import { forecastStart, type ForecastInput } from "./forecast-facts.ts";
 import { connectToBom } from "./ftp.ts";
+import { factLine } from "./print.ts";
 import { readSavedSeries } from "./saved-series.ts";
 import { selectFacts } from "./selection.ts";
 import type { Series } from "./series.ts";
@@ -28,16 +30,12 @@ const selected = selectFacts({
   }),
   series,
   forecast,
+  daylight: daylightAround(location, windowEnd),
 });
 
 console.log(`${location.name}, forecast from ${forecast.from}`);
 console.table(forecast.days);
-for (const { from, date: factDate, score, text } of selected.comingWeek) {
-  const dates = from === factDate ? factDate : `${from}..${factDate}`;
-  console.log(
-    `  ${dates.padEnd(22)}  ${score.toFixed(2).padStart(5)}  ${text}`,
-  );
-}
+for (const fact of selected.comingWeek) console.log(`  ${factLine(fact)}`);
 
 async function live(
   series: Series[],

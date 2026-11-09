@@ -8,6 +8,7 @@ import {
 } from "../shared/locations.ts";
 import { generateCandidates } from "./candidates.ts";
 import { sydneyDate } from "./dates.ts";
+import { daylightAround } from "./daylight-facts.ts";
 import { forecastStart } from "./forecast-facts.ts";
 import { parseForecast } from "./forecast.ts";
 import { type Ftp, withDownloadCache } from "./ftp.ts";
@@ -115,7 +116,13 @@ async function buildLocationFacts({
     forecast,
   });
   return {
-    ...selectFacts({ locationId: location.id, facts, series, forecast }),
+    ...selectFacts({
+      locationId: location.id,
+      facts,
+      series,
+      forecast,
+      daylight: daylightAround(location, today),
+    }),
     forecast: days.map(({ date, iconCode, precis }) => ({
       date,
       iconCode,

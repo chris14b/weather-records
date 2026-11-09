@@ -1,21 +1,24 @@
 import {
   isForecastStatus,
+  type DaylightFact,
   type Fact,
   type FactMeasure,
   type FactWhy,
   type LocationFacts,
   type Period,
   type RankedDay,
+  type RecordFact,
   type ValueStatus,
 } from "../shared/facts.ts";
 import type { CandidateFact } from "./candidates.ts";
 import { beats, comparisonKey } from "./daily-facts.ts";
 import { daysBetween } from "./dates.ts";
+import type { DaylightCandidate } from "./daylight-facts.ts";
 import { forecastSeries, type ForecastInput } from "./forecast-facts.ts";
 import { comparablePeriods } from "./period-facts.ts";
-import { scoreFact, type ScoredFact } from "./scoring.ts";
+import { scoreDaylight, scoreFact, type ScoredFact } from "./scoring.ts";
 import type { Series } from "./series.ts";
-import { describeFact } from "./wording.ts";
+import { describeDaylight, describeFact } from "./wording.ts";
 
 /** A location's chosen facts, before its forecast is added. */
 export type SelectedFacts = Omit<LocationFacts, "forecast">;
@@ -117,6 +120,14 @@ const families: Record<FactMeasure, string> = {
   minTempChange: "temperatureChange",
 };
 
+// A turning point in the daylight is news for about a week either side, and turning points
+// are at least 9 days apart, so each section has room for every one in its days.
+const daylightSections: readonly Section[] = [
+  "today",
+  "thisWeek",
+  "comingWeek",
+];
+
 const leaderCount = 10;
 
 export interface SelectionRequest {
@@ -127,6 +138,8 @@ export interface SelectionRequest {
   series: readonly Series[];
   /** The forecast the forecast facts were made from. */
   forecast?: ForecastInput;
+  /** The turning points in the daylight around the window, from `generateDaylightFacts`. */
+  daylight?: readonly DaylightCandidate[];
 }
 
 /** Chooses the few facts worth showing in each section of a location's home page. */
@@ -135,6 +148,7 @@ export function selectFacts({
   facts,
   series,
   forecast,
+  daylight = [],
 }: SelectionRequest): SelectedFacts {
   const latest = facts.reduce(
     (last, { date, status }) =>
@@ -169,7 +183,8 @@ export function selectFacts({
   const inSection = (name: Section, allowance: Allowance) =>
     chosen.filter(
       ({ fact }) =>
-        allowanceOf(fact) === allowance && sectionOf(fact, latest) === name,
+        allowanceOf(fact) === allowance &&
+        candidateSection(fact, latest) === name,
     );
   const section = (name: Section) => {
     const extra = extraAllowances[name];
@@ -187,9 +202,15 @@ export function selectFacts({
             latest,
           )
         : picked;
-    return shown
-      .toSorted(name === "comingWeek" ? soonestFirst : strongestFirst)
-      .map((candidate) => present(candidate, series, forecast));
+    const daylightFacts = daylightSections.includes(name)
+      ? daylight
+          .filter(({ date }) => sectionOf(date, date, latest) === name)
+          .map(presentDaylight)
+      : [];
+    return [
+      ...shown.map((candidate) => present(candidate, series, forecast)),
+      ...daylightFacts,
+    ].toSorted(name === "comingWeek" ? soonestFirst : strongestFirst);
   };
   return {
     locationId,
@@ -200,17 +221,22 @@ export function selectFacts({
   };
 }
 
-function strongestFirst(a: ScoredFact, b: ScoredFact): number {
-  return b.score - a.score || b.fact.date.localeCompare(a.fact.date);
+function strongestFirst(a: Fact, b: Fact): number {
+  return b.score - a.score || b.date.localeCompare(a.date);
 }
 
-function soonestFirst(a: ScoredFact, b: ScoredFact): number {
+// A day's forecast facts come before what it would take, and its daylight last.
+function soonestFirst(a: Fact, b: Fact): number {
   return (
-    a.fact.date.localeCompare(b.fact.date) ||
-    Number(a.fact.status === "conditional") -
-      Number(b.fact.status === "conditional") ||
+    a.date.localeCompare(b.date) ||
+    outlookOrder(a) - outlookOrder(b) ||
     b.score - a.score
   );
+}
+
+function outlookOrder(fact: Fact): number {
+  if (fact.kind === "daylight") return 2;
+  return fact.status === "conditional" ? 1 : 0;
 }
 
 /**
@@ -252,11 +278,23 @@ function isCalendar(period: Period): boolean {
   return period.kind !== "day" && period.kind !== "rolling";
 }
 
-// A day or a run of days goes in the section its first day falls in.
-function sectionOf(fact: CandidateFact, latest: string): Section | undefined {
+function candidateSection(
+  fact: CandidateFact,
+  latest: string,
+): Section | undefined {
   if (isForecastStatus(fact.status)) return "comingWeek";
   if (isCalendar(fact.period)) return "thisMonth";
-  const ago = daysBetween(fact.from, latest);
+  return sectionOf(fact.from, fact.date, latest);
+}
+
+// A day or a run of days goes in the section its first day falls in.
+function sectionOf(
+  from: string,
+  date: string,
+  latest: string,
+): Section | undefined {
+  if (date > latest) return "comingWeek";
+  const ago = daysBetween(from, latest);
   if (ago === 0) return "today";
   if (ago <= 6) return "thisWeek";
   return ago <= 30 ? "thisMonth" : undefined;
@@ -270,7 +308,7 @@ function isPartOfSpell(
 ): boolean {
   if (isCalendar(fact.period)) return false;
   return facts.some((spell) => {
-    const section = sectionOf(spell.fact, latest);
+    const section = candidateSection(spell.fact, latest);
     return (
       spell.fact !== fact &&
       spell.fact.period.kind === "rolling" &&
@@ -325,8 +363,9 @@ function present(
   { fact, score, lead }: ScoredFact,
   series: readonly Series[],
   forecast: ForecastInput | undefined,
-): Fact {
+): RecordFact {
   return {
+    kind: "record",
     date: fact.date,
     from: fact.from,
     period: fact.period,
@@ -338,6 +377,20 @@ function present(
     score: Math.round(score * 100) / 100,
     text: describeFact(fact, lead),
     why: explain(fact, series, forecast),
+  };
+}
+
+function presentDaylight(candidate: DaylightCandidate): DaylightFact {
+  const { date, event, scope, sunrise, sunset } = candidate;
+  return {
+    kind: "daylight",
+    date,
+    event,
+    scope,
+    sunrise: sunrise.toISOString(),
+    sunset: sunset.toISOString(),
+    score: Math.round(scoreDaylight(candidate) * 100) / 100,
+    text: describeDaylight(candidate),
   };
 }
 

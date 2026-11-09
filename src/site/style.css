@@ -610,6 +610,12 @@ h2 {
   border: 1.5px dotted var(--text-soft);
 }
 
+/* Half filled, like the sun on the horizon. */
+.marker[data-status="daylight"] {
+  background: linear-gradient(transparent 50%, var(--text) 50%);
+  border: 1.5px solid var(--text);
+}
+
 .standout {
   display: inline-block;
   padding: 0.05rem 0.5rem;

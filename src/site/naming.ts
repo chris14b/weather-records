@@ -1,9 +1,11 @@
 import {
   isChangeMeasure,
   isForecastStatus,
-  type Fact,
+  type DaylightEvent,
+  type DaylightFact,
   type FactMeasure,
   type FactWhy,
+  type RecordFact,
 } from "../shared/facts.ts";
 
 const weekdays = [
@@ -106,12 +108,15 @@ function seasonName(month: number): string {
   return "spring";
 }
 
-type Named = Pick<Fact, "period" | "from" | "date"> &
-  Partial<Pick<Fact, "measure">>;
+type Named = Pick<RecordFact, "period" | "from" | "date"> &
+  Partial<Pick<RecordFact, "measure">>;
 
 /** What the site needs of a fact to make a sentence of it. */
 export type Phrased = Named &
-  Pick<Fact, "status" | "text" | "measure" | "direction" | "comparison"> & {
+  Pick<
+    RecordFact,
+    "status" | "text" | "measure" | "direction" | "comparison"
+  > & {
     why: Pick<FactWhy, "value" | "forecast">;
   };
 
@@ -327,5 +332,72 @@ export function sentence(fact: Phrased, today: string): Sentence {
     before: "",
     subject: capitalise(periodName(fact, today)),
     after: ` ${verb(fact, today)} ${fact.text}, ${valueClause(fact)}`,
+  };
+}
+
+const clockFormat = new Intl.DateTimeFormat("en-AU", {
+  timeZone: "Australia/Sydney",
+  hour: "numeric",
+  minute: "2-digit",
+  hourCycle: "h12",
+});
+
+/** An instant as Sydney's clocks show it: "5:41am", "8:10pm". */
+export function clockTime(instant: string): string {
+  const parts = clockFormat.formatToParts(new Date(instant));
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? "";
+  return `${part("hour")}:${part("minute")}${part("dayPeriod").toLowerCase()}`;
+}
+
+function count(n: number, unit: string): string {
+  return `${String(n)} ${unit}${n === 1 ? "" : "s"}`;
+}
+
+/** A length of time in words: "14 hours 25 minutes", "10 hours". */
+export function duration(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return [
+    hours === 0 ? "" : count(hours, "hour"),
+    rest === 0 ? "" : count(rest, "minute"),
+  ]
+    .filter((words) => words !== "")
+    .join(" ");
+}
+
+function daylightValue({ event, sunrise, sunset }: DaylightFact): string {
+  switch (event) {
+    case "earliestSunrise":
+    case "latestSunrise":
+      return `at ${clockTime(sunrise)}`;
+    case "earliestSunset":
+    case "latestSunset":
+      return `at ${clockTime(sunset)}`;
+    case "longestDay":
+    case "shortestDay": {
+      const minutes = (Date.parse(sunset) - Date.parse(sunrise)) / 60_000;
+      return `with ${duration(Math.round(minutes))} of daylight`;
+    }
+  }
+}
+
+// A day is the longest, but it has the earliest sunrise.
+const isDayLength = (event: DaylightEvent) =>
+  event === "longestDay" || event === "shortestDay";
+
+/**
+ * A turning point in the daylight as a sentence for the viewer's today, without its full
+ * stop: "Today is the longest day of the year, with 14 hours 25 minutes of daylight".
+ */
+export function daylightSentence(fact: DaylightFact, today: string): Sentence {
+  const [present, past] = isDayLength(fact.event)
+    ? ["is", "was"]
+    : ["has", "had"];
+  const verb = fact.date >= today ? present : past;
+  return {
+    before: "",
+    subject: capitalise(dayName(fact.date, today)),
+    after: ` ${verb} ${fact.text}, ${daylightValue(fact)}`,
   };
 }

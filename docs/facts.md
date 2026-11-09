@@ -9,6 +9,8 @@ There are four steps:
 3. **Score** each ranking by how unusual it is (`scoring.ts`).
 4. **Select** the best for each section, and **word** them (`selection.ts`, `wording.ts`).
 
+Facts about daylight are made apart from these, from where the location is (see Daylight, below).
+
 ## 1. Series
 
 A series is one measure's single-day values for a location, in date order (`series.ts`). There are 13:
@@ -181,9 +183,11 @@ Forecast and conditional facts go in a fourth section, the **coming week**. Neit
 - **Conditional facts** have an allowance of their own (`conditionalRule`), since nearly every forecast has a notable value within reach, and nearby days have much the same one: up to 2, each scoring at least 4, and only the strongest per family and direction across the week. Each must also score at least log(2) more than the forecast fact for its day, family and direction (`conditionalGain`), so it is at least twice as rare as what the forecast already gets.
 - **Fallback:** the site moves facts about the latest day into Today, so if nothing is left for the days after it, the strongest forecast or conditional fact about them is shown if it scores at least 2 (`forecastFloor`), about a since of a week. An ordinary week still says something, such as "the coldest day since 3 November".
 
+Daylight facts have an allowance of their own (see Daylight), so they never take the place of a weather fact.
+
 A fact that a later day beat (its `beatenBy`) is never shown, since it would only send the reader to that day's. A weaker fact about the same day that nothing beat can still show.
 
-Today, This week and This month run strongest first. The coming week runs soonest first, with a day's forecast facts before its conditional ones.
+Today, This week and This month run strongest first. The coming week runs soonest first, with a day's forecast facts before its conditional ones, and its daylight last.
 
 ## 5. Wording
 
@@ -228,9 +232,23 @@ Each fact also has a `why` for the site:
 - the since day
 - the 10 best comparable days or periods up to the fact's date, counting overlapping runs of days once
 
+## Daylight
+
+`generateDaylightFacts` in `daylight-facts.ts` finds the turning points in the year's daylight: the earliest and latest sunrise, the earliest and latest sunset, and the longest and shortest day. They come from the year's own curve, not from ranks against past years, and every location has the same six each year, give or take a day.
+
+- **Sunrise and sunset** come from `sunTimes` in `src/shared/sun.ts`, NOAA's solar calculator equations, worked out from the location's latitude and longitude. They match the US Naval Observatory's published times to the minute. Sunrise and sunset are when the sun's top edge is on the horizon, allowing for refraction (a zenith of 90.833°).
+- **Turning points:** a day is one if its sunrise, sunset or day length is further out than the day before's, and at least as far as the day after's. They are found on the sun's own time, unrounded and without daylight saving, so the curve is smooth and each has exactly one day. At Observatory Hill in 2026 they are the latest sunset on 7 January, the earliest sunset on 12 June, the shortest day on 21 June, the latest sunrise on 30 June, the earliest sunrise on 6 December and the longest day on 22 December.
+- **Of the year or the season:** on the clock, daylight saving moves sunrise and sunset an hour. The sunrises just before it starts in October are earlier than December's (5:30am on 3 October 2026, against 5:37am), and those just before it ends in April later than July's. So a turning point is "of the year" only if no other day of its calendar year beats it on the clock, and otherwise "of" its season, if nothing in the season does: "the earliest sunrise of summer", "the latest sunrise of winter". Day lengths don't change with the clock, so the solstices are always of the year.
+- **Scoring:** six turning points a year make each about a once-in-61-days fact, so they score log(365.25 / 6), or 4.11 (`scoreDaylight` in `scoring.ts`). Sunrises and sunsets weigh 0.9, since the solstices are the turning points people know, and one of only its season weighs 0.85 more, as a season comparison does. So the scores are 4.11, 3.70 and 3.14. That beats an everyday fact, so a solstice can lead Today, but not a record.
+- **Selection:** a turning point is news for about a week either side. It goes in Today on the latest day, in This week for the 6 days before, and in the coming week for the 7 days after the window's end (`daylightAround`), never in This month. Turning points are at least 9 days apart, so each section has room for every one in its days, on top of its weather facts.
+- **Wording:** `describeDaylight` gives "the longest day of the year" or "the earliest sunrise of summer". The site's `daylightSentence` adds the day and its value: "Thursday has the earliest sunrise of summer, at 5:37am", "Friday had the latest sunset of the year, at 8:10pm". A solstice gives its daylight: "Today is the longest day of the year, with 14 hours 25 minutes of daylight".
+- **On the page:** a daylight fact has its own mark, a half-filled dot ("Daylight" in the legend), since it is neither observed nor forecast. It never gets a standout badge, since it comes round every year. It has no `why`: `facts.json` gives its `event`, `scope`, and its day's `sunrise` and `sunset` to the minute.
+
+Every fact in `facts.json` has a `kind`: `record` for the ranked facts above, and `daylight`.
+
 ## Trying it out
 
 - `npm run smoke:facts [location-id] [date] [max-rank]` prints one day's candidate facts.
-- `npm run smoke:sections [location-id] [date]` prints the three sections for the 31 days to a date, with day and period facts.
+- `npm run smoke:sections [location-id] [date]` prints the three sections for the 31 days to a date, with day, period and daylight facts.
 - `npm run smoke:forecast [location-id]` downloads the live forecast and prints the coming week. With a date as well, it prints the coming week that a morning run that day would have seen, if the forecast had matched what was observed: the data stops the day before, and the rain amounts with a 25% chance are 1.5 times the observed rain.
 - The snapshot tests in `test/selection.test.ts` record the sections for five real windows, so any change to the scoring shows up as a diff to review.

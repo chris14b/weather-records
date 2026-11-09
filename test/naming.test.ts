@@ -1,7 +1,11 @@
 import { describe, expect, test } from "vitest";
+import type { DaylightFact } from "../src/shared/facts.ts";
 import {
   amount,
+  clockTime,
   dayName,
+  daylightSentence,
+  duration,
   longDate,
   nightName,
   periodName,
@@ -383,5 +387,94 @@ describe("sentence", () => {
     ],
   ])("phrases %#", (phrased, expected) => {
     expect(says(phrased)).toBe(expected);
+  });
+});
+
+describe("clockTime", () => {
+  test.each([
+    ["2026-12-21T18:41:00Z", "5:41am"],
+    ["2027-01-07T09:10:00Z", "8:10pm"],
+    ["2026-06-21T06:54:00Z", "4:54pm"],
+    ["2026-06-21T02:00:00Z", "12:00pm"],
+  ])("shows %s on Sydney's clocks as %s", (instant, expected) => {
+    expect(clockTime(instant)).toBe(expected);
+  });
+});
+
+describe("duration", () => {
+  test.each([
+    [865, "14 hours 25 minutes"],
+    [600, "10 hours"],
+    [61, "1 hour 1 minute"],
+    [45, "45 minutes"],
+  ])("words %d minutes as %s", (minutes, expected) => {
+    expect(duration(minutes)).toBe(expected);
+  });
+});
+
+describe("daylightSentence", () => {
+  const daylight = (changes: Partial<DaylightFact> = {}): DaylightFact => ({
+    kind: "daylight",
+    date: "2026-12-22",
+    event: "longestDay",
+    scope: "year",
+    sunrise: "2026-12-21T18:41:00.000Z",
+    sunset: "2026-12-22T09:06:00.000Z",
+    score: 4.11,
+    text: "the longest day of the year",
+    ...changes,
+  });
+  const words = (fact: DaylightFact, viewed: string) => {
+    const { before, subject, after } = daylightSentence(fact, viewed);
+    return `${before}${subject}${after}`;
+  };
+
+  test.each([
+    [
+      "2026-12-22",
+      "Today is the longest day of the year, with 14 hours 25 minutes of daylight",
+    ],
+    [
+      "2026-12-19",
+      "Tuesday is the longest day of the year, with 14 hours 25 minutes of daylight",
+    ],
+    [
+      "2026-12-24",
+      "Tuesday was the longest day of the year, with 14 hours 25 minutes of daylight",
+    ],
+  ])("gives a solstice's daylight, viewed on %s", (viewed, expected) => {
+    expect(words(daylight(), viewed)).toBe(expected);
+  });
+
+  test("gives a sunrise's time", () => {
+    const fact = daylight({
+      date: "2026-12-06",
+      event: "earliestSunrise",
+      scope: "season",
+      sunrise: "2026-12-05T18:37:00.000Z",
+      sunset: "2026-12-06T08:55:00.000Z",
+      text: "the earliest sunrise of summer",
+    });
+
+    expect(words(fact, "2026-12-06")).toBe(
+      "Today has the earliest sunrise of summer, at 5:37am",
+    );
+    expect(words(fact, "2026-12-07")).toBe(
+      "Yesterday had the earliest sunrise of summer, at 5:37am",
+    );
+  });
+
+  test("gives a sunset's time", () => {
+    const fact = daylight({
+      date: "2027-01-07",
+      event: "latestSunset",
+      sunrise: "2027-01-06T18:52:00.000Z",
+      sunset: "2027-01-07T09:10:00.000Z",
+      text: "the latest sunset of the year",
+    });
+
+    expect(words(fact, "2027-01-04")).toBe(
+      "Thursday has the latest sunset of the year, at 8:10pm",
+    );
   });
 });

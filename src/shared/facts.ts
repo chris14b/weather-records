@@ -103,8 +103,9 @@ export interface FactWhy {
   leaders: RankedDay[];
 }
 
-/** A fact chosen for the home page. */
-export interface Fact {
+/** A fact chosen for the home page about how a day or period ranks among comparable ones. */
+export interface RecordFact {
+  kind: "record";
   /** The last day the fact covers, which the page names ("today", "last Tuesday"). */
   date: string;
   /** The first day it covers: the same as `date` for a single day. */
@@ -124,6 +125,35 @@ export interface Fact {
   text: string;
   why: FactWhy;
 }
+
+/** A turning point in the year's sunrises, sunsets or day lengths. */
+export type DaylightEvent =
+  | "earliestSunrise"
+  | "latestSunrise"
+  | "earliestSunset"
+  | "latestSunset"
+  | "longestDay"
+  | "shortestDay";
+
+/** A fact about a day's daylight, calculated from where the location is. */
+export interface DaylightFact {
+  kind: "daylight";
+  date: string;
+  event: DaylightEvent;
+  /**
+   * The calendar year, or only its season when another day of the year beats it on the
+   * clock because of daylight saving.
+   */
+  scope: "year" | "season";
+  /** As instants, to the minute. */
+  sunrise: string;
+  sunset: string;
+  score: number;
+  /** What the day has, without naming it: e.g. "the latest sunset of the year". */
+  text: string;
+}
+
+export type Fact = RecordFact | DaylightFact;
 
 /** The facts for each section of a location's home page, latest first. */
 export interface LocationFacts {

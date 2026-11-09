@@ -50,6 +50,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 **Notes:**
 
 - Each fact is an `li.fact` built by `factItem` in `src/site/render.ts`, and the big fact by `headline`. Open the why without pushing the panels around much, e.g. as a popover over the glass.
+- A daylight fact (`kind: "daylight"`) has no `why`. Decide whether it needs one, e.g. its sunrise and sunset or the days around it, or no card at all.
 
 ---
 
@@ -181,21 +182,25 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 ---
 
-## T14: Sunrise and sunset facts
+## T14: A sky that follows the sun
 
-**Status:** todo
+**Status:** in progress
 
-**Goal:** Facts about daylight, such as the latest sunset of the year or the day the days start getting longer, and a sky that follows the sun.
+**Goal:** A sky that changes with the sun's height at the selected location, rather than at fixed hours.
 
-- Scope: sunrise and sunset calculated from each station's latitude and longitude, with no API. Put the solar position calculation in `src/shared/`, since the sky needs it in the browser.
-- Scope: facts for the latest sunset, the earliest sunrise, the longest and shortest day, and the point where days start getting longer or shorter. These come from the year's own curve, not from ranks against past years, so they need their own wording and scoring within the selection (the Selection section of [facts.md](facts.md)).
-- Scope: show them on the site.
 - Scope: replace the fixed hours in `skyPhase` (`src/site/sky.ts`), which switch the sky at set hours, with a sky that changes gradually with the sun's height at the selected location, worked out in the browser from the viewer's clock.
   - Blend the sky's colours between a few points by the sun's height, such as night, twilight, sunrise or sunset glow, low sun and midday, updated every minute. Using the sun's height rather than the clock makes twilight longer in summer than in winter without special cases.
   - Blend the weather colours (`--overcast`, `--fog`, `--mist`, `--cloud` and `--drop` in `style.css`) the same way, so an overcast evening fades to grey rather than orange, and mute the sunset glow under heavy cloud.
   - Put the glow on the side of the sky where the sun is: east in the morning, west in the evening.
   - Out of scope: moon phases, and a sun that moves across the sky.
-- Done when: tests pass, including a check of the calculation against published sunrise and sunset times for a few dates at each location, and the sky has been checked in the browser through a summer and a winter day, under clear and overcast skies.
+- Done when: tests pass, and the sky has been checked in the browser through a summer and a winter day, under clear and overcast skies.
+
+**Notes:**
+
+- The daylight facts are done (see the Daylight section of [facts.md](facts.md)). This is what is left of the task.
+- `sunPosition` in `src/shared/sun.ts` gives the sun's elevation (geometric, without refraction) and its azimuth (clockwise from north) at an instant, for a location's `latitude` and `longitude`. Tests check it against USNO's published sunrise and sunset times.
+- `render` in `src/site/render.ts` sets `data-sky` and `data-weather` on the root element, and `main.ts` re-renders every 5 minutes. A sky updated every minute is better kept apart from `render`, so the page isn't rebuilt each minute.
+- `data-sky` is used throughout `style.css`, including for the stars and for darker glass on a cloudy day.
 
 ---
 

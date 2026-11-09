@@ -1,6 +1,8 @@
 import { locationById, stationOffsets } from "../shared/locations.ts";
 import { generateCandidates } from "./candidates.ts";
 import { sydneyDate } from "./dates.ts";
+import { daylightAround } from "./daylight-facts.ts";
+import { factLine } from "./print.ts";
 import { readSavedSeries } from "./saved-series.ts";
 import { selectFacts } from "./selection.ts";
 
@@ -17,15 +19,11 @@ const selected = selectFacts({
     offsets: stationOffsets(location),
   }),
   series,
+  daylight: daylightAround(location, date),
 });
 
 console.log(`${location.name}, for the 31 days to ${date}`);
 for (const section of ["today", "thisWeek", "thisMonth"] as const) {
   console.log(`\n${section}:`);
-  for (const { from, date: factDate, score, text } of selected[section]) {
-    const dates = from === factDate ? factDate : `${from}..${factDate}`;
-    console.log(
-      `  ${dates.padEnd(22)}  ${score.toFixed(2).padStart(5)}  ${text}`,
-    );
-  }
+  for (const fact of selected[section]) console.log(`  ${factLine(fact)}`);
 }

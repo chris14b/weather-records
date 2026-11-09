@@ -1,7 +1,7 @@
 import type { Fact, FactsFile, ValueStatus } from "../shared/facts.ts";
 import { locations, type Location } from "../shared/locations.ts";
 import { arrange, headlineSize, standout, type Standout } from "./arrange.ts";
-import { longDate, sentence, sydneyDate } from "./naming.ts";
+import { daylightSentence, longDate, sentence, sydneyDate } from "./naming.ts";
 import { forecastWeather, skyPhase, sydneyHour } from "./sky.ts";
 
 type Children = (Node | string)[];
@@ -19,17 +19,19 @@ function element<K extends keyof HTMLElementTagNameMap>(
   return node;
 }
 
-/** How the page shows a fact: the live feed counts as observed, like the daily files. */
-type ShownStatus = Exclude<ValueStatus, "provisional">;
+/** How the page marks a fact: the live feed counts as observed, like the daily files. */
+type ShownStatus = Exclude<ValueStatus, "provisional"> | "daylight";
 
-function shown(status: ValueStatus): ShownStatus {
-  return status === "provisional" ? "confirmed" : status;
+function shown(fact: Fact): ShownStatus {
+  if (fact.kind === "daylight") return "daylight";
+  return fact.status === "provisional" ? "confirmed" : fact.status;
 }
 
 const statusLabels: Record<ShownStatus, string> = {
   confirmed: "Observed",
   forecast: "Forecast",
   conditional: "If it gets there",
+  daylight: "Daylight",
 };
 
 function marker(status: ShownStatus): HTMLElement {
@@ -58,7 +60,10 @@ function badge(fact: Fact): Children {
 }
 
 function phrase(fact: Fact, today: string): Children {
-  const { before, subject, after } = sentence(fact, today);
+  const { before, subject, after } =
+    fact.kind === "daylight"
+      ? daylightSentence(fact, today)
+      : sentence(fact, today);
   return [
     ...badge(fact),
     before,
@@ -68,7 +73,7 @@ function phrase(fact: Fact, today: string): Children {
 }
 
 function factItem(fact: Fact, today: string): HTMLElement {
-  const status = shown(fact.status);
+  const status = shown(fact);
   return element("li", { class: "fact", "data-status": status }, [
     marker(status),
     element("p", {}, phrase(fact, today)),
@@ -103,7 +108,7 @@ function headline(fact: Fact | undefined, today: string): HTMLElement {
   }
   const node = element(
     "p",
-    { class: "headline", "data-status": shown(fact.status) },
+    { class: "headline", "data-status": shown(fact) },
     phrase(fact, today),
   );
   const size = headlineSize(fact.score);
@@ -136,7 +141,12 @@ function locationToggle(
 }
 
 function legend(): HTMLElement {
-  const statuses: ShownStatus[] = ["confirmed", "forecast", "conditional"];
+  const statuses: ShownStatus[] = [
+    "confirmed",
+    "forecast",
+    "conditional",
+    "daylight",
+  ];
   return element(
     "ul",
     { class: "legend", "aria-label": "Kinds of fact" },

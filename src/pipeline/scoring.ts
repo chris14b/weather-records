@@ -1,6 +1,12 @@
-import type { Comparison, FactMeasure, Lead } from "../shared/facts.ts";
+import type {
+  Comparison,
+  DaylightEvent,
+  FactMeasure,
+  Lead,
+} from "../shared/facts.ts";
 import type { CandidateFact } from "./candidates.ts";
 import { daysBetween } from "./dates.ts";
+import type { DaylightCandidate } from "./daylight-facts.ts";
 
 export interface ScoredFact {
   fact: CandidateFact;
@@ -41,6 +47,25 @@ const measureWeights: Record<FactMeasure, number> = {
   maxTempChange: 0.9,
   minTempChange: 0.85,
 };
+
+/** The year has six turning points in its daylight, so each comes about once in 61 days. */
+const daylightScore = Math.log(365.25 / 6);
+
+// The solstices are the turning points people know.
+const daylightWeights: Record<DaylightEvent, number> = {
+  longestDay: 1,
+  shortestDay: 1,
+  earliestSunrise: 0.9,
+  latestSunrise: 0.9,
+  earliestSunset: 0.9,
+  latestSunset: 0.9,
+};
+
+/** Scores a turning point in the daylight on the same scale as a day's facts; see docs/facts.md. */
+export function scoreDaylight({ event, scope }: DaylightCandidate): number {
+  const scopeWeight = scope === "season" ? comparisonWeights.season : 1;
+  return daylightScore * daylightWeights[event] * scopeWeight;
+}
 
 /** Scores a fact by its rank or its since, whichever is more striking; see docs/facts.md. */
 export function scoreFact(fact: CandidateFact): ScoredFact {

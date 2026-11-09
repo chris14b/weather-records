@@ -2,6 +2,7 @@ import type {
   ChangingMeasure,
   Comparison,
   DateRange,
+  DaylightEvent,
   Direction,
   FactMeasure,
   Lead,
@@ -10,6 +11,7 @@ import type {
 import type { CandidateFact } from "./candidates.ts";
 import { comparisonKey } from "./daily-facts.ts";
 import { daysBetween } from "./dates.ts";
+import type { DaylightCandidate } from "./daylight-facts.ts";
 import { coverage, minimumCoverage } from "./scoring.ts";
 
 interface Phrase {
@@ -106,6 +108,25 @@ export function describeFact(fact: CandidateFact, lead: Lead): string {
     lead === "rank" ? rankScope(fact) : sinceScope(fact),
     lead === "rank" ? caveat(fact) : "",
   ].join("");
+}
+
+const daylightPhrases: Record<DaylightEvent, string> = {
+  earliestSunrise: "the earliest sunrise",
+  latestSunrise: "the latest sunrise",
+  earliestSunset: "the earliest sunset",
+  latestSunset: "the latest sunset",
+  longestDay: "the longest day",
+  shortestDay: "the shortest day",
+};
+
+/** What a turning point in the daylight is, without naming its day: e.g. "the latest sunrise of winter". */
+export function describeDaylight({
+  event,
+  scope,
+  date,
+}: DaylightCandidate): string {
+  const of = scope === "year" ? "the year" : comparisonKey(date, "season");
+  return `${daylightPhrases[event]} of ${of}`;
 }
 
 /** 1st, 2nd, 3rd, 4th… */

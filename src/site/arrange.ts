@@ -28,7 +28,11 @@ export function arrange(location: LocationFacts, viewerToday: string): Page {
   const todaysOutlook = location.comingWeek.filter(isToday);
   const headline =
     strongest(location.today) ??
-    strongest(todaysOutlook.filter((fact) => fact.status === "forecast"));
+    strongest(
+      todaysOutlook.filter(
+        (fact) => fact.kind === "record" && fact.status === "forecast",
+      ),
+    );
 
   return {
     date,
@@ -58,8 +62,10 @@ const standoutScores = {
   calendar: { rare: 3.5, exceptional: 4.5 },
 } as const;
 
-/** Whether a fact is rare enough to mark, and how rare. */
-export function standout({ score, period }: Fact): Standout | undefined {
+/** Whether a fact is rare enough to mark, and how rare. Daylight comes round every year. */
+export function standout(fact: Fact): Standout | undefined {
+  if (fact.kind === "daylight") return undefined;
+  const { score, period } = fact;
   const { rare, exceptional } =
     period.kind === "day" || period.kind === "rolling"
       ? standoutScores.days

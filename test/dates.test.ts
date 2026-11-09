@@ -4,6 +4,7 @@ import {
   daysBetween,
   monthsBetween,
   sydneyDate,
+  sydneyOffsetMinutes,
 } from "../src/pipeline/dates.ts";
 
 describe("addDays", () => {
@@ -49,5 +50,16 @@ describe("sydneyDate", () => {
     ["2026-06-30T14:00:00Z", "2026-07-01"],
   ])("%s is %s in Sydney", (instant, expected) => {
     expect(sydneyDate(new Date(instant))).toBe(expected);
+  });
+});
+
+describe("sydneyOffsetMinutes", () => {
+  test.each([
+    ["2026-07-01T00:00:00Z", 600],
+    ["2026-12-01T00:00:00Z", 660],
+    ["2026-10-03T15:59:00Z", 600],
+    ["2026-10-03T16:00:00Z", 660],
+  ])("gives Sydney's offset at %s", (instant, expected) => {
+    expect(sydneyOffsetMinutes(new Date(instant))).toBe(expected);
   });
 });

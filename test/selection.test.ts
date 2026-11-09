@@ -3,10 +3,14 @@ import { generateCandidates } from "../src/pipeline/candidates.ts";
 import { generateDailyFacts } from "../src/pipeline/daily-facts.ts";
 import { addDays, daysBetween } from "../src/pipeline/dates.ts";
 import { readSavedSeries } from "../src/pipeline/saved-series.ts";
-import { type SelectedFacts, selectFacts } from "../src/pipeline/selection.ts";
+import {
+  type SelectedFacts,
+  type SelectionRequest,
+  selectFacts,
+} from "../src/pipeline/selection.ts";
 import type { ForecastDay } from "../src/pipeline/forecast.ts";
 import { changeSeries, type Series } from "../src/pipeline/series.ts";
-import type { Fact, FactMeasure } from "../src/shared/facts.ts";
+import type { Fact, FactMeasure, RecordFact } from "../src/shared/facts.ts";
 import {
   type Location,
   locations,
@@ -14,6 +18,30 @@ import {
 } from "../src/shared/locations.ts";
 
 const latest = "2026-11-06";
+
+type Sections = Pick<
+  SelectedFacts,
+  "today" | "thisWeek" | "thisMonth" | "comingWeek"
+>;
+
+/** The facts chosen without any daylight, so every one is a record fact. */
+function selectRecords(request: SelectionRequest): {
+  [Section in keyof Sections]: RecordFact[];
+} & Pick<SelectedFacts, "locationId"> {
+  const selected = selectFacts(request);
+  const records = (facts: readonly Fact[]) =>
+    facts.map((fact) => {
+      if (fact.kind !== "record") throw new Error("Unexpected daylight fact");
+      return fact;
+    });
+  return {
+    locationId: selected.locationId,
+    today: records(selected.today),
+    thisWeek: records(selected.thisWeek),
+    thisMonth: records(selected.thisMonth),
+    comingWeek: records(selected.comingWeek),
+  };
+}
 
 /** Every day from `from` to `latest` at `baseline`, except the days given. */
 function series<Measure extends FactMeasure>(
@@ -54,7 +82,7 @@ const allSeries = [
   series("temp3pm", () => 20, maxTemps),
   rain,
 ];
-const selected = selectFacts({
+const selected = selectRecords({
   locationId: "test",
   facts: generateDailyFacts({
     locationId: "test",
@@ -64,11 +92,11 @@ const selected = selectFacts({
   series: allSeries,
 });
 
-const summary = (facts: readonly Fact[]) =>
+const summary = (facts: readonly RecordFact[]) =>
   facts.map(({ date, measure, text }) => ({ date, measure, text }));
 
-function selectAll(allSeries: readonly Series[]): SelectedFacts {
-  return selectFacts({
+function selectAll(allSeries: readonly Series[]) {
+  return selectRecords({
     locationId: "test",
     facts: generateCandidates({
       locationId: "test",
@@ -158,7 +186,7 @@ describe("selectFacts", () => {
     });
     const coldChange = [max, changeSeries(max), changeSeries(min)];
 
-    const { today } = selectFacts({
+    const { today } = selectRecords({
       locationId: "test",
       facts: generateDailyFacts({
         locationId: "test",
@@ -264,7 +292,7 @@ describe("selectFacts with a forecast", () => {
   function selectWithForecast(
     values: Readonly<Record<string, number>>,
     maxTemp: number,
-  ): SelectedFacts {
+  ) {
     const allSeries = [
       series(
         "maxTemp",
@@ -274,7 +302,7 @@ describe("selectFacts with a forecast", () => {
       ),
     ];
     const forecast = { days: forecastDays(maxTemp), from: addDays(latest, 1) };
-    return selectFacts({
+    return selectRecords({
       locationId: "test",
       facts: generateCandidates({
         locationId: "test",
@@ -381,7 +409,7 @@ describe("selectFacts on real data", () => {
       }),
     }));
 
-  const sections = (facts: SelectedFacts) =>
+  const sections = (facts: ReturnType<typeof selectRecords>) =>
     Object.fromEntries(
       (["today", "thisWeek", "thisMonth"] as const).map((section) => [
         section,
@@ -407,7 +435,7 @@ describe("selectFacts on real data", () => {
     if (location === undefined) throw new Error(`No location ${id}`);
     const locationSeries = await savedSeriesTo(location);
 
-    const facts = selectFacts({
+    const facts = selectRecords({
       locationId: id,
       facts: generateCandidates({
         locationId: id,
