@@ -364,11 +364,14 @@ describe("selectFacts", () => {
 });
 
 describe("selectFacts with a forecast", () => {
-  const forecastDays = (maxTemp: number): ForecastDay[] =>
+  const forecastDays = (
+    maxTemp: number,
+    later: Readonly<Record<number, number>> = {},
+  ): ForecastDay[] =>
     Array.from({ length: 7 }, (_, index) => ({
       date: addDays(latest, index + 1),
       minTemp: 15,
-      maxTemp: index === 1 ? maxTemp : 20,
+      maxTemp: index === 1 ? maxTemp : (later[index] ?? 20),
       rainChance: 0,
       rain50: null,
       rain25: null,
@@ -380,6 +383,7 @@ describe("selectFacts with a forecast", () => {
     values: Readonly<Record<string, number>>,
     maxTemp: number,
     date = latest,
+    later: Readonly<Record<number, number>> = {},
   ) {
     const allSeries = [
       series(
@@ -389,7 +393,10 @@ describe("selectFacts with a forecast", () => {
         "1990-01-01",
       ),
     ];
-    const forecast = { days: forecastDays(maxTemp), from: addDays(latest, 1) };
+    const forecast = {
+      days: forecastDays(maxTemp, later),
+      from: addDays(latest, 1),
+    };
     return selectRecords({
       date,
       facts: generateCandidates({
@@ -576,6 +583,30 @@ describe("selectFacts with a forecast", () => {
     );
 
     expect(comingWeek.map(({ status }) => status)).toEqual(["forecast"]);
+  });
+
+  test("leaves out what it would take when another day's forecast already gets it", () => {
+    const { comingWeek } = selectWithForecast(
+      { "2019-01-10": 36.5, "2021-01-10": 35.5 },
+      37,
+      latest,
+      { 3: 35.5 },
+    );
+
+    expect(
+      comingWeek.map(({ date, status, text }) => ({ date, status, text })),
+    ).toEqual([
+      {
+        date: "2026-11-08",
+        status: "forecast",
+        text: "the hottest day since records began in 1990",
+      },
+      {
+        date: "2026-11-10",
+        status: "forecast",
+        text: "the equal third hottest day since records began in 1990",
+      },
+    ]);
   });
 });
 

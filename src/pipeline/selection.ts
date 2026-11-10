@@ -151,8 +151,10 @@ export function selectFacts({
   );
   const sectionFor = (fact: CandidateFact) =>
     candidateSection(fact, date, latest);
-  const groupKey = ({ fact }: ScoredFact) =>
-    `${fact.date} ${families[fact.measure]} ${fact.direction} ${isCalendar(fact.period) ? "calendar" : fact.period.kind}`;
+  const kindKey = ({ fact }: ScoredFact) =>
+    `${families[fact.measure]} ${fact.direction} ${isCalendar(fact.period) ? "calendar" : fact.period.kind}`;
+  const groupKey = (candidate: ScoredFact) =>
+    `${candidate.fact.date} ${kindKey(candidate)}`;
   // A fact that a later day beat would only send the reader to that day's.
   const scored = facts
     .filter(({ beatenBy }) => beatenBy === null)
@@ -163,17 +165,24 @@ export function selectFacts({
       (candidate) => `${groupKey(candidate)} ${origin(candidate.fact.status)}`,
     ).values(),
   ].map((group) => group.reduce(stronger));
+  // What it would take on one day says little when another day's forecast already says it.
   const forecastScores = new Map(
-    strongest
-      .filter(({ fact }) => fact.status === "forecast")
-      .map((candidate) => [groupKey(candidate), candidate.score]),
+    [
+      ...Map.groupBy(
+        strongest.filter(
+          ({ fact }) =>
+            fact.status === "forecast" && sectionFor(fact) !== undefined,
+        ),
+        kindKey,
+      ),
+    ].map(([key, group]) => [key, group.reduce(stronger).score]),
   );
   const chosen = strongest
     .filter(
       (candidate) =>
         candidate.fact.status !== "conditional" ||
         candidate.score >=
-          (forecastScores.get(groupKey(candidate)) ?? 0) + conditionalGain,
+          (forecastScores.get(kindKey(candidate)) ?? 0) + conditionalGain,
     )
     .filter((candidate, _, all) => !isPartOfSpell(candidate, all, sectionFor));
   const inSection = (name: Section, allowance: Allowance) =>
