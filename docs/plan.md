@@ -5,7 +5,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 ## How to use this plan
 
 - Each task has a permanent ID, such as `T15`. An ID is never reused or renumbered, and never has a letter after it (no `T5b`). A new task, including one split off another, takes the next ID, and goes where its priority puts it. Its place in the list, not its ID, sets its priority.
-- **Next ID:** T43
+- **Next ID:** T48
 - **Depends on** lists the tasks that must be finished first. A task that is no longer in this plan is finished. Keep every task below the tasks it depends on.
 - The next task is the first one that isn't deferred or blocked and whose dependencies are all finished.
 - Statuses: `todo`, `in progress`, `blocked` (say on what), `deferred` (skip until the user says otherwise). An open task can have **Notes** for whatever a later session needs.
@@ -15,6 +15,21 @@ The open tasks, in order of priority. Background and settled decisions are in [C
   - decisions go into [CLAUDE.md](../CLAUDE.md)
   - history, such as what was tried and dropped, goes in the commit message. Git keeps the old plan (`git log -p --follow -- docs/plan.md`).
 - Refer to tasks by ID, and never to a finished one.
+
+---
+
+## T42: Records for the day of the week
+
+**Status:** todo
+
+**Goal:** Facts that compare a day with the same weekday, such as "the wettest Saturday since 2022", if they turn out worth showing.
+
+- Background: CLAUDE.md's Facts section says not to compare against the same weekday, and no code for it was ever written. The user asked for it on 2026-11-09, so this reverses that decision: update CLAUDE.md in the same change.
+- Background: the weather doesn't know the weekday, so any weekday holds about a seventh of the days and sets a record about as often as a calendar month does. The interest is in the reading ("the wettest Saturday since 2022" matters to weekend plans), not the rarity, so the weight is a judgement, like the calendar date's in `comparisonWeights`.
+- Scope: a `weekday` comparison in `Comparison` (`src/shared/facts.ts`), keyed by `comparisonKey` in `daily-facts.ts`, for days only: not runs of days or calendar periods. Decide which measures get it, perhaps only the maximum, the minimum and rain.
+- Scope: scoring within the Scoring section of [facts.md](facts.md): a weight in `comparisonWeights`, and whether its since needs a rule like `previousOccurrence`, since "the wettest Saturday since 31 October" is only a week.
+- Scope: wording. A day is "the wettest Saturday", and a night or a day's rain is credited to the day it ends on, so decide how to name them: "Friday night was the coldest Friday night…" says it twice.
+- Done when: tests cover the comparison, its scoring and its wording, the selection snapshots have been reviewed for how often weekday facts win, and CLAUDE.md is updated.
 
 ---
 
@@ -34,6 +49,110 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 - Scope: adding the downloaded readings to the saved readings in `data/recent/readings/`, for any date in the last 13 months that is missing: before saving began, or in a gap left by missed runs. On overlapping dates the two must agree, or the build fails. The pruning to 13 months (`readingsKeptFrom`) applies to these readings too.
 - Scope: a way to see which dates the saved readings are missing, so the user knows which months to download. Add the steps to [refreshing-history.md](refreshing-history.md).
 - Done when: tests cover parsing, the station check, the overlap check and filling a gap, and the 9am and 3pm records start about a year earlier.
+
+---
+
+## T19: Wind
+
+**Status:** todo
+
+**Goal:** Wind facts such as "the 8th windiest day this year", for the locations where BOM's feeds allow them.
+
+- Background, checked on 2026-10-30:
+  - The FTP daily files have a column for the day's average 10 m wind speed (m/s). It holds real values for Sydney Airport (files from 2009) and Sydney Olympic Park (from 2011).
+  - Observatory Hill reports `0.00` every day because it has no wind instrument: BOM measures Sydney's harbour wind at Fort Denison instead. Treat those zeros as missing, never as calm, so there are no wind facts for Observatory Hill.
+  - The ZIPs don't include wind, and no allowed source has a history of gusts.
+- Scope: a one-off backfill of the wind column from every FTP daily file since each station's first file, saved in a committed file per station (e.g. `data/wind/<station>.csv`), or as a column in `data/ftp-history/`. Keep it up to date from the files the daily run already downloads. It is never pruned, because no ZIP replaces it.
+- Scope: wind measures for the fact generator, with every comparison that has enough history, within the ranking, scoring and wording in [facts.md](facts.md) ("windiest", "calmest").
+- Scope: update the data sources section of CLAUDE.md.
+- Out of scope, so ask the user first: saving each day's maximum gust from the live feed. Its records would only begin on the day saving starts.
+- Done when: tests cover the parsing, the backfill, and the rule that Observatory Hill's zeros count as missing.
+
+---
+
+## T43: Forecast day-to-day changes
+
+**Status:** todo
+
+**Goal:** Facts about the forecast's rises and drops in the maximum and minimum, such as "Thursday is forecast to have the biggest drop in maximum temperature since 2017" after a 38 °C Wednesday and a 22 °C Thursday.
+
+- Background: observed changes are ranked (`maxTempChange` and `minTempChange`, from `changeSeries` in `series.ts`), but `forecastSeries` in `forecast-facts.ts` only adds the forecast's days to the maximum, minimum and rain series. So a forecast southerly buster gets no change fact, though it is often the most interesting thing in the coming week.
+- Scope: change facts for each forecast day, from `changeSeries` over the maximum and minimum with the forecast added. The first forecast day's change is from the last observed day, and every later one from the forecast day before. Like the forecast's other days, each is ranked against the observed changes and the forecast's earlier ones, with the status `forecast`.
+  - A running value isn't in the series (see Values still running in [facts.md](facts.md)), so today's forecast maximum is compared with yesterday's observed maximum until 9pm. Check that `withoutOvertaken` handles a change, or leave today's change out while today's maximum is still running.
+- Scope: no "what it would take" facts for changes to begin with. The reach of 2 °C either side applies to one day's value, and a change moves with two. Decide later whether they're worth having.
+- Scope: wording. `verb` in `src/site/naming.ts` gives forecasts "is forecast to be", but a change takes "had" (`isHad`), so a forecast change needs "is forecast to have".
+- Scope: selection within the forecast's allowance (the Selection section of [facts.md](facts.md)). Changes have a family of their own, so they don't push out the day's "coldest day" fact.
+- Done when: tests cover a forecast change from the last observed day, one between two forecast days, and the wording, and [facts.md](facts.md) has the changes under Forecasts.
+
+---
+
+## T44: Forecast rain over 3 days
+
+**Status:** todo
+
+**Goal:** Facts about the forecast's wettest 3 days, such as "The 3 days to Sunday are forecast to be the wettest since 2022", beside the existing 7-day total.
+
+- Background: observed rain is ranked over runs of 3 and 7 days (`rollingDays` in `period-facts.ts`), but the forecast only over its first 7 days (`runDays` in `forecast-facts.ts`). A wet weekend inside an otherwise dry week then gets nothing.
+- Scope: every run of 3 forecast days, credited and totalled as the 7-day run is (see Rain over the next 7 days in [facts.md](facts.md)), and ranked with `runRanker` against all runs, the same season and the same month. A day with no rain range and a chance of 50% or more leaves any run holding it unknown.
+- Scope: "what it would take", as for the 7 days: up to the total of the amounts with a 25% chance.
+- Scope: decide whether a run may start on observed days and end on forecast ones, such as the 3 days to tomorrow, when yesterday was wet.
+- Scope: selection. Overlapping 3-day runs, and a 3-day run inside the 7, would say much the same thing. Check that the spell rule (`isPartOfSpell` in `selection.ts`) keeps only the strongest, and that the coming week isn't filled with rain.
+- Background: T38 asks whether the 10:30pm run's forecast should leave day 0 out of its rain. That applies to these runs too.
+- Done when: tests cover a wet run inside a dry week, a run left unknown by a missing range, and the selection beside the 7-day total, and [facts.md](facts.md) is updated.
+
+---
+
+## T45: Hot and cold spells
+
+**Status:** todo
+
+**Goal:** Facts about runs of days by their mean temperature, such as "The 3 days to Tuesday were the hottest since 2019" or "the coldest 7 nights since July 2025".
+
+- Background: runs of days are ranked for rain only (`rolling` in `generatePeriodFacts`, `period-facts.ts`). The ranking, the overlap rule and counting each spell once already work for any measure (see Runs of days in [facts.md](facts.md)). This is a different thing from T22: a spell's mean needs no temperature threshold.
+- Scope: runs of 3 and 7 days for the mean maximum and the mean minimum, in both directions: hot and cold days, warm and cold nights. Compare them with all runs, the same season and the same month, as for rain.
+- Scope: every day of a run must have a value, as for rain, since a missing day might have been the hottest. Means are rounded to 0.1 °C, as for calendar periods.
+- Scope: a rule in place of rain's spell rule, which needs a run to start and end wet. A run should get facts only when it says more than a shorter run inside it, so one hot day with two ordinary ones either side isn't "the hottest 3 days". Record the rule in [facts.md](facts.md).
+- Scope: the 2020 Observatory Hill station change. A mean over a few days is more sensitive to the change than one day's extreme, so compare it both ways, as for calendar periods' means (`offsets` from `stationOffsets`).
+- Scope: wording. A run of minimums is its nights: "The 3 nights to Tuesday were the warmest since…". Check `hasNights` and `sentence` in `src/site/naming.ts`.
+- Scope: selection. Runs of days compete with each other within a family, so check that a hot spell and the hottest day in it don't both show, and that heat doesn't push the rain spells out of Past week.
+- Out of scope, unless it turns out easy: the forecast's hot and cold spells. Otherwise add them to the plan as a new task.
+- Done when: tests cover a hot spell, a cold run of nights, a run with a missing day and the new rule, the selection snapshots have been reviewed, and [facts.md](facts.md) is updated.
+
+---
+
+## T46: More statistics for months, seasons and years
+
+**Status:** todo
+
+**Goal:** More facts for calendar periods, such as "October was the sunniest October since 2009" or "Spring had the most rain days since 2016".
+
+- Background: months, seasons and years, complete and so far, are ranked only by total rain, mean maximum and mean minimum (`periodMeasures` in `period-facts.ts`).
+- Scope: choose from these with the user, and add the ones chosen:
+  - **Mean temperature**, the average of the maximum and the minimum, which is what BOM's monthly climate summaries lead with ("the warmest October on record").
+  - **Rain days**, the days with at least 1 mm, BOM's own measure of a rain day, so it needs no threshold of our own. Like the total, it needs every day to have a value.
+  - **Mean solar exposure**, from 2009 (2011 at Olympic Park), and longer once T21 is done. Observatory Hill has none from 2018-04 to 2020-07. Wording: "sunniest" and "dullest", or "cloudiest".
+  - **Mean temperature range**, from `range`. Very sensitive to the station change: 066214's range is about 0.6 °C wider than 066062's.
+  - **Mean humidity**, from the FTP daily files' highest and lowest relative humidity, from 2009.
+- Scope: the missing-days rules (see Missing days in [facts.md](facts.md)): the temperature means follow the WMO rule for months, and counts and totals need every day.
+- Scope: the 2020 Observatory Hill station change. Mean temperature has an offset of about 0 °C (+0.3 °C and −0.3 °C), and the range about +0.6 °C. Compare both ways, as the mean maximum and minimum are.
+- Scope: families in `selection.ts`, so a month shows one temperature fact rather than "the warmest", "the warmest days" and "the warmest nights" together. Decide which family mean temperature and the range belong to.
+- Scope: wording for each, without repeating the subject ("October had the most rain days since 2016").
+- Done when: tests cover each new measure, its missing days and its wording, the selection snapshots have been reviewed, and [facts.md](facts.md) is updated.
+
+---
+
+## T47: Forecast temperature range
+
+**Status:** todo
+
+**Goal:** Facts about the forecast's temperature range, such as "Saturday is forecast to have the biggest temperature range since March".
+
+- Background: observed ranges are ranked (`range`, the day's maximum minus its minimum), but `forecastSeries` in `forecast-facts.ts` only adds the forecast's days to the maximum, minimum and rain series, so the forecast has no range facts.
+- Scope: a range for each forecast day, from its forecast maximum minus its forecast minimum, the night that ends that morning, as for observed days. Today's forecast has no minimum, so today's range takes the observed minimum and the forecast maximum, with the status `forecast`. Rank each against the observed ranges and the forecast's earlier ones, in both directions.
+- Scope: no "what it would take" facts, as for T43's changes: a range moves with two values, and the 2 °C reach is for one.
+- Scope: wording. A range takes "had" (`isHad` in `src/site/naming.ts`), so it needs the "is forecast to have" that T43 adds for changes. If this is done before T43, add it here.
+- Scope: selection within the forecast's allowance. The range is a family of its own, so it doesn't push out the day's "hottest day" fact, but check that it doesn't crowd the coming week either.
+- Done when: tests cover today's range from an observed minimum, a range between two forecast values and the wording, and [facts.md](facts.md) has the range under Forecasts.
 
 ---
 
@@ -70,24 +189,6 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 ---
 
-## T19: Wind
-
-**Status:** todo
-
-**Goal:** Wind facts such as "the 8th windiest day this year", for the locations where BOM's feeds allow them.
-
-- Background, checked on 2026-10-30:
-  - The FTP daily files have a column for the day's average 10 m wind speed (m/s). It holds real values for Sydney Airport (files from 2009) and Sydney Olympic Park (from 2011).
-  - Observatory Hill reports `0.00` every day because it has no wind instrument: BOM measures Sydney's harbour wind at Fort Denison instead. Treat those zeros as missing, never as calm, so there are no wind facts for Observatory Hill.
-  - The ZIPs don't include wind, and no allowed source has a history of gusts.
-- Scope: a one-off backfill of the wind column from every FTP daily file since each station's first file, saved in a committed file per station (e.g. `data/wind/<station>.csv`), or as a column in `data/ftp-history/`. Keep it up to date from the files the daily run already downloads. It is never pruned, because no ZIP replaces it.
-- Scope: wind measures for the fact generator, with every comparison that has enough history, within the ranking, scoring and wording in [facts.md](facts.md) ("windiest", "calmest").
-- Scope: update the data sources section of CLAUDE.md.
-- Out of scope, so ask the user first: saving each day's maximum gust from the live feed. Its records would only begin on the day saving starts.
-- Done when: tests cover the parsing, the backfill, and the rule that Observatory Hill's zeros count as missing.
-
----
-
 ## T12: Near-miss facts
 
 **Status:** todo
@@ -110,21 +211,6 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 - Scope: a README covering what the site is, how to refresh the ZIPs once a year (link to [refreshing-history.md](refreshing-history.md)), how to run the site locally, and the attribution.
 - Done when: the README is written.
-
----
-
-## T42: Records for the day of the week
-
-**Status:** todo
-
-**Goal:** Facts that compare a day with the same weekday, such as "the wettest Saturday since 2022", if they turn out worth showing.
-
-- Background: CLAUDE.md's Facts section says not to compare against the same weekday, and no code for it was ever written. The user asked for it on 2026-11-09, so this reverses that decision: update CLAUDE.md in the same change.
-- Background: the weather doesn't know the weekday, so any weekday holds about a seventh of the days and sets a record about as often as a calendar month does. The interest is in the reading ("the wettest Saturday since 2022" matters to weekend plans), not the rarity, so the weight is a judgement, like the calendar date's in `comparisonWeights`.
-- Scope: a `weekday` comparison in `Comparison` (`src/shared/facts.ts`), keyed by `comparisonKey` in `daily-facts.ts`, for days only: not runs of days or calendar periods. Decide which measures get it, perhaps only the maximum, the minimum and rain.
-- Scope: scoring within the Scoring section of [facts.md](facts.md): a weight in `comparisonWeights`, and whether its since needs a rule like `previousOccurrence`, since "the wettest Saturday since 31 October" is only a week.
-- Scope: wording. A day is "the wettest Saturday", and a night or a day's rain is credited to the day it ends on, so decide how to name them: "Friday night was the coldest Friday night…" says it twice.
-- Done when: tests cover the comparison, its scoring and its wording, the selection snapshots have been reviewed for how often weekday facts win, and CLAUDE.md is updated.
 
 ---
 
