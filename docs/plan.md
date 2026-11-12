@@ -293,7 +293,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 **Goal:** Each scheduled run starts on time and gets the data it is timed for.
 
-- Scope: the schedule in `deploy.yml` first ran on 2026-11-10, using GitHub's `timezone` field (added in March 2026). Check from the run history that the runs start at 6:30am to 10:30pm Sydney time, not UTC, and how late they start.
+- Scope: once cron-job.org starts the runs ([starting-runs.md](starting-runs.md)), check from its history and GitHub's run history that each slot gets a `workflow_dispatch` run within a minute or two. The first was cron-job.org's test run at 9:47am on 2026-11-13, which started within seconds and deployed by 9:49am.
 - Scope: check that a scheduled run commits only when the data changed, and that a push run, which also builds the data, still deploys and commits cleanly when the scheduled run has moved `main` on.
 - Scope: from the commits and logs, check that the 10:30am run had last night's minimum, the rain to 9am, the 9am reading and that morning's daily files, that the 4:30pm run saved today's maximum and the 3pm reading, that the later runs overwrote the maximum, and that the 10:30pm run had the maximum from its closed window and BOM's 10pm (11:00 UTC) forecast. If the logs can't show it, have `build:data` print each feed's issue or observation time.
 - Scope: check that the 10:30pm run handles the 11:00 UTC forecast issue, whose day 0 is today with nothing left in it. No such issue had been seen by 2026-11-09. If the parser rejects it, every 10:30pm run fails. If day 0 has a low chance and no rain range there, `forecastRain` counts it as 0 mm, so the 7-day total treats the rest of today as dry; decide whether to leave day 0 out of that issue's rain.
@@ -304,6 +304,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 - The run times and their reasons are in CLAUDE.md. BOM's forecast schedule there comes from search results quoting its announcement (its site refuses automated requests), and matched the feed on 2026-11-09. The latest observations appeared about 5 minutes after the half-hour then.
 - GitHub's docs say a run in an hour skipped by daylight saving moves to the next valid time. No run is between 2am and 3am, so it shouldn't matter.
+- GitHub's own schedule, removed on 2026-11-13: its `timezone` field worked, but from 9 to 13 November 2026, six of its eight scheduled runs started 5–51 minutes after a Sydney slot, which read as UTC would be 1–4 hours late. The other two came 2 h 43 m and 5 h 52 m after the 10:30pm slot. The other 25 slots got no run at all. Every run succeeded. The 10:30pm slot ran at 10:35pm on 10 November and 10:41pm on 12 November, after the 11:00 UTC forecast issue, so the parser accepted those issues. Run logs need a signed-in browser, but the public API (`api.github.com/repos/chris14b/weather-records/actions/runs`) gives each run's event and start time without signing in. `gh` belongs to the work account, so don't use it here.
 
 ---
 

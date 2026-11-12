@@ -3,7 +3,7 @@ import { sydneyInstant, sydneyOffsetMinutes } from "./sydney-time.ts";
 const msPerMinute = 60_000;
 const msPerDay = 1_440 * msPerMinute;
 
-/** The scheduled runs, in minutes past midnight Sydney time; `deploy.yml` must match. */
+/** The update runs, in minutes past midnight Sydney time; the cron-job.org job must match. */
 export const updateRunsSydney: readonly number[] = [
   6, 8, 10, 12, 14, 16, 18, 20, 22,
 ].map((hour) => hour * 60 + 30);

@@ -3,9 +3,6 @@ name: Deploy
 on:
   push:
     branches: [main]
-  schedule:
-    - cron: "30 6,8,10,12,14,16,18,20,22 * * *"
-      timezone: "Australia/Sydney"
   workflow_dispatch:
 
 permissions:

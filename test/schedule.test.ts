@@ -1,26 +1,5 @@
-import { readFile } from "node:fs/promises";
 import { describe, expect, test } from "vitest";
-import { nextUpdate, updateRunsSydney } from "../src/shared/schedule.ts";
-
-describe("updateRunsSydney", () => {
-  test("matches the deploy workflow's schedule", async () => {
-    const workflow = await readFile(".github/workflows/deploy.yml", "utf8");
-    const schedules = [
-      ...workflow.matchAll(
-        /- cron: "(\d+) ([\d,]+) \* \* \*"\n\s+timezone: "([^"]+)"/g,
-      ),
-    ];
-    const runs = schedules.flatMap(([, minute, hours, timezone]) => {
-      expect(timezone).toBe("Australia/Sydney");
-      return (hours ?? "")
-        .split(",")
-        .map((hour) => Number(hour) * 60 + Number(minute));
-    });
-
-    expect(schedules).not.toHaveLength(0);
-    expect(runs.toSorted((a, b) => a - b)).toEqual(updateRunsSydney);
-  });
-});
+import { nextUpdate } from "../src/shared/schedule.ts";
 
 describe("nextUpdate", () => {
   test.each([
