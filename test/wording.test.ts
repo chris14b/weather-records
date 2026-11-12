@@ -37,6 +37,18 @@ describe("describeFact", () => {
       { comparison: "calendarDate" as const, measure: "rain" as const },
       "the wettest for 6\u00a0November since records began in 1900",
     ],
+    [
+      { comparison: "dayOfWeek" as const },
+      "the hottest Friday since records began in 1900",
+    ],
+    [
+      { comparison: "dayOfWeek" as const, measure: "minTemp" as const },
+      "the warmest Thursday night since records began in 1900",
+    ],
+    [
+      { comparison: "dayOfWeek" as const, measure: "rain" as const },
+      "the wettest from a Thursday since records began in 1900",
+    ],
   ])("words a rank: %o", (fact, expected) => {
     expect(words(fact)).toBe(expected);
   });
@@ -126,6 +138,10 @@ describe("describeFact", () => {
     [
       { comparison: "calendarDate" as const },
       "the coldest night of 5\u00a0November since records began in 1900",
+    ],
+    [
+      { comparison: "dayOfWeek" as const },
+      "the coldest Thursday night since records began in 1900",
     ],
   ])("names the night of a conditional minimum: %o", (fact, expected) => {
     expect(
@@ -244,6 +260,44 @@ describe("describeFact", () => {
             comparison: "calendarDate",
             rank: 8,
             since: { date: "1999-11-06", value: 11.4 },
+          },
+          "since",
+        ),
+      ).toBe(expected);
+    },
+  );
+
+  test.each([
+    ["2025-10-31", "since October 2025"],
+    ["2022-11-04", "since 2022"],
+  ])("words a since for the day of the week on %s", (date, expected) => {
+    expect(
+      words(
+        { comparison: "dayOfWeek", rank: 3, since: { date, value: 41 } },
+        "since",
+      ),
+    ).toBe(`the hottest Friday ${expected}`);
+  });
+
+  test.each([
+    [
+      "minTemp",
+      "lowest",
+      "2021-01-01",
+      "the coldest Thursday night since 2020",
+    ],
+    ["rain", "highest", "2021-01-01", "the wettest from a Thursday since 2020"],
+  ] as const)(
+    "names the year of a since for the day of the week by the day it is keyed by: %s",
+    (measure, direction, date, expected) => {
+      expect(
+        words(
+          {
+            measure,
+            direction,
+            comparison: "dayOfWeek",
+            rank: 8,
+            since: { date, value: 5 },
           },
           "since",
         ),

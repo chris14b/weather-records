@@ -52,7 +52,10 @@ export interface CandidateFact {
   since: DayValue | null;
   /** Comparable days or periods with a value after `since`, including this one; all of them if `since` is null. */
   comparedSince: number;
-  /** The first later comparable day or period, up to the end of the window, that beat it. */
+  /**
+   * The first later comparable day or period, up to the end of the window, that beat it. For
+   * the day of the week, any later day counts.
+   */
   beatenBy: DayValue | null;
   /** For a conditional fact, the forecast value; `value` is what the day would need to reach. */
   forecast?: number;

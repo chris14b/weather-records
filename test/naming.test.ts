@@ -471,6 +471,87 @@ describe("sentence", () => {
   ])("phrases %#", (phrased, expected) => {
     expect(says(phrased)).toBe(expected);
   });
+
+  const onDayOfWeek = (changes: Partial<Phrased>) =>
+    fact({ comparison: "dayOfWeek", ...changes });
+
+  test.each([
+    [
+      onDayOfWeek({
+        date: "2026-11-08",
+        text: "the hottest Sunday since 2019",
+      }),
+      "[Yesterday] was the hottest Sunday since 2019, with a top of 45.8\u00a0°C",
+    ],
+    [
+      onDayOfWeek({
+        date: "2026-11-05",
+        text: "the hottest Thursday since 2019",
+      }),
+      "[5\u00a0November] was the hottest Thursday since 2019, with a top of 45.8\u00a0°C",
+    ],
+    [
+      onDayOfWeek({
+        date: "2026-11-14",
+        status: "forecast",
+        text: "the hottest Saturday since 2019",
+        why: { value: 36 },
+      }),
+      "[14\u00a0November] is forecast to be the hottest Saturday since 2019, with a top of 36\u00a0°C",
+    ],
+    [
+      onDayOfWeek({
+        date: "2026-11-12",
+        status: "conditional",
+        text: "the hottest Thursday since 2019",
+        why: { value: 36.6, forecast: 35 },
+      }),
+      "A top of 36.6\u00a0°C on [12\u00a0November] (forecast 35\u00a0°C) would make it the hottest Thursday since 2019",
+    ],
+    [
+      onDayOfWeek({
+        measure: "minTemp",
+        direction: "lowest",
+        text: "the coldest Sunday night since 2019",
+        why: { value: 9.8 },
+      }),
+      "[Last night] was the coldest Sunday night since 2019, with a low of 9.8\u00a0°C",
+    ],
+    [
+      onDayOfWeek({
+        date: "2026-11-06",
+        measure: "minTemp",
+        direction: "lowest",
+        text: "the coldest Thursday night since 2019",
+        why: { value: 9.8 },
+      }),
+      "[The night of 5\u00a0November] was the coldest Thursday night since 2019, with a low of 9.8\u00a0°C",
+    ],
+    [
+      onDayOfWeek({
+        measure: "minTemp",
+        direction: "lowest",
+        status: "forecast",
+        text: "the coldest Sunday night since 2019",
+        why: { value: 9 },
+      }),
+      "[The night of 8\u00a0November] is forecast to be the coldest Sunday night since 2019, with a low of 9\u00a0°C",
+    ],
+    [
+      onDayOfWeek({
+        date: "2026-11-07",
+        measure: "rain",
+        text: "the wettest from a Friday since 2022",
+        why: { value: 30.2 },
+      }),
+      "[The 24 hours to 9\u00a0am Saturday] were the wettest from a Friday since 2022, with 30.2\u00a0mm",
+    ],
+  ])(
+    "doesn't name a day by the day of the week it is compared with: %#",
+    (phrased, expected) => {
+      expect(says(phrased)).toBe(expected);
+    },
+  );
 });
 
 describe("clockTime", () => {

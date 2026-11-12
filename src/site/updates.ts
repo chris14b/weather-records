@@ -1,5 +1,5 @@
 import { nextUpdate } from "../shared/schedule.ts";
-import { clockTime, sydneyDate, weekdayDate } from "./naming.ts";
+import { clockTime, sydneyDate, dayOfWeekDate } from "./naming.ts";
 
 function atClock(instant: Date): string {
   return clockTime(instant.toISOString());
@@ -11,7 +11,7 @@ function atClock(instant: Date): string {
  */
 export function updateNote(generatedAt: string, now: Date): string {
   const generated = new Date(generatedAt);
-  const updated = `Updated ${weekdayDate(sydneyDate(generated))} at ${atClock(generated)}.`;
+  const updated = `Updated ${dayOfWeekDate(sydneyDate(generated))} at ${atClock(generated)}.`;
   const due = nextUpdate(generated);
   if (now < due) {
     const day = sydneyDate(due) === sydneyDate(now) ? "" : " tomorrow";

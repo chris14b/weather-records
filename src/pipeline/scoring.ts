@@ -5,7 +5,7 @@ import type {
   Lead,
 } from "../shared/facts.ts";
 import type { CandidateFact } from "./candidates.ts";
-import { daysBetween } from "./dates.ts";
+import { addDays, daysBetween } from "./dates.ts";
 import type { DaylightCandidate } from "./daylight-facts.ts";
 
 export interface ScoredFact {
@@ -30,6 +30,7 @@ const comparisonWeights: Record<Comparison, number> = {
   month: 0.8,
   year: 0.75,
   calendarDate: 0.8,
+  dayOfWeek: 0.7,
 };
 
 const measureWeights: Record<FactMeasure, number> = {
@@ -126,6 +127,8 @@ function sinceScore({
   ) {
     return 0;
   }
+  // "The wettest Saturday since 31 October" is only a week.
+  if (comparison === "dayOfWeek" && since.date >= addDays(date, -364)) return 0;
   return Math.log(comparedSince);
 }
 

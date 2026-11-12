@@ -18,6 +18,20 @@ const comparisons: readonly Comparison[] = [
   "calendarDate",
 ];
 
+// The measures people plan their days around.
+const dayOfWeekMeasures: ReadonlySet<FactMeasure> = new Set([
+  "maxTemp",
+  "minTemp",
+  "rain",
+]);
+
+/** Which days a measure's days are compared with. */
+export function comparisonsFor(measure: FactMeasure): readonly Comparison[] {
+  return dayOfWeekMeasures.has(measure)
+    ? [...comparisons, "dayOfWeek"]
+    : comparisons;
+}
+
 const minimumGapDays = 7;
 
 export interface DailyFactsRequest {
@@ -46,7 +60,7 @@ export function generateDailyFacts({
     const inWindow = [...days.entries()].filter(
       ([, { date }]) => date >= windowStart && date <= windowEnd,
     );
-    return comparisons.flatMap((comparison) => {
+    return comparisonsFor(measure).flatMap((comparison) => {
       const keyOf = (date: string) => dayKey(date, comparison, measure);
       const keys = days.map(({ date }) => keyOf(date));
       return inWindow.flatMap(([index, day]) => {
@@ -65,9 +79,12 @@ export function generateDailyFacts({
         const earlier = days.filter(
           (_, other) => other < index && keys[other] === key,
         );
+        // In a cold week, every day could be the coldest of its day of the week.
         const later = days.filter(
           ({ date }, other) =>
-            other > index && date <= windowEnd && keys[other] === key,
+            other > index &&
+            date <= windowEnd &&
+            (comparison === "dayOfWeek" || keys[other] === key),
         );
         return directionsFor(measure, day.value).map(
           (direction): CandidateFact => ({
@@ -158,20 +175,43 @@ const seasons = [
   "summer",
 ] as const;
 
-/**
- * Days with the same key are compared with each other. A night is credited to the date it
- * ends on, but named by its evening, so for the calendar date it is keyed by its evening.
- */
+/** Days with the same key are compared with each other. */
 export function dayKey(
   date: string,
   comparison: Comparison,
   measure: FactMeasure,
 ): string {
-  const night = measure === "minTemp" && comparison === "calendarDate";
-  return comparisonKey(night ? addDays(date, -1) : date, comparison);
+  return comparisonKey(keyedDate(date, comparison, measure), comparison);
 }
 
-/** Periods, and days apart from nights for the calendar date, with the same key are compared with each other. */
+/**
+ * The day a day's value is keyed by. A night is credited to the date it ends on, but
+ * named by its evening. Most of a day's rain falls the day before its 9am, so for the day
+ * of the week it is keyed by that day, as the forecast's own day is.
+ */
+export function keyedDate(
+  date: string,
+  comparison: Comparison,
+  measure: FactMeasure,
+): string {
+  const dayBefore =
+    (measure === "minTemp" &&
+      (comparison === "calendarDate" || comparison === "dayOfWeek")) ||
+    (measure === "rain" && comparison === "dayOfWeek");
+  return dayBefore ? addDays(date, -1) : date;
+}
+
+const daysOfWeek = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+] as const;
+
+/** Periods, and days by their `keyedDate`, with the same key are compared with each other. */
 export function comparisonKey(date: string, comparison: Comparison): string {
   switch (comparison) {
     case "all":
@@ -184,6 +224,11 @@ export function comparisonKey(date: string, comparison: Comparison): string {
       return date.slice(5, 7);
     case "calendarDate":
       return date.slice(5);
+    case "dayOfWeek": {
+      // getUTCDay counts from Sunday.
+      const day = (new Date(`${date}T00:00:00Z`).getUTCDay() + 6) % 7;
+      return daysOfWeek[day] ?? "";
+    }
   }
 }
 

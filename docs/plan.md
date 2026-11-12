@@ -18,21 +18,6 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 ---
 
-## T42: Records for the day of the week
-
-**Status:** todo
-
-**Goal:** Facts that compare a day with the same weekday, such as "the wettest Saturday since 2022", if they turn out worth showing.
-
-- Background: CLAUDE.md's Facts section says not to compare against the same weekday, and no code for it was ever written. The user asked for it on 2026-11-09, so this reverses that decision: update CLAUDE.md in the same change.
-- Background: the weather doesn't know the weekday, so any weekday holds about a seventh of the days and sets a record about as often as a calendar month does. The interest is in the reading ("the wettest Saturday since 2022" matters to weekend plans), not the rarity, so the weight is a judgement, like the calendar date's in `comparisonWeights`.
-- Scope: a `weekday` comparison in `Comparison` (`src/shared/facts.ts`), keyed by `comparisonKey` in `daily-facts.ts`, for days only: not runs of days or calendar periods. Decide which measures get it, perhaps only the maximum, the minimum and rain.
-- Scope: scoring within the Scoring section of [facts.md](facts.md): a weight in `comparisonWeights`, and whether its since needs a rule like `previousOccurrence`, since "the wettest Saturday since 31 October" is only a week.
-- Scope: wording. A day is "the wettest Saturday", and a night or a day's rain is credited to the day it ends on, so decide how to name them: "Friday night was the coldest Friday night…" says it twice.
-- Done when: tests cover the comparison, its scoring and its wording, the selection snapshots have been reviewed for how often weekday facts win, and CLAUDE.md is updated.
-
----
-
 ## T20: Backfill the 9am and 3pm readings
 
 **Status:** todo
@@ -227,6 +212,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
   - Observatory Hill's year so far leaves out 9 to 16 years between 1864 and 1948, each with a month or so missing, so its records carry "(not counting 16 years with gaps)". That is still long for a headline. Allowing a missing month in a year so far might be fairer.
   - A period so far shows every day until the period ends, so it can sit in Past month for months.
   - Facts for the calendar date now score their sinces and ranks below the top (weight 0.8), so most days have one. Check they don't crowd Past week, and whether the 2020 Observatory Hill station change (minimums about 0.3 °C cooler) makes its "coldest for 9 November since…" nights too easy, since day facts don't take the station offset out.
+  - Facts for the day of the week (`dayOfWeek` in `comparisonWeights`, 0.7) can fill Past week in a cold week: at Sydney Airport on 5 August 2024 it had "the coldest Tuesday", "Wednesday" and "Friday since 2022 or 2023", each warmer than the one before, so none was beaten. Decide whether a page should show only the strongest of them per family and direction, as conditional facts do (`oncePerFamily`).
   - The coming week's fallback (`forecastFloor`) can pick a conditional fact over a plainer forecast one, such as "A top of 18°C on Friday (forecast 20°C) would make it the coldest day since 3 November". Decide whether a fallback should prefer forecast facts.
 - Done when: the retuning is reviewed with the user and the snapshot tests updated.
 

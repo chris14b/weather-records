@@ -9,7 +9,7 @@ import {
   type RecordFact,
 } from "../shared/facts.ts";
 
-const weekdays = [
+const daysOfWeek = [
   "Monday",
   "Tuesday",
   "Wednesday",
@@ -20,7 +20,7 @@ const weekdays = [
 ];
 
 // 1 January 1970, day 0, was a Thursday.
-const epochWeekday = 3;
+const epochDayOfWeek = 3;
 
 const months = [
   "January",
@@ -74,40 +74,50 @@ function monthName(month: number): string {
 
 /**
  * A day named as it reads mid-sentence from the viewer's today: "today", "yesterday",
- * "tomorrow", a weekday within 6 days either way, otherwise "12 October", with the year
- * when it isn't this year's.
+ * "tomorrow", its day of the week within 6 days either way unless `byDayOfWeek` is false, otherwise
+ * "12 October", with the year when it isn't this year's.
  */
-export function dayName(date: string, today: string): string {
+export function dayName(
+  date: string,
+  today: string,
+  byDayOfWeek = true,
+): string {
   const offset = daysFrom(today, date);
   if (offset === 0) return "today";
   if (offset === -1) return "yesterday";
   if (offset === 1) return "tomorrow";
 
   const parsed = parse(date);
-  if (Math.abs(offset) <= 6) return weekday(parsed);
+  if (byDayOfWeek && Math.abs(offset) <= 6) return dayOfWeek(parsed);
+  return dateName(date, today);
+}
+
+/** "12 October", with the year when it isn't this year's. */
+function dateName(date: string, today: string): string {
+  const parsed = parse(date);
   return parsed.year === parse(today).year
     ? dayAndMonth(parsed)
     : `${dayAndMonth(parsed)} ${String(parsed.year)}`;
 }
 
-function weekday(date: CalendarDate): string {
-  const index = (((utcDay(date) + epochWeekday) % 7) + 7) % 7;
-  return weekdays[index] ?? "";
+function dayOfWeek(date: CalendarDate): string {
+  const index = (((utcDay(date) + epochDayOfWeek) % 7) + 7) % 7;
+  return daysOfWeek[index] ?? "";
 }
 
 function dayAndMonth({ day, month }: CalendarDate): string {
   return `${String(day)}\u00a0${monthName(month)}`;
 }
 
-/** A date with its weekday: "Monday 9 November". */
-export function weekdayDate(date: string): string {
+/** A date with its day of the week: "Monday 9 November". */
+export function dayOfWeekDate(date: string): string {
   const parsed = parse(date);
-  return `${weekday(parsed)} ${dayAndMonth(parsed)}`;
+  return `${dayOfWeek(parsed)} ${dayAndMonth(parsed)}`;
 }
 
 /** A date in full: "Monday 9 November 2026". */
 export function longDate(date: string): string {
-  return `${weekdayDate(date)} ${String(parse(date).year)}`;
+  return `${dayOfWeekDate(date)} ${String(parse(date).year)}`;
 }
 
 function seasonName(month: number): string {
@@ -118,7 +128,7 @@ function seasonName(month: number): string {
 }
 
 type Named = Pick<RecordFact, "period" | "from" | "date"> &
-  Partial<Pick<RecordFact, "measure" | "status">>;
+  Partial<Pick<RecordFact, "measure" | "status" | "comparison">>;
 
 /** What the site needs of a fact to make a sentence of it. */
 export type Phrased = Named &
@@ -133,30 +143,34 @@ export type Phrased = Named &
  * A night named by the evening it starts, mid-sentence: "last night", "tonight", "Thursday
  * night", "the night of 2 November". A minimum is for the 24 hours to 9 am, so the night
  * that ends on `date`. A forecast or a running value for last night is for the night still
- * under way, after midnight, so it is named by its weekday.
+ * under way, after midnight, so it is named by its day of the week, unless `byDayOfWeek` is false.
  */
 export function nightName(
   date: string,
   today: string,
   isForecast = false,
+  byDayOfWeek = true,
 ): string {
   const evening = addDays(date, -1);
   const offset = daysFrom(today, evening);
   if (offset === 0) return "tonight";
-  if (offset === -1) {
-    return isForecast ? `${weekday(parse(evening))} night` : "last night";
-  }
+  if (offset === -1 && !isForecast) return "last night";
   if (offset === 1) return "tomorrow night";
-  const name = dayName(evening, today);
-  return Math.abs(offset) <= 6 ? `${name} night` : `the night of ${name}`;
+  if (!byDayOfWeek || Math.abs(offset) > 6) {
+    return `the night of ${dateName(evening, today)}`;
+  }
+  return `${dayOfWeek(parse(evening))} night`;
 }
 
 /** What a fact is about, named mid-sentence: "today", "last night", "the 3 days to Tuesday", "November so far". */
 export function periodName(
-  { period, from, date, measure, status }: Named,
+  { period, from, date, measure, status, comparison }: Named,
   today: string,
 ): string {
   const start = parse(from);
+  // "Thursday was the hottest Thursday" says it twice. A day's rain names its 9 am, and the
+  // day before is its day of the week.
+  const byDayOfWeek = comparison !== "dayOfWeek";
   switch (period.kind) {
     case "day":
       if (measure === "minTemp") {
@@ -165,12 +179,13 @@ export function periodName(
           today,
           status !== undefined &&
             (isForecastStatus(status) || status === "partial"),
+          byDayOfWeek,
         );
       }
       if (measure === "rain") {
         return `the 24 hours to 9\u00a0am ${dayName(date, today)}`;
       }
-      return dayName(date, today);
+      return dayName(date, today, byDayOfWeek);
     case "rolling":
       return `the ${String(period.days)} days to ${dayName(date, today)}`;
     case "month": {

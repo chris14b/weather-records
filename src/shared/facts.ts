@@ -41,9 +41,10 @@ export type Direction = "highest" | "lowest";
 
 /**
  * Which days a day is compared with: every day, the days of the same year so far, or the
- * days of the same season, month or calendar date in every year.
+ * days of the same season, month, calendar date or day of the week in every year.
  */
-export type Comparison = "all" | "year" | "season" | "month" | "calendarDate";
+export type Comparison =
+  "all" | "year" | "season" | "month" | "calendarDate" | "dayOfWeek";
 
 /** A calendar period that facts can be about. Seasons are meteorological, so summer starts in December. */
 export type CalendarPeriod = "month" | "season" | "year";

@@ -112,6 +112,30 @@ describe("scoreFact", () => {
     expect(forTheDate).toBeGreaterThan(riseInMinimum);
   });
 
+  test("scores the day of the week below the calendar date", () => {
+    expect(score({ comparison: "dayOfWeek", compared: 5000 })).toBeLessThan(
+      score({ comparison: "calendarDate", compared: 5000 }),
+    );
+  });
+
+  test.each([
+    ["a week", "2026-10-30", 0],
+    ["just under a year", "2025-11-07", 0],
+    ["over a year", "2025-10-31", Math.log(54) * 0.7],
+  ])(
+    "scores a since for the day of the week that reaches back %s",
+    (_, sinceDate, expected) => {
+      expect(
+        score({
+          comparison: "dayOfWeek",
+          rank: 40,
+          since: { date: sinceDate, value: 41 },
+          comparedSince: 54,
+        }),
+      ).toBeCloseTo(expected);
+    },
+  );
+
   test("scores a rank below the top for its calendar date", () => {
     expect(
       score({ comparison: "calendarDate", rank: 2, compared: 120 }),

@@ -22,7 +22,7 @@ Create a free account at cron-job.org, then **Create cronjob**:
 
 - **Title:** `weather-records deploy`
 - **URL:** `https://api.github.com/repos/chris14b/weather-records/actions/workflows/deploy.yml/dispatches`
-- **Execution schedule:** custom, every day of every month, every weekday, hours `6, 8, 10, 12, 14, 16, 18, 20, 22`, minute `30`
+- **Execution schedule:** custom, every day of every month, every day of the week, hours `6, 8, 10, 12, 14, 16, 18, 20, 22`, minute `30`
 - **Time zone:** `Australia/Sydney`, so the runs keep to Sydney's clock through daylight saving
 
 On the **Advanced** tab:

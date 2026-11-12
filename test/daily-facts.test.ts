@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import type { CandidateFact } from "../src/pipeline/candidates.ts";
-import { generateDailyFacts } from "../src/pipeline/daily-facts.ts";
+import { dayKey, generateDailyFacts } from "../src/pipeline/daily-facts.ts";
 import { addDays } from "../src/pipeline/dates.ts";
 import { layerRecent } from "../src/pipeline/layering.ts";
 import {
@@ -143,6 +143,18 @@ describe("generateDailyFacts", () => {
     });
   });
 
+  test("counts any later day that beat a day as beating it for the day of the week", () => {
+    const facts = factsFor(
+      series("2026-01-01", [30, 35, 34, 37, 38]),
+      "2026-01-05",
+    );
+
+    expect(find(facts, "2026-01-02", "dayOfWeek").beatenBy).toEqual({
+      date: "2026-01-04",
+      value: 37,
+    });
+  });
+
   test("doesn't count a later day that only equals it as beating it", () => {
     const facts = factsFor(series("2026-01-01", [30, 35, 35]), "2026-01-03");
 
@@ -180,10 +192,32 @@ describe("generateDailyFacts", () => {
         "month lowest",
         "calendarDate highest",
         "calendarDate lowest",
+        "dayOfWeek highest",
+        "dayOfWeek lowest",
       ]),
     );
-    expect(facts).toHaveLength(10);
+    expect(facts).toHaveLength(12);
   });
+
+  test.each(["maxTemp", "minTemp", "rain"] as const)(
+    "compares %s with the same day of the week",
+    (measure) => {
+      const facts = factsFor(series("2026-01-01", [3], measure), "2026-01-01");
+
+      expect(facts.map(({ comparison }) => comparison)).toContain("dayOfWeek");
+    },
+  );
+
+  test.each(["range", "solar", "temp9am", "maxTempChange"] as const)(
+    "doesn't compare %s with the same day of the week",
+    (measure) => {
+      const facts = factsFor(series("2026-01-01", [3], measure), "2026-01-01");
+
+      expect(facts.map(({ comparison }) => comparison)).not.toContain(
+        "dayOfWeek",
+      );
+    },
+  );
 
   describe("comparisons", () => {
     const days: Series = {
@@ -209,6 +243,7 @@ describe("generateDailyFacts", () => {
       ["season", 6, 6, "2026-01-02"],
       ["month", 4, 4, "2026-01-02"],
       ["calendarDate", 3, 3, "2025-01-15"],
+      ["dayOfWeek", 2, 2, "2025-02-20"],
     ] as const)("compares %s days", (comparison, compared, rank, sinceDate) => {
       expect(find(facts, "2026-01-15", comparison)).toMatchObject({
         compared,
@@ -250,6 +285,17 @@ describe("generateDailyFacts", () => {
         since: null,
       });
     });
+
+    test.each([
+      ["maxTemp", "Sunday"],
+      ["minTemp", "Saturday"],
+      ["rain", "Saturday"],
+    ] as const)(
+      "keys %s on a Sunday for the day of the week as %s",
+      (measure, expected) => {
+        expect(dayKey("2026-01-04", "dayOfWeek", measure)).toBe(expected);
+      },
+    );
   });
 
   describe("missing days", () => {

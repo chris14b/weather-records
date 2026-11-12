@@ -1,6 +1,5 @@
 import type {
   ChangingMeasure,
-  Comparison,
   DateRange,
   DaylightEvent,
   Direction,
@@ -9,7 +8,7 @@ import type {
   Period,
 } from "../shared/facts.ts";
 import type { CandidateFact } from "./candidates.ts";
-import { comparisonKey } from "./daily-facts.ts";
+import { comparisonKey, dayKey, keyedDate } from "./daily-facts.ts";
 import { addDays, daysBetween } from "./dates.ts";
 import type { DaylightCandidate } from "./daylight-facts.ts";
 import { coverage, minimumCoverage } from "./scoring.ts";
@@ -175,12 +174,8 @@ function dayPhrase({ measure, direction, status }: CandidateFact): Phrase {
 }
 
 function dayHead(fact: CandidateFact, ranked: string): string {
-  const { comparison, date } = fact;
   const phrase = dayPhrase(fact);
-  return [
-    `the ${ranked}${phrase.superlative}`,
-    subject(comparison, phrase, date),
-  ]
+  return [`the ${ranked}${phrase.superlative}`, subject(fact, phrase)]
     .filter((words) => words !== "")
     .join(" ");
 }
@@ -226,9 +221,8 @@ function rankWords({ rank, ties }: CandidateFact): string {
 }
 
 function subject(
-  comparison: Comparison,
+  { comparison, date, measure }: CandidateFact,
   { noun, periodAfter = false, night = false }: Phrase,
-  date: string,
 ): string {
   switch (comparison) {
     case "all":
@@ -255,6 +249,13 @@ function subject(
       // The site names the 24 hours to 9 am that a day's rain is for.
       if (noun === "") return `for ${day}`;
       if (periodAfter) return after(noun, `on ${day}`);
+      return noun === "day" ? day : `${day} ${noun}`;
+    }
+    case "dayOfWeek": {
+      const day = dayKey(date, comparison, measure);
+      if (night) return `${day} night`;
+      // The site names the 9 am that a day's rain ends at, and it is keyed by the day before.
+      if (noun === "") return `from a ${day}`;
       return noun === "day" ? day : `${day} ${noun}`;
     }
   }
@@ -289,13 +290,14 @@ function sinceScope({
     case "rolling":
       // "The biggest rise in November since November 2024" says November twice.
       if (comparison === "month") return ` since ${since.date.slice(0, 4)}`;
+      // The night of 31 December 1999 ended in 2000.
       if (comparison === "calendarDate") {
-        // The night of 31 December 1999 ended in 2000.
-        const named =
-          measure === "minTemp" ? addDays(since.date, -1) : since.date;
-        return ` since ${named.slice(0, 4)}`;
+        return ` since ${keyedDate(since.date, comparison, measure).slice(0, 4)}`;
       }
-      return ` since ${earlierDay(since.date, date)}`;
+      return ` since ${earlierDay(
+        keyedDate(since.date, comparison, measure),
+        keyedDate(date, comparison, measure),
+      )}`;
     case "month":
       if (!period.toDate && comparison === "all")
         return ` since ${earlierMonth(since.date, date)}`;
@@ -336,7 +338,7 @@ function length({ from, to }: DateRange): number {
   return daysBetween(from, to);
 }
 
-// A weekday would be ambiguous here, since the page names the fact's own day.
+// A day of the week would be ambiguous here, since the page names the fact's own day.
 function earlierDay(earlier: string, date: string): string {
   const days = daysBetween(earlier, date);
   if (earlier.slice(0, 4) === date.slice(0, 4)) return dayMonth(earlier);
