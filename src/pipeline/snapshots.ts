@@ -3,7 +3,12 @@ import { currentStation, type Location } from "../shared/locations.ts";
 import type { RecentDay } from "./daily-files.ts";
 import { forecastPath } from "./forecast.ts";
 import type { Ftp } from "./ftp.ts";
-import { observationsPath, parseObservations } from "./observations.ts";
+import { feedGusts, gustSchema, type SavedGust } from "./gusts.ts";
+import {
+  observationsPath,
+  parseObservations,
+  parseRunningValues,
+} from "./observations.ts";
 import {
   type DailyReadings,
   parseReadings,
@@ -43,27 +48,31 @@ export interface SnapshotUpdate {
   snapshotDir: string;
   /** Where the saved 9am and 3pm readings live, one CSV per station. */
   readingsDir: string;
+  /** Where the saved gusts live, one CSV per station. */
+  gustsDir: string;
   location: Location;
   /** The last date that every measure's ZIP history covers. Saved observations up to here are pruned. */
   historyEnd: string;
-  /** Today in Sydney, as YYYY-MM-DD. Saved readings more than about 13 months older are pruned. */
+  /** Today in Sydney, as YYYY-MM-DD. Saved readings and gusts more than about 13 months older are pruned. */
   today: string;
 }
 
 export interface Snapshot {
   observations: FromStation<RecentDay>[];
   readings: FromStation<DailyReadings>[];
+  gusts: FromStation<SavedGust>[];
 }
 
 /**
- * Saves the location's closed live observations and its 9am and 3pm readings over the
- * saved ones, and returns everything saved. Readings are kept only as long as the Daily
- * Weather Observations, which can fill their gaps, keep them.
+ * Saves the location's closed live observations, its 9am and 3pm readings and today's gust
+ * so far over the saved ones, and returns everything saved. Readings and gusts are kept only
+ * as long as the Daily Weather Observations, which can fill their gaps, keep them.
  */
 export async function updateSnapshot({
   feeds,
   snapshotDir,
   readingsDir,
+  gustsDir,
   location,
   historyEnd,
   today,
@@ -85,8 +94,17 @@ export async function updateSnapshot({
   ).filter(({ date }) => date >= readingsKeptFrom(today));
   await writeSavedRows(readingsPath, readingSchema, readings);
 
+  const gustsPath = join(gustsDir, `${station}.csv`);
+  const gusts = mergeRows(
+    gustSchema,
+    await readSavedRows(gustsPath, gustSchema),
+    feedGusts(parseRunningValues(feeds.observations, location)),
+  ).filter(({ date }) => date >= readingsKeptFrom(today));
+  await writeSavedRows(gustsPath, gustSchema, gusts);
+
   return {
     observations: observations.map((day) => ({ ...day, station })),
     readings: readings.map((day) => ({ ...day, station })),
+    gusts: gusts.map((day) => ({ ...day, station })),
   };
 }

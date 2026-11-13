@@ -80,6 +80,7 @@ describe("amount", () => {
     ["relHum3pm", 31, false, "31%"],
     ["solar", 27.54, false, "27.5\u00a0MJ/m²"],
     ["wind", 25.6, false, "25.6\u00a0km/h"],
+    ["gust", 67, false, "67\u00a0km/h"],
     ["maxTempChange", -14.9, false, "14.9\u00a0°C"],
   ] as const)("writes %s %d", (measure, value, forecast, expected) => {
     expect(amount(measure, value, forecast)).toBe(expected);
@@ -318,6 +319,15 @@ describe("sentence", () => {
         why: { value: 52.3 },
       }),
       "[Saturday] was the windiest day since 2015, with an average wind speed of 52.3\u00a0km/h",
+    ],
+    [
+      fact({
+        measure: "gust",
+        status: "partial",
+        text: "the gustiest day in the past year",
+        why: { value: 85 },
+      }),
+      "[Today] is the gustiest day in the past year, with a gust of 85\u00a0km/h",
     ],
     [
       fact({

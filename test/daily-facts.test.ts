@@ -209,6 +209,14 @@ describe("generateDailyFacts", () => {
     },
   );
 
+  test("ranks a gust only as the gustiest, since a light one says what the calmest day says", () => {
+    const facts = factsFor(series("2026-01-01", [3], "gust"), "2026-01-01");
+
+    expect(new Set(facts.map(({ direction }) => direction))).toEqual(
+      new Set(["highest"]),
+    );
+  });
+
   test.each(["range", "wind", "solar", "temp9am", "maxTempChange"] as const)(
     "doesn't compare %s with the same day of the week",
     (measure) => {

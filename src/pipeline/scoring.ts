@@ -20,6 +20,10 @@ const lowestRank = 10;
 /** Records shorter than this make ranks easier to reach, so their ranks score less. */
 const fullStrengthYears = 30;
 
+// A past-year series says "in the past year" rather than claiming a long record, so a
+// whole year is all it needs.
+const pastYearFullStrengthDays = 365;
+
 /** Below this share of comparable days having a value, a rank must say what is missing. */
 export const minimumCoverage = 0.95;
 
@@ -39,6 +43,7 @@ const measureWeights: Record<FactMeasure, number> = {
   rain: 1,
   range: 0.9,
   wind: 0.9,
+  gust: 0.9,
   solar: 0.9,
   minRelHum: 0.85,
   maxRelHum: 0.8,
@@ -102,10 +107,13 @@ function recordWeight({
   comparison,
   recordStart,
   date,
+  pastYear,
 }: CandidateFact): number {
   if (comparison === "year") return 1;
-  const years = daysBetween(recordStart, date) / 365.25;
-  return Math.min(1, Math.cbrt(years / fullStrengthYears));
+  const share = pastYear
+    ? (daysBetween(recordStart, date) + 1) / pastYearFullStrengthDays
+    : daysBetween(recordStart, date) / 365.25 / fullStrengthYears;
+  return Math.min(1, Math.cbrt(share));
 }
 
 // The year's since is always the same day as the since among all days, when it has one.

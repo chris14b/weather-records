@@ -13,6 +13,7 @@ import { forecastStart } from "./forecast-facts.ts";
 import { parseForecast } from "./forecast.ts";
 import { type Ftp, withDownloadCache } from "./ftp.ts";
 import { updateFtpHistory } from "./ftp-history.ts";
+import { withoutRunningGust } from "./gusts.ts";
 import { updateDailyFiles } from "./recent.ts";
 import {
   type DataDirs,
@@ -96,6 +97,7 @@ async function buildLocationFacts({
     feeds,
     snapshotDir: dirs.snapshots,
     readingsDir: dirs.readings,
+    gustsDir: dirs.gusts,
     location,
     historyEnd: end,
     today,
@@ -108,6 +110,7 @@ async function buildLocationFacts({
     snapshot: withoutRunning(snapshot.observations, running),
     ftpHistory,
     readings: snapshot.readings,
+    gusts: withoutRunningGust(snapshot.gusts, running),
   });
   const { days } = parseForecast(feeds.forecast, location.forecastArea);
   const forecast = { days, from: forecastStart(now) };

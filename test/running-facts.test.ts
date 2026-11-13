@@ -10,7 +10,7 @@ import {
   withoutRunning,
 } from "../src/pipeline/running-facts.ts";
 import { selectFacts } from "../src/pipeline/selection.ts";
-import type { Series } from "../src/pipeline/series.ts";
+import { pastYearSeries, type Series } from "../src/pipeline/series.ts";
 import type { FactMeasure } from "../src/shared/facts.ts";
 import { dailyFact } from "./facts.ts";
 
@@ -77,6 +77,29 @@ describe("generateRunningFacts", () => {
     ).toContain(tomorrow);
   });
 
+  test("ranks the day's gust so far against the past year, only as the gustiest", () => {
+    const gusts = pastYearSeries({
+      ...series("gust", 40, { "2026-03-01": 90, "2026-08-20": 75 }),
+    });
+
+    const facts = generateRunningFacts({
+      locationId: "test",
+      series: [gusts],
+      running: [runningValue("gust", 80)],
+    });
+
+    expect(
+      new Set(
+        facts.map(({ comparison, direction }) => `${comparison} ${direction}`),
+      ),
+    ).toEqual(new Set(["all highest", "year highest"]));
+    expect(facts.find(({ comparison }) => comparison === "all")).toMatchObject({
+      status: "partial",
+      rank: 2,
+      since: { date: "2026-03-01", value: 90 },
+    });
+  });
+
   test("gives nothing for no rain since 9am", () => {
     expect(
       generateRunningFacts({
@@ -106,6 +129,18 @@ describe("withoutRunning", () => {
     ).toEqual([
       { date: today, rain: 2, maxTemp: null, minTemp: 15, station: "066214" },
     ]);
+  });
+
+  test("leaves the observations alone for a running gust, which they don't hold", () => {
+    const day = {
+      date: today,
+      rain: 2,
+      maxTemp: 28,
+      minTemp: 15,
+      station: "066214",
+    };
+
+    expect(withoutRunning([day], [runningValue("gust", 61)])).toEqual([day]);
   });
 });
 

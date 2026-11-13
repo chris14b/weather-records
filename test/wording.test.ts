@@ -64,6 +64,7 @@ describe("describeFact", () => {
     ["minRelHum", "lowest", "the lowest humidity"],
     ["wind", "highest", "the windiest day"],
     ["wind", "lowest", "the calmest day"],
+    ["gust", "highest", "the gustiest day"],
     ["solar", "highest", "the sunniest day"],
     ["solar", "lowest", "the gloomiest day"],
     ["temp9am", "lowest", "the coldest 9\u00a0am"],

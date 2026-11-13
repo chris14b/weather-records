@@ -18,26 +18,6 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 ---
 
-## T48: Wind gusts
-
-**Status:** todo
-
-**Goal:** Gust facts for Sydney Airport and Sydney Olympic Park, such as "the gustiest day in the past year", beside the average wind facts.
-
-- Decided on 2026-11-13: Observatory Hill gets no gusts. Using Fort Denison's would break the rule that a location's values come from its own stations, and the footer already says Observatory Hill has no wind records (`locationNotes` in `src/site/notes.ts`), which stays as it is.
-- Background, checked on 2026-11-13:
-  - The Daily Weather Observations have each day's strongest gust, its direction and its time, in the columns `Direction of maximum wind gust`, `Speed of maximum wind gust (km/h)` and `Time of maximum wind gust`. Sydney Airport's (`IDCJDW2125`) and Olympic Park's (`IDCJDW2061`) are their own station's. A few days are blank: 1 of 378 for Sydney Airport and 8 for Olympic Park.
-  - IDN60920 has `maximum_gust_kmh`, `maximum_gust_dir` and the time of the gust for both stations, over the calendar day from midnight.
-  - No allowed source has a long daily gust history, so gusts are kept for only 13 months, as long as the DWO keeps them. They are a past-year series (`pastYearSeries`), compared only with the year before each day.
-- Scope: save each day's gust speed from every run, like the 9am and 3pm readings (`readings.ts`, `updateSnapshot`), with its direction and time if the why should show them. The 10:30pm run misses a gust between then and midnight, so a day's value from the run is only a floor until the DWO has it.
-- Scope: extend `npm run import:dwo` to read the gust columns. Unlike the readings, where the DWO and a saved gust differ, the DWO wins. Extend `missingReadings` and `downloadPage` so `data/dwo/download.html` also lists the months missing a gust.
-- Scope: prune before `readingsKeptFrom(today)`, as for the readings.
-- Scope: a `gust` measure in km/h, worded "the gustiest day", in the `wind` family in `selection.ts`, with a weight in `measureWeights`.
-- The DWO files downloaded on 2026-11-13 were deleted after their readings were imported, so the backfill needs them again: once the import reads gusts, run `npm run import:dwo` and download what its page lists, following [refreshing-history.md](refreshing-history.md). The DWO keeps the current month and the 12 before it, so do this before December 2026 to keep November 2025's gusts.
-- Done when: tests cover saving, the DWO winning where they differ, the download page listing missing gusts, and pruning, the year of gusts is imported, and [facts.md](facts.md) and [refreshing-history.md](refreshing-history.md) have the series.
-
----
-
 ## T43: Forecast day-to-day changes
 
 **Status:** todo
@@ -198,6 +178,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
   - Facts for the calendar date now score their sinces and ranks below the top (weight 0.8), so most days have one. Check they don't crowd Past week, and whether the 2020 Observatory Hill station change (minimums about 0.3 °C cooler) makes its "coldest for 9 November since…" nights too easy, since day facts don't take the station offset out.
   - Facts for the day of the week (`dayOfWeek` in `comparisonWeights`, 0.7) can fill Past week in a cold week: at Sydney Airport on 5 August 2024 it had "the coldest Tuesday", "Wednesday" and "Friday since 2022 or 2023", each warmer than the one before, so none was beaten. Decide whether a page should show only the strongest of them per family and direction, as conditional facts do (`oncePerFamily`).
   - The 9am and 3pm readings are compared only with the past year (see Series in [facts.md](facts.md)), so their facts are sinces within the year or ranks "in the past year". Check how often they get in: they first showed in a selection snapshot as "the lowest 9 am humidity since 21 September".
+  - Gust facts (`gust`, weight 0.9) are new, and come from the runs until the DWO is imported. Check how often a running gust gets into Today. Gusts share the `wind` family with the average wind, so a day shows only the stronger of the two. Past-year series now reach full strength with a year rather than 30, so their ranks score much more: check that the readings' and gusts' ranks don't crowd Past week, as at Sydney Airport on 7 November 2026, where "the equal seventh gustiest day in the past year" (3.44) took a place.
   - Wind facts (`wind`, weight 0.9) are new. Check how often a calm day gets in: at Sydney Airport "the calmest day since 18 October" (1.98) took Past week's last place on 27 October 2026. Olympic Park's sheltered site makes its windiest days much less windy than the airport's.
   - The coming week's fallback (`forecastFloor`) can pick a conditional fact over a plainer forecast one, such as "A top of 18°C on Friday (forecast 20°C) would make it the coldest day since 3 November". Decide whether a fallback should prefer forecast facts.
 - Done when: the retuning is reviewed with the user and the snapshot tests updated.

@@ -11,7 +11,7 @@ import {
   downloadPage,
   dwoFileMonth,
   dwoUrl,
-  missingReadings,
+  missingDwoDays,
   parseDwo,
 } from "../src/pipeline/dwo.ts";
 import { type DailyReadings, parseReadings } from "../src/pipeline/readings.ts";
@@ -36,6 +36,7 @@ type Readings = [
   relHum9am: string,
   temp3pm: string,
   relHum3pm: string,
+  gust?: string,
 ];
 
 /** A DWO CSV laid out as BOM's are, as Latin-1 bytes, with a row per day from the 1st. */
@@ -46,8 +47,8 @@ function dwoCsv(
   columns = header,
 ): Uint8Array {
   const rows = days.map(
-    ([temp9am, relHum9am, temp3pm, relHum3pm], index) =>
-      `,${month}-${String(index + 1)},15.2,24.1,0,,,SE,39,13:21,${temp9am},${relHum9am},7,ESE,15,1016.1,${temp3pm},${relHum3pm},7,ESE,20,1015.0`,
+    ([temp9am, relHum9am, temp3pm, relHum3pm, gust = "39"], index) =>
+      `,${month}-${String(index + 1)},15.2,24.1,0,,,SE,${gust},13:21,${temp9am},${relHum9am},7,ESE,15,1016.1,${temp3pm},${relHum3pm},7,ESE,20,1015.0`,
   );
   const text = [
     '"Daily Weather Observations for Sydney, New South Wales for November 2026"',
@@ -85,6 +86,7 @@ describe("parseDwo", () => {
       relHum9am: 42,
       temp3pm: 23.9,
       relHum3pm: 22,
+      gust: null,
     });
   });
 
@@ -114,6 +116,7 @@ describe("parseDwo", () => {
         relHum9am: 42,
         temp3pm: 23.9,
         relHum3pm: 22,
+        gust: null,
       },
       {
         date: "2026-11-02",
@@ -121,8 +124,41 @@ describe("parseDwo", () => {
         relHum9am: null,
         temp3pm: 21.4,
         relHum3pm: 60,
+        gust: null,
       },
     ]);
+  });
+
+  test("has no gusts for Observatory Hill, whose file takes its wind from Fort Denison", () => {
+    expect(real().every(({ gust }) => gust === null)).toBe(true);
+  });
+
+  test("gives each day's strongest gust for a station that measures wind, blank when missing", () => {
+    const days = parse(
+      dwoCsv(
+        "2026-10",
+        [
+          ["16", "70", "19.5", "64", "67"],
+          ["17", "72", "20.1", "60", ""],
+        ],
+        '"Observations were drawn from Sydney Airport AMO {station 066037}"',
+      ),
+      "IDCJDW2125.202610.csv",
+      airport,
+    );
+
+    expect(days.map(({ gust }) => gust)).toEqual([67, null]);
+  });
+
+  test("fails when a station that measures wind has its wind from another station", () => {
+    const sources = [
+      '"Temperature and humidity observations are from Sydney Airport AMO {station 066037}"',
+      '"Wind observations are from Fort Denison {station 066022}"',
+    ].join("\r\n");
+
+    expect(() =>
+      parse(dwoCsv("2026-10", [], sources), "IDCJDW2125.202610.csv", airport),
+    ).toThrow("expected the wind from station 066037, found 066022");
   });
 
   test("accepts a file that takes all its observations from the station", () => {
@@ -334,14 +370,15 @@ describe("addDwoReadings", () => {
   });
 });
 
-describe("missingReadings", () => {
+describe("missingDwoDays", () => {
   test("lists each month's days with no readings or a blank one", () => {
-    const missing = missingReadings(
+    const missing = missingDwoDays(
       [
         day("2026-10-30"),
         day("2026-11-01", { relHum3pm: null }),
         day("2026-11-02"),
       ],
+      undefined,
       "2026-10-29",
       "2026-11-03",
     );
@@ -354,9 +391,30 @@ describe("missingReadings", () => {
     );
   });
 
+  test("lists a day with only the runs' gust, since that is only the strongest so far", () => {
+    const missing = missingDwoDays(
+      [day("2026-11-01"), day("2026-11-02"), day("2026-11-03")],
+      [
+        { date: "2026-11-01", feedGust: 52, dwoGust: 57 },
+        { date: "2026-11-02", feedGust: 40, dwoGust: null },
+      ],
+      "2026-11-01",
+      "2026-11-03",
+    );
+
+    expect(missing).toEqual(
+      new Map([["2026-11", ["2026-11-02", "2026-11-03"]]]),
+    );
+  });
+
   test("lists nothing when every day has its readings", () => {
     expect(
-      missingReadings([day("2026-11-01")], "2026-11-01", "2026-11-01"),
+      missingDwoDays(
+        [day("2026-11-01")],
+        undefined,
+        "2026-11-01",
+        "2026-11-01",
+      ),
     ).toEqual(new Map());
   });
 });

@@ -13,6 +13,7 @@ export type FactMeasure =
   | "maxRelHum"
   | "minRelHum"
   | "wind"
+  | "gust"
   | "solar"
   | "temp9am"
   | "relHum9am"

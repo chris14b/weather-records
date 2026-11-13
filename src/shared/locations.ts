@@ -30,6 +30,8 @@ export interface Station extends StationPeriod {
   dwo?: string;
   /** How much higher it reads than the station before it, in °C. */
   reads?: StationReadings;
+  /** False for a station with no anemometer, so it has no wind or gusts. */
+  measuresWind?: false;
 }
 
 export interface StationReadings {
@@ -59,7 +61,8 @@ export interface Location {
   stations: readonly Station[];
 }
 
-// Both Observatory Hill stations' values are in one folder.
+// Both Observatory Hill stations' values are in one folder. Neither has an anemometer: BOM
+// measures the harbour's wind at Fort Denison.
 const observatoryHillFolder: DailyFolder = {
   name: "sydney_(observatory_hill)",
   from: "2009-01",
@@ -79,6 +82,7 @@ export const locations: readonly Location[] = [
         station: "066062",
         name: "SYDNEY (OBSERVATORY HILL)",
         dailyFolder: observatoryHillFolder,
+        measuresWind: false,
       },
       {
         station: "066214",
@@ -88,6 +92,7 @@ export const locations: readonly Location[] = [
         wmo: "94768",
         dwo: "IDCJDW2124",
         reads: { maxTemp: 0.3, minTemp: -0.3 },
+        measuresWind: false,
       },
     ],
   },

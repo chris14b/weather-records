@@ -208,6 +208,29 @@ describe("parseRunningValues", () => {
     });
   });
 
+  test("gives the day's strongest gust so far for a station with an anemometer", () => {
+    expect(running(fixture("IDN60920.xml"), airport)).toContainEqual({
+      measure: "gust",
+      date: "2026-10-30",
+      value: 44,
+      observedAt: "2026-10-30T03:30:00.000Z",
+    });
+    expect(running(fixture("IDN60920.xml"), olympicPark)).toContainEqual(
+      expect.objectContaining({ measure: "gust", value: 30 }),
+    );
+  });
+
+  test("fails when the gust isn't over the calendar day", () => {
+    const xml = fixture("IDN60920.xml").replace(
+      'start-time-local="2026-10-30T00:00:00+11:00" end-time-local="2026-10-31T00:00:00+11:00" start-time-utc="2026-10-29T13:00:00+00:00" end-time-utc="2026-10-30T13:00:00+00:00" units="km/h" type="maximum_gust_kmh" instance="running" time-utc="2026-10-30T02:47:00+00:00"',
+      'start-time-local="2026-10-30T09:00:00+11:00" end-time-local="2026-10-31T09:00:00+11:00" start-time-utc="2026-10-29T22:00:00+00:00" end-time-utc="2026-10-30T22:00:00+00:00" units="km/h" type="maximum_gust_kmh" instance="running" time-utc="2026-10-30T02:47:00+00:00"',
+    );
+
+    expect(() => running(xml, airport)).toThrow(
+      "maximum_gust_kmh: expected a window from 00:00 to 00:00",
+    );
+  });
+
   test("fails when the rain since 9am doesn't start at 9am", () => {
     const xml = fixture("IDN60920.xml").replace(
       'start-time-local="2026-10-30T09:00:00+11:00" end-time-local="2026-10-30T14:33:00+11:00"',

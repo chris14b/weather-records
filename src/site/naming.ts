@@ -244,6 +244,7 @@ function isHad({ measure, direction, period }: Phrased): boolean {
     case "minTemp":
     case "rain":
     case "wind":
+    case "gust":
     case "solar":
       return false;
     case "minRelHum":
@@ -279,6 +280,7 @@ const units: Record<FactMeasure, string> = {
   maxRelHum: "%",
   minRelHum: "%",
   wind: "km/h",
+  gust: "km/h",
   solar: "MJ/m²",
   temp9am: "°C",
   relHum9am: "%",
@@ -291,8 +293,9 @@ const units: Record<FactMeasure, string> = {
 const isHumidity = (measure: FactMeasure) => units[measure] === "%";
 
 /**
- * A value with its unit: "23.6 °C", "49.6 mm", "79%". Forecasts are whole degrees, so they
- * stay that way. The Style Manual spaces every unit but the percentage sign.
+ * A value with its unit: "23.6 °C", "49.6 mm", "79%". Forecasts, humidity and gusts are
+ * whole numbers, so they stay that way. The Style Manual spaces every unit but the
+ * percentage sign.
  */
 export function amount(
   measure: FactMeasure,
@@ -300,7 +303,7 @@ export function amount(
   forecast = false,
 ): string {
   const humidity = isHumidity(measure);
-  const format = forecast || humidity ? whole : decimal;
+  const format = forecast || humidity || measure === "gust" ? whole : decimal;
   return `${format.format(Math.abs(value))}${humidity ? "" : "\u00a0"}${units[measure]}`;
 }
 
@@ -322,6 +325,8 @@ function valueClause({ measure, period, direction, status, why }: Phrased) {
       return `with ${value}`;
     case "wind":
       return `with an average wind speed of ${value}`;
+    case "gust":
+      return `with a gust of ${value}`;
     case "minRelHum":
       if (direction === "highest") return `never below ${value}`;
   }

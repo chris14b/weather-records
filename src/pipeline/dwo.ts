@@ -1,11 +1,12 @@
 import type { Station } from "../shared/locations.ts";
 import { addDays, monthsBetween } from "./dates.ts";
 import { inContext } from "./errors.ts";
+import type { SavedGust } from "./gusts.ts";
 import { type DailyReadings, readingSchema } from "./readings.ts";
 
 type Column = keyof typeof readingSchema;
 
-/** Each saved column, by its DWO column's name without the unit. */
+/** Each saved reading, by its DWO column's name without the unit. */
 const dwoColumns: Readonly<Record<Column, string>> = {
   temp9am: "9am Temperature",
   relHum9am: "9am relative humidity",
@@ -13,7 +14,12 @@ const dwoColumns: Readonly<Record<Column, string>> = {
   relHum3pm: "3pm relative humidity",
 };
 
+const gustColumn = "Speed of maximum wind gust";
+
 const columns = Object.keys(dwoColumns) as Column[];
+
+/** A day of the Daily Weather Observations: its readings, and its strongest gust in km/h. */
+export type DwoDay = DailyReadings & { gust: number | null };
 
 const fileNamePattern = /^(IDCJDW\d{4})\.(\d{4})(\d{2})\.csv$/;
 const numberPattern = /^-?\d+(\.\d+)?$/;
@@ -35,15 +41,16 @@ export function dwoFileMonth(
 }
 
 /**
- * Reads the 9am and 3pm temperature and humidity from a month of a station's Daily Weather
- * Observations, as saved from BOM's website. Fails unless the file names the station as the
- * source of its temperature and humidity.
+ * Reads the 9am and 3pm temperature and humidity, and the strongest gust, from a month of a
+ * station's Daily Weather Observations, as saved from BOM's website. Fails unless the file
+ * names the station as the source of its temperature and humidity, and of its wind if the
+ * station measures wind. A station that doesn't has no gusts, wherever the file's wind is from.
  */
 export function parseDwo(
   bytes: Uint8Array,
   fileName: string,
   station: Station,
-): DailyReadings[] {
+): DwoDay[] {
   return inContext(fileName, () => {
     const named = dwoFileMonth(fileName);
     if (named === undefined) {
@@ -61,11 +68,22 @@ export function parseDwo(
     );
     if (headerIndex === -1) throw new Error("found no column headers");
 
-    checkStation(lines.slice(0, headerIndex).join("\n"), station.station);
+    const hasGusts = station.measuresWind !== false;
+    checkStation(
+      lines.slice(0, headerIndex).join("\n"),
+      station.station,
+      hasGusts
+        ? ["temperature", "humidity", "wind"]
+        : ["temperature", "humidity"],
+    );
     const header = splitCsvLine(lines[headerIndex] ?? "");
-    const indexes = columnIndexes(header);
+    const indexes = columnIndexes(
+      header,
+      columns.map((column) => dwoColumns[column]),
+    );
+    const [gustIndex] = hasGusts ? columnIndexes(header, [gustColumn]) : [];
 
-    const days: DailyReadings[] = [];
+    const days: DwoDay[] = [];
     for (const [offset, line] of lines.slice(headerIndex + 1).entries()) {
       if (line.trim() === "") continue;
       inContext(`line ${String(headerIndex + offset + 2)}`, () => {
@@ -86,12 +104,16 @@ export function parseDwo(
         days.push({
           date,
           ...Object.fromEntries(
-            columns.map((column) => [
+            columns.map((column, index) => [
               column,
-              parseNumber(cells[indexes[column]] ?? ""),
+              parseNumber(cells[indexes[index] ?? -1] ?? ""),
             ]),
           ),
-        } as DailyReadings);
+          gust:
+            gustIndex === undefined
+              ? null
+              : parseNumber(cells[gustIndex] ?? ""),
+        } as DwoDay);
       });
     }
     return days;
@@ -99,11 +121,15 @@ export function parseDwo(
 }
 
 /**
- * Checks the lines above the column headers credit the station with the temperature and
- * humidity. A file that takes its other observations elsewhere, such as Sydney's wind from
+ * Checks the lines above the column headers credit the station with each kind of
+ * observation. A file that takes some observations elsewhere, such as Sydney's wind from
  * Fort Denison, says which station each kind comes from.
  */
-function checkStation(preamble: string, expected: string): void {
+function checkStation(
+  preamble: string,
+  expected: string,
+  kinds: readonly string[],
+): void {
   const sources = [...preamble.matchAll(/([^{}\n]*)\{station (\d{6})\}/g)].map(
     ([, text = "", station = ""]) => ({ text, station }),
   );
@@ -117,7 +143,7 @@ function checkStation(preamble: string, expected: string): void {
     }
     return;
   }
-  for (const kind of ["temperature", "humidity"]) {
+  for (const kind of kinds) {
     const credited = sources.filter(({ text }) =>
       text.toLowerCase().includes(kind),
     );
@@ -135,21 +161,26 @@ function checkStation(preamble: string, expected: string): void {
   }
 }
 
-function columnIndexes(header: readonly string[]): Record<Column, number> {
-  const names = header.map((name) => name.replace(/\s*\([^)]*\)\s*$/, ""));
-  return Object.fromEntries(
-    columns.map((column) => {
-      const indexes = names.flatMap((name, index) =>
-        name === dwoColumns[column] ? [index] : [],
+/** The index of each named column, matched without its unit. */
+function columnIndexes(
+  header: readonly string[],
+  wanted: readonly string[],
+): number[] {
+  const names = header.map((name) =>
+    name.replace(/\s*\([^)]*\)\s*$/, "").trim(),
+  );
+  return wanted.map((wantedName) => {
+    const indexes = names.flatMap((name, index) =>
+      name === wantedName ? [index] : [],
+    );
+    const [only] = indexes;
+    if (only === undefined || indexes.length > 1) {
+      throw new Error(
+        `expected one "${wantedName}" column, found ${String(indexes.length)}`,
       );
-      if (indexes.length !== 1) {
-        throw new Error(
-          `expected one "${dwoColumns[column]}" column, found ${String(indexes.length)}`,
-        );
-      }
-      return [column, indexes[0]];
-    }),
-  ) as Record<Column, number>;
+    }
+    return only;
+  });
 }
 
 function parseDate(cell: string): string {
@@ -253,13 +284,29 @@ export function addDwoReadings(
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 
-/** The months from `from` to `to` with a day missing any reading, and those days. */
-export function missingReadings(
-  rows: readonly DailyReadings[],
+/**
+ * The months from `from` to `to` with a day the Daily Weather Observations could fill, and
+ * those days: a day missing any reading, or, when `gusts` are given, the DWO's gust. A run's
+ * gust is only the strongest so far, so a day needs the DWO's even when the runs saw one.
+ */
+export function missingDwoDays(
+  readings: readonly DailyReadings[],
+  gusts: readonly SavedGust[] | undefined,
   from: string,
   to: string,
 ): Map<string, string[]> {
-  const byDate = new Map(rows.map((row) => [row.date, row]));
+  const readingsByDate = new Map(readings.map((row) => [row.date, row]));
+  const dwoGustDates = new Set(
+    gusts?.filter(({ dwoGust }) => dwoGust !== null).map(({ date }) => date),
+  );
+  const isMissing = (date: string) => {
+    const row = readingsByDate.get(date);
+    return (
+      row === undefined ||
+      columns.some((column) => row[column] === null) ||
+      (gusts !== undefined && !dwoGustDates.has(date))
+    );
+  };
   const missing = new Map<string, string[]>();
   for (const month of monthsBetween(from.slice(0, 7), to.slice(0, 7))) {
     for (
@@ -267,9 +314,7 @@ export function missingReadings(
       date.startsWith(month) && date <= to;
       date = addDays(date, 1)
     ) {
-      if (date < from) continue;
-      const row = byDate.get(date);
-      if (row === undefined || columns.some((column) => row[column] === null)) {
+      if (date >= from && isMissing(date)) {
         missing.set(month, [...(missing.get(month) ?? []), date]);
       }
     }
@@ -280,7 +325,7 @@ export function missingReadings(
 export interface DownloadLink {
   month: string;
   url: string;
-  /** Days that month still missing a reading. */
+  /** Days that month that the DWO could still fill. */
   missingDays: number;
   /** Whether the month's file is already in the downloads folder. */
   downloaded: boolean;

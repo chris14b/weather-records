@@ -352,10 +352,10 @@ describe("selectFacts", () => {
     });
 
     test("doesn't count a record in the past year as an all-time one", () => {
-      const date = "2027-01-03";
-      const days = Array.from({ length: 366 }, (_, index) => ({
-        date: addDays(date, index - 365),
-        value: index === 365 ? 20 : 60,
+      const date = "2027-01-01";
+      const days = Array.from({ length: 30 }, (_, index) => ({
+        date: addDays(date, index - 29),
+        value: index === 29 ? 20 : 60,
         status: "confirmed" as const,
       }));
       const readings: Series = {
@@ -375,7 +375,7 @@ describe("selectFacts", () => {
         }).today.map(({ text }) => text);
 
       expect(today([readings])).toEqual([
-        "the lowest 9\u00a0am humidity since January 2026",
+        "the lowest 9\u00a0am humidity since December 2026",
       ]);
       expect(today([pastYearSeries(readings)])).toEqual([]);
     });

@@ -3,6 +3,7 @@ import type { LayeredRecord } from "../src/pipeline/layering.ts";
 import {
   changeSeries,
   columnSeries,
+  gustSeries,
   layeredSeries,
   rangeSeries,
   type Series,
@@ -212,5 +213,25 @@ describe("windSeries", () => {
     expect(windSeries(series).days.map(({ value }) => value)).toEqual([
       66.7, 25.6,
     ]);
+  });
+});
+
+describe("gustSeries", () => {
+  test("takes the DWO's gust where there is one, and the runs' as provisional, compared only with the year before", () => {
+    expect(
+      gustSeries([
+        { date: "2026-11-10", feedGust: 52, dwoGust: 67 },
+        { date: "2026-11-11", feedGust: 40, dwoGust: null },
+        { date: "2026-11-12", feedGust: null, dwoGust: null },
+      ]),
+    ).toEqual({
+      measure: "gust",
+      days: [
+        { date: "2026-11-10", value: 67, status: "confirmed" },
+        { date: "2026-11-11", value: 40, status: "provisional" },
+      ],
+      fullRecord: false,
+      pastYear: true,
+    });
   });
 });

@@ -59,12 +59,21 @@ const windows: Record<Measure, Window> = {
   },
 };
 
+// The strongest gust so far today, over the calendar day. No run is late enough to see its
+// window close, so it is always still running.
+const gustWindow: Window = {
+  type: "maximum_gust_kmh",
+  start: "00:00",
+  end: "00:00",
+  creditStart: true,
+};
+
 const valuePattern = /^-?\d+(\.\d+)?$/;
 
 const msPerDay = 86_400_000;
 
 /** A measure whose value builds up through its window, so it is a floor or a ceiling until the window closes. */
-export type RunningMeasure = Measure;
+export type RunningMeasure = Measure | "gust";
 
 /** A value whose window is still open, never saved as the day's value. */
 export interface RunningValue {
@@ -114,8 +123,8 @@ export function parseObservations(
 
 /**
  * Reads the values still building up at the time of the observation: the maximum before
- * its window closes at 9pm, the minimum before 9am, and the rain since 9am, credited to
- * the 24 hours to 9am that it is part of.
+ * its window closes at 9pm, the minimum before 9am, the rain since 9am, credited to the
+ * 24 hours to 9am that it is part of, and the day's strongest gust so far.
  */
 export function parseRunningValues(
   bytes: Uint8Array,
@@ -136,6 +145,7 @@ export function parseRunningValues(
       ...read("maxTemp", runningValue(elements, windows.maxTemp, observedAt)),
       ...read("minTemp", runningValue(elements, windows.minTemp, observedAt)),
       ...read("rain", rainSince9am(elements)),
+      ...read("gust", runningValue(elements, gustWindow, observedAt)),
     ];
   });
 }

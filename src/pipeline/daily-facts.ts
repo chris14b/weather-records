@@ -127,9 +127,11 @@ export function generateDailyFacts({
 }
 
 // A dry day is never the wettest of anything, and the lowest rain is always 0 mm. Only a
-// rise can be the biggest rise, and only a drop the biggest drop.
+// rise can be the biggest rise, and only a drop the biggest drop. A day with light gusts is
+// the calmest day, which the average wind already says.
 function directionsFor(measure: FactMeasure, value: number): Direction[] {
   if (measure === "rain") return value > 0 ? ["highest"] : [];
+  if (measure === "gust") return ["highest"];
   if (isChangeMeasure(measure)) {
     if (value > 0) return ["highest"];
     return value < 0 ? ["lowest"] : [];

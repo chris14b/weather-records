@@ -77,6 +77,10 @@ const phrases: Record<FactMeasure, Record<Direction, Phrase>> = {
     highest: { superlative: "windiest", noun: "day" },
     lowest: { superlative: "calmest", noun: "day" },
   },
+  gust: {
+    highest: { superlative: "gustiest", noun: "day" },
+    lowest: { superlative: "least gusty", noun: "day" },
+  },
   solar: {
     highest: { superlative: "sunniest", noun: "day" },
     lowest: { superlative: "gloomiest", noun: "day" },

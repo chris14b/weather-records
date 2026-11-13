@@ -6,6 +6,7 @@ import type {
 } from "../shared/facts.ts";
 import { addDays } from "./dates.ts";
 import type { FtpHistoryDay } from "./ftp-history.ts";
+import type { SavedGust } from "./gusts.ts";
 import type { DailyRecord } from "./history.ts";
 import type { LayeredRecord } from "./layering.ts";
 import type { DailyReadings } from "./readings.ts";
@@ -139,6 +140,7 @@ export interface LocationData {
   minTemp: readonly LayeredRecord[];
   ftpHistory: readonly FtpHistoryDay[];
   readings: readonly DailyReadings[];
+  gusts: readonly SavedGust[];
 }
 
 /** Every series that facts are made from, for one location. */
@@ -158,6 +160,7 @@ export function locationSeries(data: LocationData): Series[] {
     pastYearSeries(columnSeries("relHum9am", data.readings)),
     pastYearSeries(columnSeries("temp3pm", data.readings)),
     pastYearSeries(columnSeries("relHum3pm", data.readings)),
+    gustSeries(data.gusts),
     changeSeries(maxTemp),
     changeSeries(minTemp),
   ];
@@ -192,6 +195,25 @@ export function windSeries(series: Series<"wind">): Series<"wind"> {
       value: Math.round(day.value * 3.6 * 10) / 10,
     })),
   };
+}
+
+/**
+ * Each day's strongest gust, kept for only about a year. The Daily Weather Observations'
+ * gust is the whole day's, so it wins over a run's, which is only the strongest so far.
+ */
+export function gustSeries(rows: readonly SavedGust[]): Series<"gust"> {
+  return pastYearSeries({
+    measure: "gust",
+    days: rows.flatMap(({ date, feedGust, dwoGust }): SeriesDay[] => {
+      if (dwoGust !== null) {
+        return [{ date, value: dwoGust, status: "confirmed" }];
+      }
+      return feedGust === null
+        ? []
+        : [{ date, value: feedGust, status: "provisional" }];
+    }),
+    fullRecord: false,
+  });
 }
 
 /** Marks a series whose values are kept for only about a year, such as the 9am and 3pm readings. */

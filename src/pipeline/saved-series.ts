@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { currentStation, type Location } from "../shared/locations.ts";
 import type { RecentDay } from "./daily-files.ts";
 import { type FtpHistoryDay, ftpHistorySchema } from "./ftp-history.ts";
+import { gustSchema, type SavedGust } from "./gusts.ts";
 import type { DailyRecord, Measure } from "./history.ts";
 import { layerRecent } from "./layering.ts";
 import { type DailyReadings, readingSchema } from "./readings.ts";
@@ -17,6 +18,7 @@ export interface DataDirs {
   daily: string;
   snapshots: string;
   readings: string;
+  gusts: string;
   ftpHistory: string;
 }
 
@@ -27,6 +29,7 @@ export const dataDirs: DataDirs = {
   daily: join(dataRoot, "recent/daily"),
   snapshots: join(dataRoot, "recent/snapshots"),
   readings: join(dataRoot, "recent/readings"),
+  gusts: join(dataRoot, "recent/gusts"),
   ftpHistory: join(dataRoot, "ftp-history"),
 };
 
@@ -69,6 +72,7 @@ export interface SeriesSources {
   snapshot: readonly FromStation<RecentDay>[];
   ftpHistory: readonly FtpHistoryDay[];
   readings: readonly DailyReadings[];
+  gusts: readonly SavedGust[];
 }
 
 export function seriesFromSources({
@@ -77,6 +81,7 @@ export function seriesFromSources({
   snapshot,
   ftpHistory,
   readings,
+  gusts,
 }: SeriesSources): Series[] {
   const layered = (measure: Measure) =>
     layerRecent(measure, histories[measure], [
@@ -89,6 +94,7 @@ export function seriesFromSources({
     minTemp: layered("minTemp"),
     ftpHistory,
     readings,
+    gusts,
   });
 }
 
@@ -101,27 +107,30 @@ export async function readSavedSeries(
   const savedDays = async (dir: string, station: string) =>
     (await readSavedDays(dir, station)).map((day) => ({ ...day, station }));
 
-  const [histories, daily, snapshot, ftpHistory, readings] = await Promise.all([
-    loadHistories(dirs.raw, location),
-    Promise.all(
-      location.stations.map(({ station }) => savedDays(dirs.daily, station)),
-    ),
-    savedDays(dirs.snapshots, current),
-    Promise.all(
-      location.stations.map(({ station }) =>
-        readSavedRows(
-          join(dirs.ftpHistory, `${station}.csv`),
-          ftpHistorySchema,
+  const [histories, daily, snapshot, ftpHistory, readings, gusts] =
+    await Promise.all([
+      loadHistories(dirs.raw, location),
+      Promise.all(
+        location.stations.map(({ station }) => savedDays(dirs.daily, station)),
+      ),
+      savedDays(dirs.snapshots, current),
+      Promise.all(
+        location.stations.map(({ station }) =>
+          readSavedRows(
+            join(dirs.ftpHistory, `${station}.csv`),
+            ftpHistorySchema,
+          ),
         ),
       ),
-    ),
-    readSavedRows(join(dirs.readings, `${current}.csv`), readingSchema),
-  ]);
+      readSavedRows(join(dirs.readings, `${current}.csv`), readingSchema),
+      readSavedRows(join(dirs.gusts, `${current}.csv`), gustSchema),
+    ]);
   return seriesFromSources({
     histories,
     daily: daily.flat(),
     snapshot,
     ftpHistory: ftpHistory.flat(),
     readings,
+    gusts,
   });
 }

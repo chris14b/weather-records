@@ -1,7 +1,8 @@
 import { locations } from "../shared/locations.ts";
 import { parseForecast } from "./forecast.ts";
 import { connectToBom } from "./ftp.ts";
-import { parseObservations } from "./observations.ts";
+import { feedGusts } from "./gusts.ts";
+import { parseObservations, parseRunningValues } from "./observations.ts";
 import { parseReadings } from "./readings.ts";
 import { downloadLiveFeeds } from "./snapshots.ts";
 
@@ -14,6 +15,8 @@ try {
     console.table(parseObservations(feeds.observations, location));
     console.log("9am and 3pm readings:");
     console.table(parseReadings(feeds.readings, location));
+    console.log("Gust so far today:");
+    console.table(feedGusts(parseRunningValues(feeds.observations, location)));
     const forecast = parseForecast(feeds.forecast, location.forecastArea);
     console.log(`Forecast issued at ${forecast.issuedAt}:`);
     console.table(forecast.days);

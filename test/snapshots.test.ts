@@ -24,7 +24,7 @@ import {
   readingsJson,
 } from "./live-feeds.ts";
 
-const [observatoryHill] = locations as [Location];
+const [observatoryHill, airport] = locations as [Location, Location];
 
 const feedsAt = (observationsUtc: string): LiveFeeds => ({
   observations: Buffer.from(observationsAt(observationsUtc)),
@@ -32,6 +32,9 @@ const feedsAt = (observationsUtc: string): LiveFeeds => ({
     "IDN60910.94768.json": readingsJson("94768", "Sydney - Observatory Hill", [
       { local: "20261029150000", air_temp: 22.2, rel_hum: 54 },
       { local: "20261030090000", air_temp: 20.1, rel_hum: 62 },
+    ]),
+    "IDN60910.94767.json": readingsJson("94767", "Sydney Airport", [
+      { local: "20261030090000", air_temp: 19.4, rel_hum: 70 },
     ]),
   }),
   forecast: Buffer.from(fixture("IDN11060.xml")),
@@ -60,11 +63,13 @@ describe("updateSnapshot", () => {
   let dir: string;
   let snapshotDir: string;
   let readingsDir: string;
+  let gustsDir: string;
 
   beforeEach(async () => {
     dir = await mkdtemp(join(tmpdir(), "snapshots-"));
     snapshotDir = join(dir, "snapshots");
     readingsDir = join(dir, "readings");
+    gustsDir = join(dir, "gusts");
   });
 
   afterEach(async () => {
@@ -75,12 +80,14 @@ describe("updateSnapshot", () => {
     feeds: LiveFeeds,
     historyEnd = "2026-10-20",
     today = "2026-10-30",
+    location = observatoryHill,
   ) =>
     updateSnapshot({
       feeds,
       snapshotDir,
       readingsDir,
-      location: observatoryHill,
+      gustsDir,
+      location,
       historyEnd,
       today,
     });
@@ -179,6 +186,69 @@ describe("updateSnapshot", () => {
       "2026-10-30",
     ]);
     expect(await saved(readingsDir)).not.toContain("2025-09-30");
+  });
+
+  describe("gusts", () => {
+    const savedGusts = () => readFile(join(gustsDir, "066037.csv"), "utf8");
+    const gustsAt = (utc: string, feedGust: number): LiveFeeds => ({
+      ...feedsAt(utc),
+      observations: Buffer.from(
+        observationsAt(utc).replace(
+          'type="maximum_gust_kmh" instance="running" time-utc="2026-10-30T02:47:00+00:00" time-local="2026-10-30T13:47:00+11:00">44<',
+          `type="maximum_gust_kmh" instance="running" time-utc="2026-10-30T02:47:00+00:00" time-local="2026-10-30T13:47:00+11:00">${String(feedGust)}<`,
+        ),
+      ),
+    });
+    const updateAirport = (feeds: LiveFeeds, today = "2026-10-30") =>
+      update(feeds, "2026-10-20", today, airport);
+
+    test("saves today's gust so far, which a later run replaces", async () => {
+      await updateAirport(gustsAt("2026-10-30T03:30:00+00:00", 44));
+      const snapshot = await updateAirport(
+        gustsAt("2026-10-30T09:30:00+00:00", 61),
+      );
+
+      expect(await savedGusts()).toBe(
+        "date,feedGust,dwoGust\n2026-10-30,61,\n",
+      );
+      expect(snapshot.gusts).toEqual([
+        { date: "2026-10-30", feedGust: 61, dwoGust: null, station: "066037" },
+      ]);
+    });
+
+    test("keeps the DWO's gust for a day", async () => {
+      await mkdir(gustsDir);
+      await writeFile(
+        join(gustsDir, "066037.csv"),
+        "date,feedGust,dwoGust\n2026-10-29,52,57\n",
+      );
+
+      await updateAirport(afternoon);
+
+      expect(await savedGusts()).toBe(
+        "date,feedGust,dwoGust\n2026-10-29,52,57\n2026-10-30,44,\n",
+      );
+    });
+
+    test("prunes gusts from before the same month a year ago", async () => {
+      await mkdir(gustsDir);
+      await writeFile(
+        join(gustsDir, "066037.csv"),
+        "date,feedGust,dwoGust\n2025-09-30,40,41\n2025-10-01,42,43\n",
+      );
+
+      await updateAirport(afternoon);
+
+      expect(await savedGusts()).not.toContain("2025-09-30");
+      expect(await savedGusts()).toContain("2025-10-01");
+    });
+
+    test("saves none for Observatory Hill, which has no anemometer", async () => {
+      const snapshot = await update(evening);
+
+      expect(snapshot.gusts).toEqual([]);
+      await expect(readdir(gustsDir)).rejects.toThrow("ENOENT");
+    });
   });
 });
 

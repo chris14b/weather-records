@@ -6,11 +6,12 @@ import type { RunningMeasure, RunningValue } from "./observations.ts";
 import type { Series } from "./series.ts";
 import type { FromStation } from "./stations.ts";
 
-/** A running maximum or rain total can only rise, and a running minimum only fall. */
+/** A running maximum, rain total or gust can only rise, and a running minimum only fall. */
 const settledWay: Record<RunningMeasure, Direction> = {
   maxTemp: "highest",
   minTemp: "lowest",
   rain: "highest",
+  gust: "highest",
 };
 
 /** The saved live observations without the values still running, such as the maximum from 4pm. */
@@ -20,7 +21,7 @@ export function withoutRunning(
 ): FromStation<RecentDay>[] {
   return days.map((day) =>
     running
-      .filter(({ date }) => date === day.date)
+      .filter(({ date, measure }) => date === day.date && measure in day)
       .reduce((settled, { measure }) => ({ ...settled, [measure]: null }), day),
   );
 }

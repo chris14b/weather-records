@@ -69,6 +69,7 @@ beforeEach(async () => {
     daily: join(root, "recent/daily"),
     snapshots: join(root, "recent/snapshots"),
     readings: join(root, "recent/readings"),
+    gusts: join(root, "recent/gusts"),
     ftpHistory: join(root, "ftp-history"),
   };
   await cp(dataDirs.ftpHistory, dirs.ftpHistory, { recursive: true });

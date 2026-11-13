@@ -9,15 +9,17 @@ import {
   downloadPage,
   dwoFileMonth,
   dwoUrl,
-  missingReadings,
+  missingDwoDays,
   parseDwo,
 } from "./dwo.ts";
+import { addDwoGusts, gustSchema } from "./gusts.ts";
 import { readingSchema, readingsKeptFrom } from "./readings.ts";
 import { readSavedRows, writeSavedRows } from "./saved-table.ts";
 
 const dataRoot = join(import.meta.dirname, "../../data");
 const downloadsDir = join(dataRoot, "dwo");
 const readingsDir = join(dataRoot, "recent/readings");
+const gustsDir = join(dataRoot, "recent/gusts");
 
 const today = sydneyDate(new Date());
 const keptFrom = readingsKeptFrom(today);
@@ -60,22 +62,74 @@ const imports = await Promise.all(
         const readings = inContext(location.name, () =>
           addDwoReadings(saved, dwoRows.flat(), keptFrom),
         );
-        return { location, station, dwo, files, path, readings };
+        const gustsPath = join(gustsDir, `${station.station}.csv`);
+        const gusts =
+          station.measuresWind === false
+            ? undefined
+            : addDwoGusts(
+                await readSavedRows(gustsPath, gustSchema),
+                dwoRows.flat(),
+                keptFrom,
+                today,
+              );
+        return {
+          location,
+          station,
+          dwo,
+          files,
+          path,
+          readings,
+          gustsPath,
+          gusts,
+        };
       })(),
     ];
   }),
 );
 
 const pageLocations = [];
-for (const { location, station, dwo, files, path, readings } of imports) {
+for (const {
+  location,
+  station,
+  dwo,
+  files,
+  path,
+  readings,
+  gustsPath,
+  gusts,
+} of imports) {
   await writeSavedRows(path, readingSchema, readings);
-  const missing = missingReadings(readings, keptFrom, addDays(today, -1));
+  if (gusts !== undefined) {
+    await writeSavedRows(gustsPath, gustSchema, gusts);
+  }
+  const missing = missingDwoDays(readings, gusts, keptFrom, addDays(today, -1));
   console.log(
-    `${location.name} (${station.station}): imported ${String(files.length)} files, ${String(readings.length)} days saved`,
+    `${location.name} (${station.station}): imported ${String(files.length)} files, ${String(readings.length)} days of readings saved`,
   );
-  if (missing.size === 0) console.log("  no readings missing");
+  if (gusts !== undefined) {
+    const stronger = gusts.filter(
+      ({ feedGust, dwoGust }) =>
+        feedGust !== null && dwoGust !== null && dwoGust > feedGust,
+    );
+    const weaker = gusts.filter(
+      ({ feedGust, dwoGust }) =>
+        feedGust !== null && dwoGust !== null && dwoGust < feedGust,
+    );
+    console.log(
+      `  ${String(gusts.filter(({ dwoGust }) => dwoGust !== null).length)} days with the DWO's gust, ${String(stronger.length)} stronger than the runs saw`,
+    );
+    for (const { date, feedGust, dwoGust } of weaker) {
+      console.log(
+        `  ${date}: the DWO's gust of ${String(dwoGust)} km/h is weaker than the runs' ${String(feedGust)} km/h`,
+      );
+    }
+  }
+  if (missing.size === 0) console.log("  nothing missing");
   for (const [month, dates] of missing) {
-    console.log(`  ${month}: ${String(dates.length)} days missing a reading`);
+    const days = dates.length === 1 ? "day" : "days";
+    console.log(
+      `  ${month}: ${String(dates.length)} ${days} the DWO could fill`,
+    );
   }
   pageLocations.push({
     name: location.name,

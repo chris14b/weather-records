@@ -163,6 +163,31 @@ describe("scoreFact", () => {
     expect(score({ ...year, recordStart: "2025-06-01" })).toBe(score(year));
   });
 
+  test("scores a record in a past year of gusts at full strength, as the day it was", () => {
+    const gust = {
+      measure: "gust" as const,
+      date: "2026-09-26",
+      recordStart: "2025-09-27",
+      compared: 330,
+      fullRecord: false,
+      pastYear: true as const,
+    };
+
+    expect(score(gust)).toBeCloseTo(Math.log(330) * 0.9);
+  });
+
+  test("scores a rank lower in a past-year series with less than a year to compare", () => {
+    const pastYear = {
+      fullRecord: false,
+      pastYear: true as const,
+      compared: 60,
+    };
+
+    expect(score({ ...pastYear, recordStart: "2026-09-07" })).toBeLessThan(
+      score({ ...pastYear, recordStart: "2025-11-07" }),
+    );
+  });
+
   test("scores a rank lower when comparable days are missing", () => {
     expect(score({ compared: 9000, missingDays: 1000 })).toBeCloseTo(
       Math.log(9000) * 0.9,
