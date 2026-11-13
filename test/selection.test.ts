@@ -129,8 +129,11 @@ describe("selectFacts", () => {
   });
 
   test("leaves out the facts that a later day beat", () => {
-    expect(selected.pastWeek).toEqual([]);
-    expect(selected.pastMonth).toEqual([]);
+    const amongAllDays = [...selected.pastWeek, ...selected.pastMonth].filter(
+      ({ comparison }) => comparison === "all",
+    );
+
+    expect(amongAllDays).toEqual([]);
   });
 
   test("keeps the strongest of a day's facts about the same family of measures and direction", () => {
@@ -143,10 +146,7 @@ describe("selectFacts", () => {
       status: "confirmed",
       lead: "rank",
     });
-    expect(hottest?.score).toBeCloseTo(
-      Math.log(3963) * Math.cbrt(10.85 / 30),
-      1,
-    );
+    expect(hottest?.score).toBeCloseTo(Math.log(3963), 1);
   });
 
   test("explains a fact with its value, the previous record and the leaders", () => {
@@ -247,13 +247,16 @@ describe("selectFacts", () => {
         text: "the hottest day since records began in 2016",
       },
     ]);
-    expect(summary(tomorrow.pastWeek)).toEqual([
-      {
-        date: latest,
-        measure: "rain",
-        text: "the wettest since records began in 2016",
-      },
-    ]);
+    expect(summary(tomorrow.pastWeek)).toContainEqual({
+      date: latest,
+      measure: "rain",
+      text: "the wettest since records began in 2016",
+    });
+    expect(
+      tomorrow.pastWeek
+        .filter(({ date }) => date === latest)
+        .map(({ measure }) => measure),
+    ).not.toContain("maxTemp");
   });
 
   test("lets a spell of rain stand for the weaker days and spells inside it", () => {
@@ -283,6 +286,12 @@ describe("selectFacts", () => {
         date: "2026-11-04",
         period: { kind: "rolling", days: 3 },
         text: "the wettest since records began in 2016",
+      },
+      {
+        from: "2026-11-01",
+        date: "2026-11-01",
+        period: { kind: "day" },
+        text: "the wettest for 1\u00a0November since records began in 2016",
       },
     ]);
   });
@@ -483,7 +492,7 @@ describe("selectFacts with a forecast", () => {
       {
         date: "2026-11-07",
         status: "forecast",
-        score: 2.89,
+        score: 3.25,
         text: "the coldest 7\u00a0November since records began in 1990",
       },
     ]);

@@ -38,7 +38,7 @@ describe("scoreFact", () => {
     );
 
     expect(smallestRangeSince.lead).toBe("since");
-    expect(smallestRangeSince.score).toBeCloseTo(Math.log(247) * 0.9);
+    expect(smallestRangeSince.score).toBeCloseTo(Math.log(247) * 0.75);
   });
 
   test("prefers the wettest October day since 2018 to the 3rd wettest since 2011", () => {
@@ -84,12 +84,22 @@ describe("scoreFact", () => {
     const all = score({ compared: 5000 });
     const season = score({ comparison: "season", compared: 5000 });
     const month = score({ comparison: "month", compared: 5000 });
-    const year = score({ comparison: "year", compared: 5000 });
 
     expect(season).toBeLessThan(all);
     expect(month).toBeLessThan(season);
-    expect(year).toBeLessThan(month);
   });
+
+  test.each(["calendarDate", "year"] as const)(
+    "scores the %s between a month and every day, since it reads well",
+    (comparison) => {
+      const scored = score({ comparison, rank: 3, compared: 300 });
+
+      expect(scored).toBeGreaterThan(
+        score({ comparison: "month", rank: 3, compared: 300 }),
+      );
+      expect(scored).toBeLessThan(score({ rank: 3, compared: 300 }));
+    },
+  );
 
   test("scores the coldest night for the date in 27 years above the biggest rise in minimum in 8 days", () => {
     const forTheDate = score({
@@ -139,7 +149,7 @@ describe("scoreFact", () => {
   test("scores a rank below the top for its calendar date", () => {
     expect(
       score({ comparison: "calendarDate", rank: 2, compared: 120 }),
-    ).toBeCloseTo(Math.log(60) * 0.8);
+    ).toBeCloseTo(Math.log(60) * 0.9);
   });
 
   test("scores a rank lower in a short record, but not a since", () => {
@@ -154,6 +164,29 @@ describe("scoreFact", () => {
     expect(scoreFact(short).score).toBeLessThan(scoreFact(long).score);
     expect(scoreFact({ ...short, ...since }).score).toBe(
       scoreFact({ ...long, ...since }).score,
+    );
+  });
+
+  test("scores an outright record in a short record in full, as the since it is", () => {
+    const short = { compared: 5000, recordStart: "2011-08-01" };
+
+    expect(score(short)).toBeCloseTo(Math.log(5000));
+    expect(score({ ...short, ties: 1 })).toBeLessThan(Math.log(5000 / 2));
+  });
+
+  test("scores a since for a day-to-day change lower than a rank as rare", () => {
+    const change = { measure: "maxTempChange" as const, compared: 5000 };
+    const since = {
+      rank: 500,
+      since: { date: "2026-04-12", value: 12 },
+      comparedSince: 200,
+    };
+
+    expect(score({ ...change, ...since })).toBeCloseTo(
+      Math.log(200) * 0.9 * 0.8,
+    );
+    expect(score({ ...change, rank: 10, compared: 2000 })).toBeCloseTo(
+      Math.log(200) * 0.9,
     );
   });
 

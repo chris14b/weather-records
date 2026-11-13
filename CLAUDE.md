@@ -70,7 +70,7 @@ A static website that shows obscure weather records for the current and recent w
 - Use BOM's own names and identifiers. A location is named by its current station's `description` in the observations feed, and its forecast area is matched by AAC code. Never name a location after a nearby suburb, in code, docs or on the site.
 - The joins are defined in config, not by merging files. Joining is by fixed cutover date. Never fill one station's gaps with another station's values.
 - The Observatory Hill stations differ: the new one reads about 0.3 °C warmer for maximums and cooler for minimums. The site carries a note about the 2020 station change, and one saying that Observatory Hill has no wind instrument, with BOM measuring Sydney Harbour's wind at Fort Denison. A location's notes are `locationNotes` in `src/site/notes.ts`.
-- The Olympic Park record starts in 2011. Facts from such a short record are worth less, and scoring must reflect that.
+- The Olympic Park record starts in 2011. Ranks below the top from such a short record are worth less, and scoring must reflect that. An outright record isn't: a record since 2011 is a since of the whole record, so it scores as one.
 
 ## Data sources
 
@@ -106,7 +106,7 @@ How facts are made, ranked, chosen and worded is explained in [docs/facts.md](do
 
 - **Comparisons:** against all records, this year, the same month in every year, the same calendar date, and the same season. The maximum, the minimum and rain are also compared with the same day of the week ("the wettest Saturday since 2022"), all seven alike, for days only: a night and a day's rain by the day they start on. Such a fact never names its day by its day of the week, so it doesn't say it twice. In code and docs, "weekday" would mean Monday to Friday, so the comparison is `dayOfWeek` and weeks start on Monday.
 - **Ranks:** a fact can give a rank, such as "the second coldest" or "the equal third wettest", not only "the coldest". Tied values share a rank.
-- **Scoring:** narrow comparisons and short records score lower, because they make records easy to set. An outright all-time record always shows, however short the record. Show a small number of the best facts, without near-duplicates.
+- **Scoring:** narrow comparisons and short records score lower, because they make records easy to set, apart from an outright record. A calendar date and the year so far weigh more than their narrowness alone would give them, because they read well. An outright all-time record always shows, however short the record. Show a small number of the best facts, without near-duplicates.
 - **Recent days:** facts cover the last 31 days, not just the latest, for the home page's Today, Past week and Past month sections. Each day is judged against the data as it stood on that day, and a fact that a later day has beaten isn't shown.
 - **Dates:** every fact carries the date it refers to. The page decides whether to say "today" or "yesterday", based on when it is viewed.
 - **Values still running:** the maximum before 9pm, the minimum before 9am, the rain since 9am and the day's gust so far are `partial`. They give facts only the way the final value can't undo (the hottest, the coldest night, the wettest, the gustiest), for single days only, and are never saved as the day's value apart from the maximum from 4pm and the gust. They are worded like observed facts, with no "so far" or time, and marked by a "So far" dot: a ring with a smaller dot inside. A forecast for the same day is dropped once the running value has reached it.

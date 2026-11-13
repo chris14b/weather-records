@@ -1,8 +1,9 @@
-import type {
-  Comparison,
-  DaylightEvent,
-  FactMeasure,
-  Lead,
+import {
+  isChangeMeasure,
+  type Comparison,
+  type DaylightEvent,
+  type FactMeasure,
+  type Lead,
 } from "../shared/facts.ts";
 import type { CandidateFact } from "./candidates.ts";
 import { addDays, daysBetween } from "./dates.ts";
@@ -17,7 +18,7 @@ export interface ScoredFact {
 /** The lowest rank worth saying, counting the days it ties with. */
 const lowestRank = 10;
 
-/** Records shorter than this make ranks easier to reach, so their ranks score less. */
+/** Records shorter than this make ranks below the top easier to reach, so those ranks score less. */
 const fullStrengthYears = 30;
 
 // A past-year series says "in the past year" rather than claiming a long record, so a
@@ -27,13 +28,14 @@ const pastYearFullStrengthDays = 365;
 /** Below this share of comparable days having a value, a rank must say what is missing. */
 export const minimumCoverage = 0.95;
 
-// Narrow comparisons make records easy to set, and are less interesting to read.
+// Narrow comparisons make records easy to set. A calendar date and the year so far weigh
+// more than that alone would give them, because they read well.
 const comparisonWeights: Record<Comparison, number> = {
   all: 1,
+  calendarDate: 0.9,
   season: 0.85,
+  year: 0.85,
   month: 0.8,
-  year: 0.75,
-  calendarDate: 0.8,
   dayOfWeek: 0.7,
 };
 
@@ -41,7 +43,7 @@ const measureWeights: Record<FactMeasure, number> = {
   maxTemp: 1,
   minTemp: 1,
   rain: 1,
-  range: 0.9,
+  range: 0.75,
   wind: 0.9,
   gust: 0.9,
   solar: 0.9,
@@ -54,6 +56,10 @@ const measureWeights: Record<FactMeasure, number> = {
   maxTempChange: 0.9,
   minTempChange: 0.85,
 };
+
+// "The biggest drop in minimum temperature since 12 April" doesn't say whether that is
+// unusual, as "the third biggest of the year" does.
+const changeSinceWeight = 0.8;
 
 /** The year has six turning points in its daylight, so each comes about once in 61 days. */
 const daylightScore = Math.log(365.25 / 6);
@@ -105,11 +111,15 @@ function rankScore(fact: CandidateFact): number {
 
 function recordWeight({
   comparison,
+  rank,
+  ties,
   recordStart,
   date,
   pastYear,
 }: CandidateFact): number {
   if (comparison === "year") return 1;
+  // An outright record over the whole record is a since of all of it, however short.
+  if (rank === 1 && ties === 0 && pastYear === undefined) return 1;
   const share = pastYear
     ? (daysBetween(recordStart, date) + 1) / pastYearFullStrengthDays
     : daysBetween(recordStart, date) / 365.25 / fullStrengthYears;
@@ -124,6 +134,7 @@ function sinceScore({
   comparedSince,
   date,
   period,
+  measure,
 }: CandidateFact): number {
   if (since === null || comparison === "year") return 0;
   // A gap after the since day might hold a day that matched or beat this one.
@@ -138,7 +149,9 @@ function sinceScore({
   }
   // "The wettest Saturday since 31 October" is only a week.
   if (comparison === "dayOfWeek" && since.date >= addDays(date, -364)) return 0;
-  return Math.log(comparedSince);
+  return (
+    Math.log(comparedSince) * (isChangeMeasure(measure) ? changeSinceWeight : 1)
+  );
 }
 
 /** The first day of the same month or season a year before the one `date` is in. */
