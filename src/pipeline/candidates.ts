@@ -37,10 +37,12 @@ export interface CandidateFact {
   ties: number;
   /** Comparable days or periods with a value, including this one. */
   compared: number;
-  /** The first date of the measure's series. */
+  /** The first date it was compared from: the series' first, or for a past-year series the day after the same date a year earlier, if later. */
   recordStart: string;
   /** Whether the series goes back to when records began, so "on record" is true. */
   fullRecord: boolean;
+  /** Whether it was compared only with the year before it. */
+  pastYear?: true;
   /** Comparable days or periods between the record start and this one with no value. */
   missingDays: number;
   /**

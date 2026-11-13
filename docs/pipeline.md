@@ -13,11 +13,12 @@ All in `src/pipeline/`, except the config, the `facts.json` types and the foreca
 | FTP                    | `ftp.ts` (`connectToBom`, `withDownloadCache`)                                                                                                                                                                                                       |
 | FTP daily files        | `daily-files.ts` (parser, `downloadDailyFile`, `folderMonths`), `recent.ts` (`updateDailyFiles`), `ftp-history.ts` (`updateFtpHistory`)                                                                                                              |
 | Live feeds             | `observations.ts` (IDN60920), `readings.ts` (IDN60910), `forecast.ts` (IDN11060), `snapshots.ts` (`downloadLiveFeeds`, `updateSnapshot`), `xml.ts`                                                                                                   |
+| Daily Weather Obs.     | `dwo.ts` (`parseDwo`, `addDwoReadings`, `missingReadings`, `downloadPage`), `import-dwo.ts` (`npm run import:dwo`)                                                                                                                                   |
 | Layering and series    | `layering.ts` (`layerRecent`), `series.ts` (`locationSeries` and one function per kind of series), `saved-series.ts` (`dataDirs`, `loadHistories`, `historyEnd`, `seriesFromSources`, and `readSavedSeries`, which builds the series from disk only) |
 | Facts                  | `candidates.ts`, `daily-facts.ts`, `period-facts.ts`, `forecast-facts.ts`, `thresholds.ts`, `scoring.ts`, `selection.ts`, `wording.ts`                                                                                                               |
 | Shared helpers         | `saved-table.ts` (the saved CSV files), `dates.ts` (`sydneyDate`, `sydneyHour` and date arithmetic), `errors.ts` (`inContext`)                                                                                                                       |
 | The build              | `facts-file.ts` (`buildFactsFile`, `writeFactsFile`, `factsPath`)                                                                                                                                                                                    |
-| Commands               | `build-data.ts` (`npm run build:data`), `backfill-ftp-history.ts`, and the `smoke-*.ts` scripts                                                                                                                                                      |
+| Commands               | `build-data.ts` (`npm run build:data`), `backfill-ftp-history.ts`, `import-dwo.ts`, and the `smoke-*.ts` scripts                                                                                                                                     |
 
 Every error from a file names the file and the line or element (`inContext`).
 
@@ -28,7 +29,7 @@ Every error from a file names the file and the line or element (`inContext`).
 | `data/raw/`                           | the history ZIPs, downloaded by hand                    | BOM's                                      | replaced when refreshed                                           |
 | `data/recent/daily/<station>.csv`     | FTP daily values the ZIPs don't cover yet               | `date,rain,maxTemp,minTemp`                | up to the location's history end                                  |
 | `data/recent/snapshots/<station>.csv` | live-feed values (provisional)                          | `date,rain,maxTemp,minTemp`                | up to the location's history end                                  |
-| `data/recent/readings/<station>.csv`  | the 9am and 3pm readings                                | `date,temp9am,relHum9am,temp3pm,relHum3pm` | before `readingsKeptFrom(today)`, the 1st of the month a year ago |
+| `data/recent/readings/<station>.csv`  | the 9am and 3pm readings, from IDN60910 and the DWO     | `date,temp9am,relHum9am,temp3pm,relHum3pm` | before `readingsKeptFrom(today)`, the 1st of the month a year ago |
 | `data/ftp-history/<station>.csv`      | humidity and solar from every FTP daily file since 2009 | `date,maxRelHum,minRelHum,solar`           | never                                                             |
 
 - All of them are read and written by `saved-table.ts`. Each file has a schema of its columns, each a `number` or `text`. Text can't hold commas, quotes or line breaks; writing one fails.
@@ -108,6 +109,17 @@ Every error from a file names the file and the line or element (`inContext`).
 - Each location's `forecast` in `facts.json` gives each day's date, icon code and précis, from the day of the run.
 - The forecast isn't saved.
 
+## The Daily Weather Observations
+
+BOM's website keeps a CSV per station per month for the current month and the 12 before it. The user downloads them by hand into `data/dwo/` (ignored by git), following [refreshing-history.md](refreshing-history.md), and `npm run import:dwo` adds them to the saved readings. The build never reads them. Each current station's product is its `dwo` in `src/shared/locations.ts`. They were first imported on 2026-11-13, filling every location from 2025-11-01.
+
+- Files are named `<product>.YYYYMM.csv`, and the name must match the station's product. They are Latin-1 with CRLF line ends (the `°C` in the headers), and the last line has no line end.
+- Quoted lines above the column headers give the title, when it was prepared, the copyright, and which station each kind of observation is from, as `{station 066214}`. Only a line with a station counts. If a file names one station, it must be the expected one. If it names several, as Sydney's does (`Temperature, humidity and rainfall observations are from Sydney (Observatory Hill) {station 066214}`, with pressure, cloud, evaporation and sunshine from Sydney Airport and wind from Fort Denison, each on its own line), every line that mentions temperature or humidity must name the expected station, and one must. Sydney Airport's and Olympic Park's each say `Observations were drawn from` their own station.
+- The column headers are the line whose second cell is `Date`. The four columns used are found by name without their unit (`9am Temperature`, `9am relative humidity`, `3pm Temperature`, `3pm relative humidity`), each exactly once. Every other column is ignored.
+- Rows start with an empty cell, then the date as `2026-11-1`. They run day by day from the 1st of the file's month, and the current month's file ends with today, its 3pm values blank until they are taken. Blank cells are missing. Olympic Park's file for 2026-09 has no readings on 2026-09-02.
+- `addDwoReadings` only fills values the saved readings are missing, and never replaces one. Where both have a value they must agree, or the import fails, listing every disagreement, before writing anything. Temperatures must be equal. Humidity may differ by 1% (`tolerances`): the DWO's seems to be worked out from the rounded temperature and dew point and then rounded, while the feed's comes from the unrounded values. On 2026-11-12 the 3pm humidity at Observatory Hill was 52% in the feed and 53% in the DWO (23.8 °C with a dew point of 13.6 °C gives 52.85%), and 45% against 46% at Olympic Park. The other 46 shared values agreed exactly. Readings before `readingsKeptFrom(today)` are dropped, as the runs drop them.
+- `missingReadings` lists the days from `readingsKeptFrom(today)` to yesterday that are missing any of the four values, by month. `downloadPage` turns them into `data/dwo/download.html`, with a link to each month's CSV, marking the months whose file is already in `data/dwo/`. A day the DWO also leaves blank stays listed.
+
 ## Layering
 
 `layerRecent` layers each measure in priority order. The ZIP history alone covers every date up to its own last record, so a day it's missing stays missing even if the FTP file has a value. After that, each day takes the first layer that has a value (FTP, then snapshot), so a snapshot can fill a day the FTP file leaves blank. FTP values get `periodDays: 1` and `quality: null`, and every record carries its `source` (`zip`, `ftp` or `snapshot`) and `station`.
@@ -128,7 +140,7 @@ The gap check fails when the first recent date after the history's end isn't the
 
 ## Tests and trying things out
 
-- Fixtures in `test/fixtures/` are real files, kept byte for byte (they're in `.prettierignore`): the October and November 2026 Observatory Hill daily files, and IDN60920, IDN11060 and IDN60910.94768 from 2:30pm on 2026-10-30, trimmed to the Sydney stations and areas plus Canberra.
+- Fixtures in `test/fixtures/` are real files, kept byte for byte (they're in `.prettierignore`): the October and November 2026 Observatory Hill daily files, IDN60920, IDN11060 and IDN60910.94768 from 2:30pm on 2026-10-30, trimmed to the Sydney stations and areas plus Canberra, and Sydney's DWO for October 2026 (`IDCJDW2124.202610.csv`). `test/dwo.test.ts` builds made-up DWO files with `dwoCsv`, laid out as that one is.
 - Helpers build made-up files in the real formats: `test/daily-file.ts` (`dailyFile`, and `FakeFtp` for the FTP tests) and `test/live-feeds.ts` (`readingsJson`, and the `.tgz` around it). The history tests build fixture ZIPs in a temp directory from inline CSV text.
 - Some tests read `data/raw/` and `data/ftp-history/` directly, including the selection snapshot tests, so refreshing the ZIPs can change them. Review the change before updating them with `npx vitest run -u`. The selection snapshots also read `data/recent/`, but cut every series at a fixed `dataEnd` (2026-11-08), so the data each run adds can't change them.
 - `test/facts-file.test.ts` runs the whole build for Observatory Hill against `FakeFtp` serving the fixtures, as at 2:30pm on 2026-10-30, with the real ZIPs and a copy of `data/ftp-history/`.

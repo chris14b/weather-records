@@ -18,25 +18,6 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 ---
 
-## T20: Backfill the 9am and 3pm readings
-
-**Status:** todo
-
-**Goal:** Give the 9am and 3pm facts about a year of history, from BOM's Daily Weather Observations (DWO), and make DWO the way to fill any gap that missed runs leave.
-
-- Background:
-  - DWO keeps the current month and the 12 before it, one CSV per station per month, at `https://www.bom.gov.au/climate/dwo/YYYYMM/text/<product>.YYYYMM.csv`. The CSV columns include 9am and 3pm temperature and relative humidity.
-  - These are on BOM's website, so the user downloads them by hand in a browser. Code must never fetch them.
-  - `IDCJDW2124` is Sydney, and its temperature and humidity come from Observatory Hill (066214). The user also found `IDCJDW2125`. Find the products for Sydney Airport and Sydney Olympic Park, and check which station each file's header names.
-  - Use only the temperature and humidity columns. The Sydney file takes its cloud and pressure from Sydney Airport and its wind from Fort Denison.
-- Scope: give the user the list of files to download, and add it to [refreshing-history.md](refreshing-history.md).
-- Scope: a parser for the DWO CSVs, which checks that the header names the expected station.
-- Scope: adding the downloaded readings to the saved readings in `data/recent/readings/`, for any date in the last 13 months that is missing: before saving began, or in a gap left by missed runs. On overlapping dates the two must agree, or the build fails. The pruning to 13 months (`readingsKeptFrom`) applies to these readings too.
-- Scope: a way to see which dates the saved readings are missing, so the user knows which months to download. Add the steps to [refreshing-history.md](refreshing-history.md).
-- Done when: tests cover parsing, the station check, the overlap check and filling a gap, and the 9am and 3pm records start about a year earlier.
-
----
-
 ## T19: Wind
 
 **Status:** todo
@@ -46,11 +27,16 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 - Background, checked on 2026-10-30:
   - The FTP daily files have a column for the day's average 10 m wind speed (m/s). It holds real values for Sydney Airport (files from 2009) and Sydney Olympic Park (from 2011).
   - Observatory Hill reports `0.00` every day because it has no wind instrument: BOM measures Sydney's harbour wind at Fort Denison instead. Treat those zeros as missing, never as calm, so there are no wind facts for Observatory Hill.
-  - The ZIPs don't include wind, and no allowed source has a history of gusts.
+  - The ZIPs don't include wind.
+- Background on gusts, checked on 2026-11-13:
+  - The Daily Weather Observations have each day's strongest gust, its direction and its time, so the CSVs downloaded for the 9am and 3pm readings hold a year of gusts. Sydney's (`IDCJDW2124`) takes its wind from Fort Denison (066022). Sydney Airport's and Olympic Park's are their own. A few days are blank: 6 of 378 for Sydney, 1 for Sydney Airport and 8 for Olympic Park.
+  - IDN60920 has `maximum_gust_kmh`, `maximum_gust_dir` and the time of the gust for Sydney Airport, Olympic Park and Fort Denison, over the calendar day from midnight. It has no gust for Observatory Hill, but it gives that station a `wind_spd_kmh`, which matched Fort Denison's at 12pm that day, so it may be Fort Denison's too.
+  - So gusts could be saved like the 9am and 3pm readings: from each run, with the DWO filling the year before and any gaps. The last run, at 10:30pm, misses a gust between then and midnight, so where the two differ the DWO's value should win, unlike for the readings. Like the readings, they could be kept for only 13 months, as long as the DWO keeps them, so they would be a past-year series (`pastYearSeries`), compared only with the year before each day: "the windiest day in the past year".
+  - Fort Denison is another station, so using its wind for Observatory Hill would break the rule that a location's values come from its own stations. Ask the user before doing it.
 - Scope: a one-off backfill of the wind column from every FTP daily file since each station's first file, saved in a committed file per station (e.g. `data/wind/<station>.csv`), or as a column in `data/ftp-history/`. Keep it up to date from the files the daily run already downloads. It is never pruned, because no ZIP replaces it.
 - Scope: wind measures for the fact generator, with every comparison that has enough history, within the ranking, scoring and wording in [facts.md](facts.md) ("windiest", "calmest").
 - Scope: update the data sources section of CLAUDE.md.
-- Out of scope, so ask the user first: saving each day's maximum gust from the live feed. Its records would only begin on the day saving starts.
+- Out of scope, so ask the user first: gusts, from the live feed and the DWO (see above), and kept for 13 months.
 - Done when: tests cover the parsing, the backfill, and the rule that Observatory Hill's zeros count as missing.
 
 ---
@@ -213,6 +199,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
   - A period so far shows every day until the period ends, so it can sit in Past month for months.
   - Facts for the calendar date now score their sinces and ranks below the top (weight 0.8), so most days have one. Check they don't crowd Past week, and whether the 2020 Observatory Hill station change (minimums about 0.3 °C cooler) makes its "coldest for 9 November since…" nights too easy, since day facts don't take the station offset out.
   - Facts for the day of the week (`dayOfWeek` in `comparisonWeights`, 0.7) can fill Past week in a cold week: at Sydney Airport on 5 August 2024 it had "the coldest Tuesday", "Wednesday" and "Friday since 2022 or 2023", each warmer than the one before, so none was beaten. Decide whether a page should show only the strongest of them per family and direction, as conditional facts do (`oncePerFamily`).
+  - The 9am and 3pm readings are compared only with the past year (see Series in [facts.md](facts.md)), so their facts are sinces within the year or ranks "in the past year". Check how often they get in: they first showed in a selection snapshot as "the lowest 9 am humidity since 21 September".
   - The coming week's fallback (`forecastFloor`) can pick a conditional fact over a plainer forecast one, such as "A top of 18°C on Friday (forecast 20°C) would make it the coldest day since 3 November". Decide whether a fallback should prefer forecast facts.
 - Done when: the retuning is reviewed with the user and the snapshot tests updated.
 
@@ -289,6 +276,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 **Notes:**
 
 - The run times and their reasons are in CLAUDE.md. BOM's forecast schedule there comes from search results quoting its announcement (its site refuses automated requests), and matched the feed on 2026-11-09. The latest observations appeared about 5 minutes after the half-hour then.
+- The DWO downloaded on 2026-11-13 for the readings matched the saved 9am and 3pm readings, and every 9am and 3pm reading from 2026-11-07 to 2026-11-12 had been saved at all three locations, so the 10:30am and 4:30pm runs got their readings on those days.
 - GitHub's docs say a run in an hour skipped by daylight saving moves to the next valid time. No run is between 2am and 3am, so it shouldn't matter.
 - GitHub's own schedule, removed on 2026-11-13: its `timezone` field worked, but from 9 to 13 November 2026, six of its eight scheduled runs started 5–51 minutes after a Sydney slot, which read as UTC would be 1–4 hours late. The other two came 2 h 43 m and 5 h 52 m after the 10:30pm slot. The other 25 slots got no run at all. Every run succeeded. The 10:30pm slot ran at 10:35pm on 10 November and 10:41pm on 12 November, after the 11:00 UTC forecast issue, so the parser accepted those issues. Run logs need a signed-in browser, but the public API (`api.github.com/repos/chris14b/weather-records/actions/runs`) gives each run's event and start time without signing in. `gh` belongs to the work account, so don't use it here.
 

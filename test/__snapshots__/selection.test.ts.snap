@@ -10,8 +10,8 @@ exports[`selectFacts on real data > chooses the facts at sydney-airport for the 
   "pastWeek": [
     "2026-10-25 5.29 minTemp the warmest since 10 April",
     "2026-10-26 3.22 maxTempChange the biggest day-to-day drop in maximum temperature on 26 October since records began in 1939",
+    "2026-10-28 2.71 relHum9am the lowest 9 am humidity since 21 September",
     "2026-10-23 2.38 rain the fifth wettest for 23 October since records began in 1929",
-    "2026-10-28 2.36 minRelHum the lowest humidity since 12 October",
     "2026-10-24 1.89 maxTemp the eighth hottest 24 October since records began in 1939",
     "2026-10-27 1.84 maxRelHum the lowest peak humidity since 17 October",
   ],

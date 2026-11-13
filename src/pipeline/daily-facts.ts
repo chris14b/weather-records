@@ -7,7 +7,7 @@ import {
   type FactMeasure,
 } from "../shared/facts.ts";
 import type { CandidateFact } from "./candidates.ts";
-import { addDays } from "./dates.ts";
+import { addDays, yearBefore } from "./dates.ts";
 import type { Series, SeriesDay } from "./series.ts";
 
 const comparisons: readonly Comparison[] = [
@@ -25,8 +25,15 @@ const dayOfWeekMeasures: ReadonlySet<FactMeasure> = new Set([
   "rain",
 ]);
 
+// Within a year, a month, a season or a date has only itself to be compared with.
+const pastYearComparisons: readonly Comparison[] = ["all", "year"];
+
 /** Which days a measure's days are compared with. */
-export function comparisonsFor(measure: FactMeasure): readonly Comparison[] {
+export function comparisonsFor(
+  measure: FactMeasure,
+  pastYear = false,
+): readonly Comparison[] {
+  if (pastYear) return pastYearComparisons;
   return dayOfWeekMeasures.has(measure)
     ? [...comparisons, "dayOfWeek"]
     : comparisons;
@@ -44,7 +51,8 @@ export interface DailyFactsRequest {
 
 /**
  * Ranks every day in the window that has a value, for each measure, direction and
- * comparison. Each day is compared only with the days up to and including it.
+ * comparison. Each day is compared only with the days up to and including it, and in a
+ * past-year series only with the year before it.
  */
 export function generateDailyFacts({
   locationId,
@@ -53,19 +61,23 @@ export function generateDailyFacts({
   windowDays = 31,
 }: DailyFactsRequest): CandidateFact[] {
   const windowStart = addDays(windowEnd, 1 - windowDays);
-  return series.flatMap(({ measure, days, fullRecord }) => {
+  return series.flatMap(({ measure, days, fullRecord, pastYear = false }) => {
     const first = days[0];
     if (first === undefined) return [];
     const runs = missingRuns(days);
     const inWindow = [...days.entries()].filter(
       ([, { date }]) => date >= windowStart && date <= windowEnd,
     );
-    return comparisonsFor(measure).flatMap((comparison) => {
+    return comparisonsFor(measure, pastYear).flatMap((comparison) => {
       const keyOf = (date: string) => dayKey(date, comparison, measure);
       const keys = days.map(({ date }) => keyOf(date));
       return inWindow.flatMap(([index, day]) => {
         const key = keys[index];
-        const comparable = (date: string) => keyOf(date) === key;
+        const scopeStart = pastYear
+          ? laterOf(first.date, addDays(yearBefore(day.date), 1))
+          : first.date;
+        const comparable = (date: string) =>
+          date >= scopeStart && keyOf(date) === key;
         const missing = runs.flatMap(({ dates }) =>
           dates.filter((date) => date < day.date && comparable(date)),
         );
@@ -77,7 +89,8 @@ export function generateDailyFacts({
           )
           .map(({ range }) => range);
         const earlier = days.filter(
-          (_, other) => other < index && keys[other] === key,
+          ({ date }, other) =>
+            other < index && date >= scopeStart && keys[other] === key,
         );
         // In a cold week, every day could be the coldest of its day of the week.
         const later = days.filter(
@@ -98,8 +111,9 @@ export function generateDailyFacts({
             status: day.status,
             comparison,
             ...rank(day, earlier, direction),
-            recordStart: first.date,
+            recordStart: scopeStart,
             fullRecord,
+            ...(pastYear ? { pastYear } : {}),
             missingDays: missing.length,
             gaps,
             beatenBy: dayValue(
@@ -146,6 +160,10 @@ export function rank(
     since: dayValue(earlier[sinceIndex]),
     comparedSince: earlier.length - sinceIndex,
   };
+}
+
+function laterOf(a: string, b: string): string {
+  return a > b ? a : b;
 }
 
 export function beats(

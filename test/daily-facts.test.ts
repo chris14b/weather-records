@@ -6,6 +6,7 @@ import { layerRecent } from "../src/pipeline/layering.ts";
 import {
   changeSeries,
   layeredSeries,
+  pastYearSeries,
   type Series,
 } from "../src/pipeline/series.ts";
 import { loadLocationHistory } from "../src/pipeline/stations.ts";
@@ -435,5 +436,52 @@ describe("generateDailyFacts", () => {
       });
       expect(find(facts, "2026-10-13", "calendarDate", "lowest").rank).toBe(1);
     });
+  });
+});
+
+describe("generateDailyFacts for a past-year series", () => {
+  const readings = (from: string, values: readonly (number | null)[]) =>
+    pastYearSeries({ ...series(from, values, "temp9am"), fullRecord: false });
+
+  test("compares each day only with the 365 days to it", () => {
+    const values = [30, ...Array<number>(364).fill(20), 25];
+    const fact = find(
+      factsFor(readings("2025-11-13", values), "2026-11-13", 1),
+      "2026-11-13",
+    );
+
+    expect(fact).toMatchObject({
+      rank: 1,
+      compared: 365,
+      recordStart: "2025-11-14",
+      pastYear: true,
+    });
+  });
+
+  test("compares a day with less than a year before it from the series' start", () => {
+    const fact = find(
+      factsFor(readings("2026-06-01", [20, 25]), "2026-06-02", 1),
+      "2026-06-02",
+    );
+
+    expect(fact).toMatchObject({ rank: 1, recordStart: "2026-06-01" });
+  });
+
+  test("compares only with all days and the year so far", () => {
+    const facts = factsFor(readings("2026-06-01", [20, 25]), "2026-06-02", 1);
+
+    expect(new Set(facts.map(({ comparison }) => comparison))).toEqual(
+      new Set(["all", "year"]),
+    );
+  });
+
+  test("counts only the year's missing days", () => {
+    const values = [null, 30, null, ...Array<number>(363).fill(20), 25];
+    const fact = find(
+      factsFor(readings("2025-11-12", values), "2026-11-13", 1),
+      "2026-11-13",
+    );
+
+    expect(fact).toMatchObject({ rank: 1, missingDays: 1, compared: 364 });
   });
 });

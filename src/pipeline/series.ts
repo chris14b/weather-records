@@ -29,6 +29,8 @@ export interface Series<Measure extends FactMeasure = FactMeasure> {
   multiDay?: readonly MultiDayValue[];
   /** Whether the values go back to when records began. */
   fullRecord: boolean;
+  /** Whether the values are kept for only about a year, so each day is compared with the year before it. */
+  pastYear?: true;
 }
 
 /**
@@ -151,10 +153,10 @@ export function locationSeries(data: LocationData): Series[] {
     columnSeries("maxRelHum", data.ftpHistory),
     columnSeries("minRelHum", data.ftpHistory),
     columnSeries("solar", data.ftpHistory),
-    columnSeries("temp9am", data.readings),
-    columnSeries("relHum9am", data.readings),
-    columnSeries("temp3pm", data.readings),
-    columnSeries("relHum3pm", data.readings),
+    pastYearSeries(columnSeries("temp9am", data.readings)),
+    pastYearSeries(columnSeries("relHum9am", data.readings)),
+    pastYearSeries(columnSeries("temp3pm", data.readings)),
+    pastYearSeries(columnSeries("relHum3pm", data.readings)),
     changeSeries(maxTemp),
     changeSeries(minTemp),
   ];
@@ -178,4 +180,11 @@ export function columnSeries<Column extends FactMeasure>(
     }),
     fullRecord: false,
   };
+}
+
+/** Marks a series whose values are kept for only about a year, such as the 9am and 3pm readings. */
+export function pastYearSeries<Measure extends FactMeasure>(
+  series: Series<Measure>,
+): Series<Measure> {
+  return { ...series, pastYear: true };
 }

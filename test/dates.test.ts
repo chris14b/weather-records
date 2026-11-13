@@ -4,6 +4,7 @@ import {
   daysBetween,
   monthsBetween,
   sydneyDate,
+  yearBefore,
 } from "../src/pipeline/dates.ts";
 
 describe("addDays", () => {
@@ -13,6 +14,16 @@ describe("addDays", () => {
     ["2026-03-01", -1, "2026-02-28"],
   ])("%s plus %i is %s", (date, days, expected) => {
     expect(addDays(date, days)).toBe(expected);
+  });
+});
+
+describe("yearBefore", () => {
+  test.each([
+    ["2026-11-13", "2025-11-13"],
+    ["2028-02-29", "2027-02-28"],
+    ["2026-01-01", "2025-01-01"],
+  ])("a year before %s is %s", (date, expected) => {
+    expect(yearBefore(date)).toBe(expected);
   });
 });
 

@@ -105,6 +105,8 @@ export interface FactWhy {
   recordStart: string;
   /** Whether the series goes back to when records began. */
   fullRecord: boolean;
+  /** Whether it was compared only with the year before it. */
+  pastYear?: true;
   /** Comparable days between the record start and this day with no value. */
   missingDays: number;
   /** Runs of at least a week of missing days that include a comparable day. */

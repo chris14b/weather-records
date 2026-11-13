@@ -6,3 +6,4 @@ dist/
 coverage/
 *.partial
 src/site/public/facts.json
+data/dwo/

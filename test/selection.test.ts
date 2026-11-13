@@ -8,7 +8,11 @@ import {
   selectFacts,
 } from "../src/pipeline/selection.ts";
 import type { ForecastDay } from "../src/pipeline/forecast.ts";
-import { changeSeries, type Series } from "../src/pipeline/series.ts";
+import {
+  changeSeries,
+  pastYearSeries,
+  type Series,
+} from "../src/pipeline/series.ts";
 import type {
   Fact,
   FactMeasure,
@@ -345,6 +349,35 @@ describe("selectFacts", () => {
         },
       ]);
       expect(pastMonth[0]?.score).toBeLessThan(3);
+    });
+
+    test("doesn't count a record in the past year as an all-time one", () => {
+      const date = "2027-01-03";
+      const days = Array.from({ length: 366 }, (_, index) => ({
+        date: addDays(date, index - 365),
+        value: index === 365 ? 20 : 60,
+        status: "confirmed" as const,
+      }));
+      const readings: Series = {
+        measure: "relHum9am",
+        days,
+        fullRecord: false,
+      };
+      const today = (allSeries: Series[]) =>
+        selectRecords({
+          date,
+          facts: generateCandidates({
+            locationId: "test",
+            series: allSeries,
+            windowEnd: date,
+          }),
+          series: allSeries,
+        }).today.map(({ text }) => text);
+
+      expect(today([readings])).toEqual([
+        "the lowest 9\u00a0am humidity since January 2026",
+      ]);
+      expect(today([pastYearSeries(readings)])).toEqual([]);
     });
 
     test("leaves out a lesser rank that scores too little", () => {

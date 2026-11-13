@@ -12,6 +12,12 @@ export function addDays(date: string, days: number): string {
   return time.toISOString().slice(0, 10);
 }
 
+/** The same date a year earlier, or 28 February for 29 February. */
+export function yearBefore(date: string): string {
+  const monthDay = date.slice(5) === "02-29" ? "02-28" : date.slice(5);
+  return `${String(Number(date.slice(0, 4)) - 1)}-${monthDay}`;
+}
+
 /** The number of days from `from` to `to`, negative if `to` is earlier. */
 export function daysBetween(from: string, to: string): number {
   return (

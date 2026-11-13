@@ -397,9 +397,13 @@ function isAllTimeRecord({
   period,
   rank,
   ties,
+  pastYear,
 }: CandidateFact): boolean {
   return (
-    rank === 1 && ties === 0 && (comparison === "all" || isCalendar(period))
+    rank === 1 &&
+    ties === 0 &&
+    pastYear === undefined &&
+    (comparison === "all" || isCalendar(period))
   );
 }
 
@@ -527,6 +531,7 @@ function explain(
     compared: fact.compared,
     recordStart: fact.recordStart,
     fullRecord: fact.fullRecord,
+    ...(fact.pastYear === undefined ? {} : { pastYear: fact.pastYear }),
     missingDays: fact.missingDays,
     gaps: fact.gaps,
     record:
@@ -546,6 +551,7 @@ function explain(
     return source.days
       .filter(
         (day) =>
+          day.date >= fact.recordStart &&
           day.date <= date &&
           dayKey(day.date, comparison, fact.measure) === key,
       )

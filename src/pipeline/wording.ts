@@ -9,7 +9,7 @@ import type {
 } from "../shared/facts.ts";
 import type { CandidateFact } from "./candidates.ts";
 import { comparisonKey, dayKey, keyedDate } from "./daily-facts.ts";
-import { addDays, daysBetween } from "./dates.ts";
+import { addDays, daysBetween, yearBefore } from "./dates.ts";
 import type { DaylightCandidate } from "./daylight-facts.ts";
 import { coverage, minimumCoverage } from "./scoring.ts";
 
@@ -86,12 +86,12 @@ const phrases: Record<FactMeasure, Record<Direction, Phrase>> = {
     lowest: { superlative: "coldest", noun: "3\u00a0pm" },
   },
   relHum9am: {
-    highest: { superlative: "most humid", noun: "9\u00a0am" },
-    lowest: { superlative: "driest", noun: "9\u00a0am" },
+    highest: { superlative: "highest", noun: "9\u00a0am humidity" },
+    lowest: { superlative: "lowest", noun: "9\u00a0am humidity" },
   },
   relHum3pm: {
-    highest: { superlative: "most humid", noun: "3\u00a0pm" },
-    lowest: { superlative: "driest", noun: "3\u00a0pm" },
+    highest: { superlative: "highest", noun: "3\u00a0pm humidity" },
+    lowest: { superlative: "lowest", noun: "3\u00a0pm humidity" },
   },
   maxTempChange: changePhrases("maxTemp"),
   minTempChange: changePhrases("minTemp"),
@@ -268,11 +268,15 @@ function after(noun: string, words: string): string {
 function rankScope({
   comparison,
   fullRecord,
+  pastYear,
   recordStart,
   date,
 }: CandidateFact): string {
   if (comparison === "year") return "";
   if (fullRecord) return ` since records began in ${recordStart.slice(0, 4)}`;
+  if (pastYear && recordStart === addDays(yearBefore(date), 1)) {
+    return " in the past year";
+  }
   const years = daysBetween(recordStart, date) / 365.25;
   return ` since ${recordStart.endsWith("-01-01") || years >= 3 ? recordStart.slice(0, 4) : monthYear(recordStart)}`;
 }

@@ -26,6 +26,8 @@ export interface Station extends StationPeriod {
   dailyFolder: DailyFolder;
   /** The WMO number that names the station's file of recent readings (IDN60910). Only stations still open have one. */
   wmo?: string;
+  /** The product code of the station's Daily Weather Observations, which BOM's website keeps for 13 months. Only stations still open have one. */
+  dwo?: string;
   /** How much higher it reads than the station before it, in °C. */
   reads?: StationReadings;
 }
@@ -84,6 +86,7 @@ export const locations: readonly Location[] = [
         dailyFolder: observatoryHillFolder,
         from: "2020-09-01",
         wmo: "94768",
+        dwo: "IDCJDW2124",
         reads: { maxTemp: 0.3, minTemp: -0.3 },
       },
     ],
@@ -100,6 +103,7 @@ export const locations: readonly Location[] = [
         name: "SYDNEY AIRPORT AMO",
         dailyFolder: { name: "sydney_airport_amo", from: "2009-01" },
         wmo: "94767",
+        dwo: "IDCJDW2125",
       },
     ],
   },
@@ -118,6 +122,7 @@ export const locations: readonly Location[] = [
           from: "2011-08",
         },
         wmo: "95765",
+        dwo: "IDCJDW2061",
       },
     ],
   },

@@ -65,7 +65,8 @@ describe("describeFact", () => {
     ["solar", "highest", "the sunniest day"],
     ["solar", "lowest", "the gloomiest day"],
     ["temp9am", "lowest", "the coldest 9\u00a0am"],
-    ["relHum3pm", "lowest", "the driest 3\u00a0pm"],
+    ["relHum3pm", "lowest", "the lowest 3\u00a0pm humidity"],
+    ["relHum9am", "highest", "the highest 9\u00a0am humidity"],
   ] as const)("words %s %s as %s", (measure, direction, expected) => {
     expect(words({ measure, direction })).toBe(
       `${expected} since records began in 1900`,
@@ -210,6 +211,30 @@ describe("describeFact", () => {
       );
     },
   );
+
+  test("says a past-year record is in the past year", () => {
+    expect(
+      words({
+        measure: "temp9am",
+        fullRecord: false,
+        pastYear: true,
+        recordStart: "2025-11-07",
+        rank: 2,
+      }),
+    ).toBe("the second warmest 9\u00a0am in the past year");
+  });
+
+  test("says since when a past-year record has less than a year", () => {
+    expect(
+      words({
+        measure: "relHum3pm",
+        direction: "lowest",
+        fullRecord: false,
+        pastYear: true,
+        recordStart: "2026-03-14",
+      }),
+    ).toBe("the lowest 3\u00a0pm humidity since March 2026");
+  });
 
   test.each([
     ["2026-11-02", "since 2\u00a0November"],
