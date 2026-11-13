@@ -12,8 +12,8 @@ exports[`selectFacts on real data > chooses the facts at sydney-airport for the 
     "2026-10-26 3.22 maxTempChange the biggest day-to-day drop in maximum temperature on 26 October since records began in 1939",
     "2026-10-28 2.71 relHum9am the lowest 9 am humidity since 21 September",
     "2026-10-23 2.38 rain the fifth wettest for 23 October since records began in 1929",
+    "2026-10-27 1.98 wind the calmest day since 18 October",
     "2026-10-24 1.89 maxTemp the eighth hottest 24 October since records began in 1939",
-    "2026-10-27 1.84 maxRelHum the lowest peak humidity since 17 October",
   ],
   "today": [
     "2026-10-29 5.03 solar the sunniest day since 4 February",
@@ -104,10 +104,10 @@ exports[`selectFacts on real data > chooses the facts at sydney-olympic-park for
   ],
   "pastWeek": [
     "2020-02-09 5.89 solar the gloomiest day since March 2018",
+    "2020-02-09 5.48 wind the windiest day since November 2018",
     "2020-02-10 5.20 rain the wettest since records began in 2011",
     "2020-02-08..2020-02-10 5.17 rain the wettest since records began in 2011",
     "2020-02-07 4.58 range the smallest temperature range since 26 August 2019",
-    "2020-02-09 4.22 minRelHum the most humid day since 18 September 2019",
     "2020-02-06 2.94 minTempChange the biggest day-to-day rise in minimum temperature in February since 2017",
     "2020-02-11 2.08 maxTemp the hottest day since 3 February",
   ],

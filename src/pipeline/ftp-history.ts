@@ -10,6 +10,7 @@ import type { FromStation } from "./stations.ts";
 export const ftpHistorySchema = {
   maxRelHum: "number",
   minRelHum: "number",
+  wind: "number",
   solar: "number",
 } as const;
 
@@ -68,10 +69,11 @@ export async function updateFtpHistory({
         ...saved.filter(({ date }) => !date.startsWith(month)),
         ...days
           .filter(({ date }) => inPeriod(date))
-          .map(({ date, maxRelHum, minRelHum, solar }) => ({
+          .map(({ date, maxRelHum, minRelHum, wind, solar }) => ({
             date,
             maxRelHum,
             minRelHum,
+            wind,
             solar,
           })),
       ];

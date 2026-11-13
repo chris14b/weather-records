@@ -209,7 +209,7 @@ describe("generateDailyFacts", () => {
     },
   );
 
-  test.each(["range", "solar", "temp9am", "maxTempChange"] as const)(
+  test.each(["range", "wind", "solar", "temp9am", "maxTempChange"] as const)(
     "doesn't compare %s with the same day of the week",
     (measure) => {
       const facts = factsFor(series("2026-01-01", [3], measure), "2026-01-01");

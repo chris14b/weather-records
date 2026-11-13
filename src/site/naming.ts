@@ -243,6 +243,7 @@ function isHad({ measure, direction, period }: Phrased): boolean {
     case "maxTemp":
     case "minTemp":
     case "rain":
+    case "wind":
     case "solar":
       return false;
     case "minRelHum":
@@ -277,6 +278,7 @@ const units: Record<FactMeasure, string> = {
   range: "°C",
   maxRelHum: "%",
   minRelHum: "%",
+  wind: "km/h",
   solar: "MJ/m²",
   temp9am: "°C",
   relHum9am: "%",
@@ -318,6 +320,8 @@ function valueClause({ measure, period, direction, status, why }: Phrased) {
       return `with a low of ${value}`;
     case "rain":
       return `with ${value}`;
+    case "wind":
+      return `with an average wind speed of ${value}`;
     case "minRelHum":
       if (direction === "highest") return `never below ${value}`;
   }

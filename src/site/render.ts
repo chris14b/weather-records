@@ -8,6 +8,7 @@ import {
   type Standout,
 } from "./arrange.ts";
 import { daylightSentence, longDate, sentence, sydneyDate } from "./naming.ts";
+import { locationNotes } from "./notes.ts";
 import { updateNote } from "./updates.ts";
 
 export type Children = (Node | string)[];
@@ -208,15 +209,9 @@ function footer(
   generatedAt: string,
   now: Date,
 ): HTMLElement {
-  const notes: Children = [];
-  if (location.id === "sydney-observatory-hill") {
-    notes.push(
-      element("p", {}, [
-        "Observatory Hill's records join two stations: 066062 until 31\u00a0August 2020, then 066214. ",
-        "The new station reads about 0.3\u00a0°C warmer for maximums and 0.3\u00a0°C cooler for minimums, so records that span the change are less exact.",
-      ]),
-    );
-  }
+  const notes: Children = locationNotes(location.id).map((note) =>
+    element("p", {}, [note]),
+  );
   notes.push(
     element("p", {}, [
       `${updateNote(generatedAt, now)} Data © `,

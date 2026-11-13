@@ -38,6 +38,7 @@ const measureWeights: Record<FactMeasure, number> = {
   minTemp: 1,
   rain: 1,
   range: 0.9,
+  wind: 0.9,
   solar: 0.9,
   minRelHum: 0.85,
   maxRelHum: 0.8,

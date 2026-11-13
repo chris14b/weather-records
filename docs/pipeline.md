@@ -24,13 +24,13 @@ Every error from a file names the file and the line or element (`inContext`).
 
 ## Saved files
 
-| Path                                  | Holds                                                   | Columns                                    | Pruned                                                            |
-| ------------------------------------- | ------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------- |
-| `data/raw/`                           | the history ZIPs, downloaded by hand                    | BOM's                                      | replaced when refreshed                                           |
-| `data/recent/daily/<station>.csv`     | FTP daily values the ZIPs don't cover yet               | `date,rain,maxTemp,minTemp`                | up to the location's history end                                  |
-| `data/recent/snapshots/<station>.csv` | live-feed values (provisional)                          | `date,rain,maxTemp,minTemp`                | up to the location's history end                                  |
-| `data/recent/readings/<station>.csv`  | the 9am and 3pm readings, from IDN60910 and the DWO     | `date,temp9am,relHum9am,temp3pm,relHum3pm` | before `readingsKeptFrom(today)`, the 1st of the month a year ago |
-| `data/ftp-history/<station>.csv`      | humidity and solar from every FTP daily file since 2009 | `date,maxRelHum,minRelHum,solar`           | never                                                             |
+| Path                                  | Holds                                                         | Columns                                    | Pruned                                                            |
+| ------------------------------------- | ------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------- |
+| `data/raw/`                           | the history ZIPs, downloaded by hand                          | BOM's                                      | replaced when refreshed                                           |
+| `data/recent/daily/<station>.csv`     | FTP daily values the ZIPs don't cover yet                     | `date,rain,maxTemp,minTemp`                | up to the location's history end                                  |
+| `data/recent/snapshots/<station>.csv` | live-feed values (provisional)                                | `date,rain,maxTemp,minTemp`                | up to the location's history end                                  |
+| `data/recent/readings/<station>.csv`  | the 9am and 3pm readings, from IDN60910 and the DWO           | `date,temp9am,relHum9am,temp3pm,relHum3pm` | before `readingsKeptFrom(today)`, the 1st of the month a year ago |
+| `data/ftp-history/<station>.csv`      | humidity, wind and solar from every FTP daily file since 2009 | `date,maxRelHum,minRelHum,wind,solar`      | never                                                             |
 
 - All of them are read and written by `saved-table.ts`. Each file has a schema of its columns, each a `number` or `text`. Text can't hold commas, quotes or line breaks; writing one fails.
 - Saved files have a row for every day their source covered, even an all-blank one, so a blank row still records that the day was covered.
@@ -71,12 +71,13 @@ Every error from a file names the file and the line or element (`inContext`).
 
 - The FTP server has no list linking folders to station numbers (`stations_db.txt` has 109 NSW stations, but there are 132 NSW folders), so each station's `dailyFolder` names its folder, its first month (`from`) and the months it has no file for (`missing`).
 - The Observatory Hill folder held 066062's values before 2020, so both its stations share it. It has **no files from 2018-04 to 2020-07**, and no other Sydney folder covers that time, so Observatory Hill has no humidity or solar from 2018-03-25 (the last week of March is blank) to 2020-07-31.
+- The wind column is the day's average speed at 10 m, in m/s. Observatory Hill has no anemometer, and every one of its 5,644 days from 2009 to 2026-11-11 says `0.00`, so the parser reads a wind of `0.00` as missing. No station with an anemometer averaged a calm day: Sydney Airport's 6,517 days ran from 1.36 to 18.54 m/s (2015-04-21), and Olympic Park's 5,540 from 0.19 to 7.69 m/s. Olympic Park's site is sheltered, so its wind is much lighter than the airport's on the same day.
 - The Observatory Hill and Sydney Airport folders start in 2009-01. The Olympic Park (Archery Centre) folder starts in 2011-08, whose rows are all blank; its first values are on 2011-09-01. A second folder, `sydney_olympic_park_(sydney_olympic_pk_a)`, is an older station whose last file is 2011-08.
 
 ### Updating
 
 - `updateDailyFiles` fetches every month from the one holding the first day after the later of the history end and the last saved day, up to the current Sydney month. Fetched months replace their saved rows. A missing current-month file is skipped; any earlier missing month is an error. It saves rain, max and min only.
-- `updateFtpHistory` does both the backfill and the update. For each station, it fetches from the month after its last saved day (or its folder's first month) up to the current month, within the station's own period, and writes after every month so an interrupted run resumes. `npm run backfill:ftp-history` runs it for every location.
+- `updateFtpHistory` does both the backfill and the update. A new column means starting again: move the old files aside, run `npm run backfill:ftp-history` (about a minute), and check the other columns match. The wind column was added that way on 2026-11-13, and every other cell was unchanged. For each station, it fetches from the month after its last saved day (or its folder's first month) up to the current month, within the station's own period, and writes after every month so an interrupted run resumes. `npm run backfill:ftp-history` runs it for every location.
 - Wrap the connection in `withDownloadCache` so the two download the current month only once.
 
 ## The live feeds

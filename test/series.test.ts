@@ -6,6 +6,7 @@ import {
   layeredSeries,
   rangeSeries,
   type Series,
+  windSeries,
 } from "../src/pipeline/series.ts";
 
 function record(
@@ -197,5 +198,19 @@ describe("columnSeries", () => {
       days: [{ date: "2026-10-30", value: 18.2, status: "confirmed" }],
       fullRecord: false,
     });
+  });
+});
+
+describe("windSeries", () => {
+  test("turns the daily files' m/s into km/h, to 0.1 km/h", () => {
+    const series = columnSeries("wind", [
+      { date: "2015-04-21", wind: 18.54 },
+      { date: "2015-04-22", wind: 7.11 },
+      { date: "2015-04-23", wind: null },
+    ]);
+
+    expect(windSeries(series).days.map(({ value }) => value)).toEqual([
+      66.7, 25.6,
+    ]);
   });
 });

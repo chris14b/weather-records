@@ -52,7 +52,7 @@ export function dailyFile(
       cell(day.minTemp),
       cell(day.maxRelHum),
       cell(day.minRelHum),
-      "0.00",
+      cell(day.wind),
       cell(day.solar),
     ].join(",");
   });
@@ -86,17 +86,17 @@ export function repeatedDays(
   return daysFrom(first, ...Array.from({ length: count }, () => values));
 }
 
-/** Consecutive days from `first`, each with the humidity and solar values given. */
-export function humidityAndSolarFrom(
+/** The values of a day in a daily file that only the FTP history keeps. */
+export type HistoryValues = Partial<
+  Pick<DailyFileDay, "maxRelHum" | "minRelHum" | "wind" | "solar">
+>;
+
+/** Consecutive days from `first`, each with the values given and the rest blank. */
+export function historyDaysFrom(
   first: string,
-  ...values: [number | null, number | null, number | null][]
+  ...values: HistoryValues[]
 ): FileDay[] {
-  return values.map(([maxRelHum, minRelHum, solar], index) => ({
-    date: addDays(first, index),
-    maxRelHum,
-    minRelHum,
-    solar,
-  }));
+  return values.map((day, index) => ({ date: addDays(first, index), ...day }));
 }
 
 /** Serves made-up daily files, and records the name of each file requested. */

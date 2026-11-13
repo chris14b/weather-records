@@ -79,6 +79,7 @@ describe("amount", () => {
     ["rain", 1234.5, false, "1,234.5\u00a0mm"],
     ["relHum3pm", 31, false, "31%"],
     ["solar", 27.54, false, "27.5\u00a0MJ/m²"],
+    ["wind", 25.6, false, "25.6\u00a0km/h"],
     ["maxTempChange", -14.9, false, "14.9\u00a0°C"],
   ] as const)("writes %s %d", (measure, value, forecast, expected) => {
     expect(amount(measure, value, forecast)).toBe(expected);
@@ -308,6 +309,15 @@ describe("sentence", () => {
         why: { value: 82 },
       }),
       "[Today] is the most humid day since 3\u00a0March, never below 82%",
+    ],
+    [
+      fact({
+        date: "2026-11-07",
+        measure: "wind",
+        text: "the windiest day since 2015",
+        why: { value: 52.3 },
+      }),
+      "[Saturday] was the windiest day since 2015, with an average wind speed of 52.3\u00a0km/h",
     ],
     [
       fact({

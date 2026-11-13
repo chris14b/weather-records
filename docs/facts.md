@@ -13,18 +13,19 @@ Facts about daylight are made apart from these, from where the location is (see 
 
 ## 1. Series
 
-A series is one measure's single-day values for a location, in date order (`series.ts`). There are 13:
+A series is one measure's single-day values for a location, in date order (`series.ts`). There are 14:
 
-| Measure                                        | From                                            | Starts                                               |
-| ---------------------------------------------- | ----------------------------------------------- | ---------------------------------------------------- |
-| `maxTemp`, `minTemp`, `rain`                   | ZIPs, then FTP daily files, then live snapshots | when records began                                   |
-| `range` (max minus min)                        | the two series above, on days with both         | when records began                                   |
-| `maxRelHum`, `minRelHum`, `solar`              | FTP history (`data/ftp-history/`)               | 2009 (2011 at Olympic Park)                          |
-| `temp9am`, `relHum9am`, `temp3pm`, `relHum3pm` | saved readings (`data/recent/readings/`)        | the 1st of the month a year ago (`readingsKeptFrom`) |
-| `maxTempChange`, `minTempChange`               | each day's value minus the day before's         | when records began                                   |
+| Measure                                        | From                                            | Starts                                                |
+| ---------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------- |
+| `maxTemp`, `minTemp`, `rain`                   | ZIPs, then FTP daily files, then live snapshots | when records began                                    |
+| `range` (max minus min)                        | the two series above, on days with both         | when records began                                    |
+| `maxRelHum`, `minRelHum`, `wind`, `solar`      | FTP history (`data/ftp-history/`)               | 2009 (2011 at Olympic Park), none at Observatory Hill |
+| `temp9am`, `relHum9am`, `temp3pm`, `relHum3pm` | saved readings (`data/recent/readings/`)        | the 1st of the month a year ago (`readingsKeptFrom`)  |
+| `maxTempChange`, `minTempChange`               | each day's value minus the day before's         | when records began                                    |
 
 - A series whose history goes back to when records began has `fullRecord` set. Only those may say "since records began in 1859"; the others say "since 2009" and so on.
 - The 9am and 3pm readings are kept for only about 13 months, as long as the Daily Weather Observations keep them, so they are **past-year** series (`pastYearSeries`, `pastYear`). Each day is compared only with the 365 days to it, from the day after the same date a year earlier (`yearBefore`), or from the series' first day if that is later. The readings are kept from the 1st of the month a year ago, so every one is in some day's year, but the oldest days in the 31-day window can have a few weeks less than a year: on 13 November 2026, 14 October needed readings from 15 October 2025, and they began on 1 November. Within a year, a month, a season or a date has nothing to be compared with but itself, so they are compared only among all days and the year so far (`comparisonsFor`).
+- `wind` is the day's average speed at 10 m. The daily files give it in m/s, and `windSeries` turns it into km/h, to 0.1 km/h, the unit BOM's observations and forecasts use, so ties and every value in `facts.json` are what the site shows. It comes only from the daily files, which run one to two days behind, so its facts are about days that Today has already passed to Past week. Its facts are "the windiest day" and "the calmest day". Observatory Hill has no anemometer, so its series is empty (see [pipeline.md](pipeline.md)).
 - Missing days are simply absent. Nothing is filled in, and nothing is counted through a gap.
 - A multi-day rain or temperature total is left out of the days, so the days it covers count as missing. It is kept apart, as the series' `multiDay`, for rain totals over periods (see Periods). A ZIP value with a blank period counts as a single day only on a series' first day or after a day with a value. Otherwise it probably is an accumulation, and is left out too.
 - A **change** is left out when either its day or the day before has no value, so a change is never taken across a gap. Only the maximum and minimum have changes. Changes in rain, range and humidity were judged not worth showing.
@@ -157,7 +158,7 @@ These keep ranks easy to set from scoring too high:
 - **Missing days:** a rank is multiplied by the share of comparable days that have a value. The missing days might have held something better.
 - **Sinces that don't count:** there is no since score for `year`, because its since is always the same day as the `all` since. There is none when a gap falls after the since day, since the gap might have held a day that matched it. A day's or run's since for `month` or `season` counts only if it reaches back before the same month or season last year (`previousOccurrence`): "the coldest November night since 13 November 2025" covers only about 20 November days, but sounds like a year. A since for the day of the week counts only if it reaches back more than 52 weeks, since "the wettest Saturday since 31 October" is only a week.
 - **Comparison weight:** all 1, season 0.85, month 0.8, calendar date 0.8, year 0.75, day of the week 0.7 (`comparisonWeights`). Narrow comparisons give many more chances to set a record, and are less interesting to read. The calendar date weighs as much as the month because "the coldest 9 November since 1999" reads better than a short since such as "the biggest day-to-day rise in minimum temperature since 1 November": on 9 November 2026 at Observatory Hill the first scores log(27) × 0.8, about 2.6, and the second 1.77. So a quiet day usually still has a fact for its date, and on a short record its record for the date can lead Today: Olympic Park's coldest 9 November since records began in 2011 scores 1.77. The day of the week weighs least: each day of the week holds about a seventh of the days, so it sets records about as often as a month does, and its interest is in the reading, "the wettest Saturday since 2022", not its rarity. On the 5th and 19th of every month in 2024 and 2025, facts for the day of the week were 9 of the 229 facts in Today and 24 of the 825 in Past week across the three locations, and none in Past month. Most were winter nights and cold days, such as Olympic Park's "the coldest Monday since 2018".
-- **Measure weight:** 1 for temperature and rain, down to 0.75 for 9am and 3pm humidity (`measureWeights`). Changes weigh less than their measures: 0.9 for the maximum and 0.85 for the minimum.
+- **Measure weight:** 1 for temperature and rain, 0.9 for wind and solar, down to 0.75 for 9am and 3pm humidity (`measureWeights`). Changes weigh less than their measures: 0.9 for the maximum and 0.85 for the minimum.
 
 ### Worked examples
 
@@ -174,6 +175,7 @@ These keep ranks easy to set from scoring too high:
 - rain
 - range
 - humidity (all four)
+- wind
 - solar
 - changes in maximum and minimum
 
@@ -237,7 +239,7 @@ Past week and Past month run strongest first, and so do Today's observed and day
 
 - **Subject:** "Today", "Yesterday", its day of the week within 6 days, otherwise a date ("12 October"). A minimum is for the 24 hours to 9am, so it names the night that ends on its date by its evening: "Last night", "Tonight", "Thursday night", "The night of 2 November". A forecast or a running value for last night is for the night still under way after midnight, so it is named by its day of the week: "Sunday night is forecast to be…", "Sunday night is the coldest since 2007". A day's rain is "The 24 hours to 9 am Friday". A fact for the day of the week would say the day twice ("Thursday was the hottest Thursday"), so a day or night that would be named by its day of the week is named by its date instead: "5 November was the hottest Thursday since 2019", "The night of 5 November was the coldest Thursday night". Today, yesterday, tomorrow, last night, tonight and tomorrow night keep their names, and so does a day's rain, whose day of the week is the day before its 9am. Periods are "October", "October 2025" in another year, "The 3 days to Tuesday", "November so far", "Spring", "2026" for the year so far, and "2025".
 - **Verb:** "is" or "was" by whether the day is over. A night, the rain to 9am and the 9am readings are over by the time the page shows them, unless the value is still running, which isn't over until its 9am. Rain days and runs of days take "were". Measures that aren't a kind of day take "had": changes, ranges, humidity and the 9am and 3pm readings ("Thursday had the lowest peak humidity"). A period's nights take "had", "has had" or, for the year so far, "has so far had". Forecasts are "is forecast to be".
-- **Value**, with its unit from the measure: "with a top of 23.6 °C", "with a low of 11.6 °C", "with 49.6 mm", "up 6.7 °C" for a change, "at 79%", "with an average top of 23.6 °C" for a period. Observed values show one decimal, forecasts whole degrees as BOM gives them.
+- **Value**, with its unit from the measure: "with a top of 23.6 °C", "with a low of 11.6 °C", "with 49.6 mm", "up 6.7 °C" for a change, "at 79%", "with an average wind speed of 25.6 km/h", "with an average top of 23.6 °C" for a period. Observed values show one decimal, forecasts whole degrees as BOM gives them.
 - **Provisional:** shown exactly like a confirmed fact, with no words and the same dot ("Observed" in the legend). The live feed is treated as fact.
 - **Partial:** worded like an observed fact, with no words of its own: "Today is the hottest day since February, with a top of 31.2 °C". Its dot is a ring with a smaller dot inside, an observed dot not yet filled out ("So far" in the legend). The headline has no dot, so a running headline has the mark and "So far" beneath it, with the halo or pulse its dot would have in a list. Screen readers hear "So far" before the sentence.
 - **Conditional:** built around what it needs: "A low of 10 °C tonight (forecast 12 °C) would make it the coldest night in November since 2006", "A top of 36.6 °C on Thursday (forecast 35 °C) would make it…", "90.1 mm in the 7 days to Sunday (forecast 70 mm) would make them…". A single day's rain is a chance: "The 24 hours to 9 am Monday have a 25% chance of being the wettest since 4 November, with 20 mm or more".

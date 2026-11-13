@@ -16,6 +16,8 @@ export interface DailyFileDay extends RecentDay {
   maxRelHum: number | null;
   /** The day's lowest relative humidity, in %. */
   minRelHum: number | null;
+  /** The day's average wind speed at 10 m, in m/s. */
+  wind: number | null;
   /** The day's total solar exposure, in MJ/m². */
   solar: number | null;
 }
@@ -145,7 +147,7 @@ export function parseDailyFile(
       minTemp = "",
       maxRelHum = "",
       minRelHum = "",
-      ,
+      wind = "",
       solar = "",
     ] = cells;
     if (station !== stationName) {
@@ -190,10 +192,17 @@ export function parseDailyFile(
       minTemp: value(minTemp),
       maxRelHum: value(maxRelHum),
       minRelHum: value(minRelHum),
+      wind: windSpeed(value(wind)),
       solar: value(solar),
     };
     if (isoDate >= monthStart) days.push(day);
   }
+}
+
+// A station with no anemometer, such as Observatory Hill, reports 0.00 every day. No
+// station that has one averaged a calm day from 2009 to 2026: the least was 0.19 m/s.
+function windSpeed(value: number | null): number | null {
+  return value === 0 ? null : value;
 }
 
 function fileName({ station, month }: DailyFile): string {

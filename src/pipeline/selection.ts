@@ -106,6 +106,7 @@ const families: Record<FactMeasure, string> = {
   minRelHum: "humidity",
   relHum9am: "humidity",
   relHum3pm: "humidity",
+  wind: "wind",
   solar: "solar",
   maxTempChange: "temperatureChange",
   minTempChange: "temperatureChange",

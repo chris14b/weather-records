@@ -152,6 +152,7 @@ export function locationSeries(data: LocationData): Series[] {
     rangeSeries(maxTemp, minTemp),
     columnSeries("maxRelHum", data.ftpHistory),
     columnSeries("minRelHum", data.ftpHistory),
+    windSeries(columnSeries("wind", data.ftpHistory)),
     columnSeries("solar", data.ftpHistory),
     pastYearSeries(columnSeries("temp9am", data.readings)),
     pastYearSeries(columnSeries("relHum9am", data.readings)),
@@ -179,6 +180,17 @@ export function columnSeries<Column extends FactMeasure>(
         : [{ date: row.date, value, status: "confirmed" as const }];
     }),
     fullRecord: false,
+  };
+}
+
+/** Turns the daily files' m/s into km/h, to 0.1 km/h, the unit BOM's observations and forecasts use. */
+export function windSeries(series: Series<"wind">): Series<"wind"> {
+  return {
+    ...series,
+    days: series.days.map((day) => ({
+      ...day,
+      value: Math.round(day.value * 3.6 * 10) / 10,
+    })),
   };
 }
 

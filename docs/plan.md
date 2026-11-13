@@ -5,7 +5,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 ## How to use this plan
 
 - Each task has a permanent ID, such as `T15`. An ID is never reused or renumbered, and never has a letter after it (no `T5b`). A new task, including one split off another, takes the next ID, and goes where its priority puts it. Its place in the list, not its ID, sets its priority.
-- **Next ID:** T48
+- **Next ID:** T49
 - **Depends on** lists the tasks that must be finished first. A task that is no longer in this plan is finished. Keep every task below the tasks it depends on.
 - The next task is the first one that isn't deferred or blocked and whose dependencies are all finished.
 - Statuses: `todo`, `in progress`, `blocked` (say on what), `deferred` (skip until the user says otherwise). An open task can have **Notes** for whatever a later session needs.
@@ -18,26 +18,23 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 ---
 
-## T19: Wind
+## T48: Wind gusts
 
 **Status:** todo
 
-**Goal:** Wind facts such as "the 8th windiest day this year", for the locations where BOM's feeds allow them.
+**Goal:** Gust facts for Sydney Airport and Sydney Olympic Park, such as "the gustiest day in the past year", beside the average wind facts.
 
-- Background, checked on 2026-10-30:
-  - The FTP daily files have a column for the day's average 10 m wind speed (m/s). It holds real values for Sydney Airport (files from 2009) and Sydney Olympic Park (from 2011).
-  - Observatory Hill reports `0.00` every day because it has no wind instrument: BOM measures Sydney's harbour wind at Fort Denison instead. Treat those zeros as missing, never as calm, so there are no wind facts for Observatory Hill.
-  - The ZIPs don't include wind.
-- Background on gusts, checked on 2026-11-13:
-  - The Daily Weather Observations have each day's strongest gust, its direction and its time, so the CSVs downloaded for the 9am and 3pm readings hold a year of gusts. Sydney's (`IDCJDW2124`) takes its wind from Fort Denison (066022). Sydney Airport's and Olympic Park's are their own. A few days are blank: 6 of 378 for Sydney, 1 for Sydney Airport and 8 for Olympic Park.
-  - IDN60920 has `maximum_gust_kmh`, `maximum_gust_dir` and the time of the gust for Sydney Airport, Olympic Park and Fort Denison, over the calendar day from midnight. It has no gust for Observatory Hill, but it gives that station a `wind_spd_kmh`, which matched Fort Denison's at 12pm that day, so it may be Fort Denison's too.
-  - So gusts could be saved like the 9am and 3pm readings: from each run, with the DWO filling the year before and any gaps. The last run, at 10:30pm, misses a gust between then and midnight, so where the two differ the DWO's value should win, unlike for the readings. Like the readings, they could be kept for only 13 months, as long as the DWO keeps them, so they would be a past-year series (`pastYearSeries`), compared only with the year before each day: "the windiest day in the past year".
-  - Fort Denison is another station, so using its wind for Observatory Hill would break the rule that a location's values come from its own stations. Ask the user before doing it.
-- Scope: a one-off backfill of the wind column from every FTP daily file since each station's first file, saved in a committed file per station (e.g. `data/wind/<station>.csv`), or as a column in `data/ftp-history/`. Keep it up to date from the files the daily run already downloads. It is never pruned, because no ZIP replaces it.
-- Scope: wind measures for the fact generator, with every comparison that has enough history, within the ranking, scoring and wording in [facts.md](facts.md) ("windiest", "calmest").
-- Scope: update the data sources section of CLAUDE.md.
-- Out of scope, so ask the user first: gusts, from the live feed and the DWO (see above), and kept for 13 months.
-- Done when: tests cover the parsing, the backfill, and the rule that Observatory Hill's zeros count as missing.
+- Decided on 2026-11-13: Observatory Hill gets no gusts. Using Fort Denison's would break the rule that a location's values come from its own stations, and the footer already says Observatory Hill has no wind records (`locationNotes` in `src/site/notes.ts`), which stays as it is.
+- Background, checked on 2026-11-13:
+  - The Daily Weather Observations have each day's strongest gust, its direction and its time, in the columns `Direction of maximum wind gust`, `Speed of maximum wind gust (km/h)` and `Time of maximum wind gust`. Sydney Airport's (`IDCJDW2125`) and Olympic Park's (`IDCJDW2061`) are their own station's. A few days are blank: 1 of 378 for Sydney Airport and 8 for Olympic Park.
+  - IDN60920 has `maximum_gust_kmh`, `maximum_gust_dir` and the time of the gust for both stations, over the calendar day from midnight.
+  - No allowed source has a long daily gust history, so gusts are kept for only 13 months, as long as the DWO keeps them. They are a past-year series (`pastYearSeries`), compared only with the year before each day.
+- Scope: save each day's gust speed from every run, like the 9am and 3pm readings (`readings.ts`, `updateSnapshot`), with its direction and time if the why should show them. The 10:30pm run misses a gust between then and midnight, so a day's value from the run is only a floor until the DWO has it.
+- Scope: extend `npm run import:dwo` to read the gust columns. Unlike the readings, where the DWO and a saved gust differ, the DWO wins. Extend `missingReadings` and `downloadPage` so `data/dwo/download.html` also lists the months missing a gust.
+- Scope: prune before `readingsKeptFrom(today)`, as for the readings.
+- Scope: a `gust` measure in km/h, worded "the gustiest day", in the `wind` family in `selection.ts`, with a weight in `measureWeights`.
+- The DWO files downloaded on 2026-11-13 were deleted after their readings were imported, so the backfill needs them again: once the import reads gusts, run `npm run import:dwo` and download what its page lists, following [refreshing-history.md](refreshing-history.md). The DWO keeps the current month and the 12 before it, so do this before December 2026 to keep November 2025's gusts.
+- Done when: tests cover saving, the DWO winning where they differ, the download page listing missing gusts, and pruning, the year of gusts is imported, and [facts.md](facts.md) and [refreshing-history.md](refreshing-history.md) have the series.
 
 ---
 
@@ -104,6 +101,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
   - **Mean solar exposure**, from 2009 (2011 at Olympic Park), and longer once T21 is done. Observatory Hill has none from 2018-04 to 2020-07. Wording: "sunniest" and "dullest", or "cloudiest".
   - **Mean temperature range**, from `range`. Very sensitive to the station change: 066214's range is about 0.6 °C wider than 066062's.
   - **Mean humidity**, from the FTP daily files' highest and lowest relative humidity, from 2009.
+  - **Mean wind speed**, from the FTP daily files' average wind, from 2009 (2011 at Olympic Park), with none at Observatory Hill. Wording: "windiest" and "calmest", as for days.
 - Scope: the missing-days rules (see Missing days in [facts.md](facts.md)): the temperature means follow the WMO rule for months, and counts and totals need every day.
 - Scope: the 2020 Observatory Hill station change. Mean temperature has an offset of about 0 °C (+0.3 °C and −0.3 °C), and the range about +0.6 °C. Compare both ways, as the mean maximum and minimum are.
 - Scope: families in `selection.ts`, so a month shows one temperature fact rather than "the warmest", "the warmest days" and "the warmest nights" together. Decide which family mean temperature and the range belong to.
@@ -200,6 +198,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
   - Facts for the calendar date now score their sinces and ranks below the top (weight 0.8), so most days have one. Check they don't crowd Past week, and whether the 2020 Observatory Hill station change (minimums about 0.3 °C cooler) makes its "coldest for 9 November since…" nights too easy, since day facts don't take the station offset out.
   - Facts for the day of the week (`dayOfWeek` in `comparisonWeights`, 0.7) can fill Past week in a cold week: at Sydney Airport on 5 August 2024 it had "the coldest Tuesday", "Wednesday" and "Friday since 2022 or 2023", each warmer than the one before, so none was beaten. Decide whether a page should show only the strongest of them per family and direction, as conditional facts do (`oncePerFamily`).
   - The 9am and 3pm readings are compared only with the past year (see Series in [facts.md](facts.md)), so their facts are sinces within the year or ranks "in the past year". Check how often they get in: they first showed in a selection snapshot as "the lowest 9 am humidity since 21 September".
+  - Wind facts (`wind`, weight 0.9) are new. Check how often a calm day gets in: at Sydney Airport "the calmest day since 18 October" (1.98) took Past week's last place on 27 October 2026. Olympic Park's sheltered site makes its windiest days much less windy than the airport's.
   - The coming week's fallback (`forecastFloor`) can pick a conditional fact over a plainer forecast one, such as "A top of 18°C on Friday (forecast 20°C) would make it the coldest day since 3 November". Decide whether a fallback should prefer forecast facts.
 - Done when: the retuning is reviewed with the user and the snapshot tests updated.
 

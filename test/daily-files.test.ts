@@ -10,7 +10,7 @@ import {
 import {
   dailyFile,
   daysFrom,
-  humidityAndSolarFrom,
+  historyDaysFrom,
   repeatedDays,
 } from "./daily-file.ts";
 
@@ -82,9 +82,16 @@ describe("parseDailyFile with a real file", () => {
       minTemp: 14.6,
       maxRelHum: 79,
       minRelHum: 18,
+      wind: null,
       solar: 21.89,
     });
     expect(days.at(-1)?.date).toBe("2026-10-28");
+  });
+
+  test("has no wind, since Observatory Hill reports 0.00 every day", async () => {
+    const days = parseText(await readFixture());
+
+    expect(days.every(({ wind }) => wind === null)).toBe(true);
   });
 
   test("treats blank cells as missing", async () => {
@@ -100,6 +107,7 @@ describe("parseDailyFile with a real file", () => {
         minTemp: 13.2,
         maxRelHum: 94,
         minRelHum: 46,
+        wind: null,
         solar: 17.17,
       },
       {
@@ -109,6 +117,7 @@ describe("parseDailyFile with a real file", () => {
         minTemp: null,
         maxRelHum: 95,
         minRelHum: 59,
+        wind: null,
         solar: 12.63,
       },
     ]);
@@ -223,6 +232,7 @@ describe("parseDailyFile with a file that starts in the month before", () => {
       minTemp: 19.3,
       maxRelHum: 84,
       minRelHum: 61,
+      wind: null,
       solar: 23.66,
     });
   });
@@ -301,6 +311,7 @@ describe("parseDailyFile with a made-up file", () => {
         minTemp: null,
         maxRelHum: null,
         minRelHum: null,
+        wind: null,
         solar: null,
       },
       {
@@ -310,29 +321,40 @@ describe("parseDailyFile with a made-up file", () => {
         minTemp: -1.5,
         maxRelHum: null,
         minRelHum: null,
+        wind: null,
         solar: null,
       },
     ]);
   });
 
-  test("treats blank humidity and solar cells as missing", () => {
+  test("reads the humidity, wind and solar, and treats blank cells as missing", () => {
+    const days = historyDaysFrom(
+      "2026-02-01",
+      { maxRelHum: 100, minRelHum: null, wind: 4.73, solar: 8.5 },
+      { maxRelHum: null, minRelHum: 41, wind: null, solar: null },
+    );
+
+    expect(
+      parseDailyFile(dailyFile("SYDNEY AIRPORT AMO", days), {
+        station: airport,
+        month: "2026-02",
+      }),
+    ).toEqual(
+      days.map((day) => ({ ...day, rain: null, maxTemp: null, minTemp: null })),
+    );
+  });
+
+  test("treats a wind of 0.00, which a station with no anemometer reports, as missing", () => {
     const file = dailyFile(
       "SYDNEY AIRPORT AMO",
-      humidityAndSolarFrom("2026-02-01", [100, null, 8.5], [null, 41, null]),
+      historyDaysFrom("2026-02-01", { wind: 0 }, { wind: 0.19 }),
     );
 
     expect(
       parseDailyFile(file, { station: airport, month: "2026-02" }).map(
-        ({ date, maxRelHum, minRelHum, solar }) => ({
-          date,
-          maxRelHum,
-          minRelHum,
-          solar,
-        }),
+        ({ wind }) => wind,
       ),
-    ).toEqual(
-      humidityAndSolarFrom("2026-02-01", [100, null, 8.5], [null, 41, null]),
-    );
+    ).toEqual([null, 0.19]);
   });
 
   test("fails on a solar value that isn't a number", async () => {
