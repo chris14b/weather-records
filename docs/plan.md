@@ -5,7 +5,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 ## How to use this plan
 
 - Each task has a permanent ID, such as `T15`. An ID is never reused or renumbered, and never has a letter after it (no `T5b`). A new task, including one split off another, takes the next ID, and goes where its priority puts it. Its place in the list, not its ID, sets its priority.
-- **Next ID:** T49
+- **Next ID:** T50
 - **Depends on** lists the tasks that must be finished first. A task that is no longer in this plan is finished. Keep every task below the tasks it depends on.
 - The next task is the first one that isn't deferred or blocked and whose dependencies are all finished.
 - Statuses: `todo`, `in progress`, `blocked` (say on what), `deferred` (skip until the user says otherwise). An open task can have **Notes** for whatever a later session needs.
@@ -260,6 +260,19 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 - The DWO downloaded on 2026-11-13 for the readings matched the saved 9am and 3pm readings, and every 9am and 3pm reading from 2026-11-07 to 2026-11-12 had been saved at all three locations, so the 10:30am and 4:30pm runs got their readings on those days.
 - GitHub's docs say a run in an hour skipped by daylight saving moves to the next valid time. No run is between 2am and 3am, so it shouldn't matter.
 - GitHub's own schedule, removed on 2026-11-13: its `timezone` field worked, but from 9 to 13 November 2026, six of its eight scheduled runs started 5–51 minutes after a Sydney slot, which read as UTC would be 1–4 hours late. The other two came 2 h 43 m and 5 h 52 m after the 10:30pm slot. The other 25 slots got no run at all. Every run succeeded. The 10:30pm slot ran at 10:35pm on 10 November and 10:41pm on 12 November, after the 11:00 UTC forecast issue, so the parser accepted those issues. Run logs need a signed-in browser, but the public API (`api.github.com/repos/chris14b/weather-records/actions/runs`) gives each run's event and start time without signing in. `gh` belongs to the work account, so don't use it here.
+
+---
+
+## T49: Label the scheduled runs
+
+**Status:** todo
+
+**Goal:** The Actions list tells the cron-job.org runs from a run started by hand.
+
+- Background: cron-job.org starts each run with a `workflow_dispatch` API call under the personal access token ([starting-runs.md](starting-runs.md)), so GitHub shows it as "Manually run by chris14b", the same as a run started from Actions → Run workflow. GitHub's own `schedule` was the only trigger it labelled "scheduled", and it was removed on 2026-11-13. The workflow can't tell the two apart, and doesn't need to: both skip the checks, and only a push runs them.
+- Scope: an optional `trigger` input on `workflow_dispatch` in `deploy.yml`, and a `run-name` that shows it, such as "Deploy (scheduled)", and "Deploy (manual)" when the input is empty. Keep the push runs' title as it is (the commit message).
+- Scope: add `"inputs":{"trigger":"scheduled"}` to the cron-job.org job's request body and to the body in [starting-runs.md](starting-runs.md). The user changes the job by hand, so say so when this is done.
+- Done when: a cron-job.org test run and a run started from Actions are shown with different names in the run list, and the behaviour of the runs is unchanged.
 
 ---
 
