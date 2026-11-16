@@ -39,6 +39,14 @@ export const overnightMeasures: ReadonlySet<FactMeasure> = new Set([
   "rain",
 ]);
 
+/** The 9 am and 3 pm readings, which are over as soon as they are taken. */
+export const readingMeasures: ReadonlySet<FactMeasure> = new Set([
+  "temp9am",
+  "relHum9am",
+  "temp3pm",
+  "relHum3pm",
+]);
+
 export type Direction = "highest" | "lowest";
 
 /**

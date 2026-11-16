@@ -27,14 +27,15 @@ interface SectionRule {
   minimumScore: number;
   /** For a day's second and later facts. */
   minimumExtraScore: number;
-  perDay: number;
+  /** How many facts one day may have, if limited. */
+  perDay?: number;
   total: number;
   /** Whether to keep only the strongest fact per family and direction, whatever its date. */
   oncePerFamily?: boolean;
 }
 
 // A week-long since scores log(7), so "the warmest day since last Tuesday" is enough for the
-// latest week. Earlier days need about a once-a-year fact.
+// latest week. Earlier days need a since of about 3 weeks.
 const sectionRules: Record<Section, SectionRule> = {
   today: {
     minimumScore: 1.75,
@@ -44,13 +45,12 @@ const sectionRules: Record<Section, SectionRule> = {
   },
   pastWeek: {
     minimumScore: 1.75,
-    minimumExtraScore: 3.5,
-    perDay: 2,
+    minimumExtraScore: 1.75,
     total: 12,
   },
   pastMonth: {
-    minimumScore: 5,
-    minimumExtraScore: 5,
+    minimumScore: 3,
+    minimumExtraScore: 3,
     perDay: 1,
     total: 5,
   },
@@ -121,6 +121,20 @@ const daylightSections: readonly Section[] = [
   "comingWeek",
 ];
 
+/**
+ * Wind, sunshine and humidity aren't the day's news: a day's facts about them wait for
+ * Past week, and never count towards the newest observations.
+ */
+const leftOutOfToday: ReadonlySet<FactMeasure> = new Set([
+  "wind",
+  "gust",
+  "solar",
+  "maxRelHum",
+  "minRelHum",
+  "relHum9am",
+  "relHum3pm",
+]);
+
 const leaderCount = 10;
 
 export interface SelectionRequest {
@@ -146,17 +160,22 @@ export function selectFacts({
 }: SelectionRequest): PageFacts {
   const latest = facts.reduce(
     (last, fact) =>
-      fact.date > last && fact.date <= date && isSettled(fact.status)
+      fact.date > last &&
+      fact.date <= date &&
+      isSettled(fact.status) &&
+      !leftOutOfToday.has(fact.measure)
         ? fact.date
         : last,
     "",
   );
   const sectionFor = (fact: CandidateFact) =>
     candidateSection(fact, date, latest);
+  const periodKind = ({ period }: CandidateFact) =>
+    isCalendar(period) ? "calendar" : period.kind;
   const kindKey = ({ fact }: ScoredFact) =>
-    `${families[fact.measure]} ${fact.direction} ${isCalendar(fact.period) ? "calendar" : fact.period.kind}`;
-  const groupKey = (candidate: ScoredFact) =>
-    `${candidate.fact.date} ${kindKey(candidate)}`;
+    `${families[fact.measure]} ${fact.direction} ${periodKind(fact)}`;
+  const groupKey = ({ fact }: ScoredFact) =>
+    `${fact.date} ${fact.measure} ${fact.direction} ${periodKind(fact)}`;
   // A fact that a later day beat would only send the reader to that day's.
   const scored = facts
     .filter(({ beatenBy }) => beatenBy === null)
@@ -322,10 +341,14 @@ function candidateSection(
   if (isForecastStatus(fact.status)) return forecastSection(fact, date);
   if (fact.status === "partial") return partialSection(fact, date);
   if (isCalendar(fact.period)) return "pastMonth";
+  const section = sectionOf(daysBetween(fact.from, date));
+  if (leftOutOfToday.has(fact.measure)) {
+    return section === "today" ? undefined : section;
+  }
   if (fact.from === latest && observationDay(fact.from, fact.measure) >= date) {
     return "today";
   }
-  return sectionOf(daysBetween(fact.from, date));
+  return section;
 }
 
 // Today has the forecasts that end by 9am tomorrow, and after midnight the night under
@@ -347,6 +370,7 @@ function partialSection(
   fact: CandidateFact,
   date: string,
 ): Section | undefined {
+  if (leftOutOfToday.has(fact.measure)) return undefined;
   const day = observationDay(fact.date, fact.measure);
   return day >= date && day <= addDays(date, 1) ? "today" : undefined;
 }

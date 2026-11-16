@@ -171,7 +171,9 @@ These keep ranks easy to set from scoring too high:
 
 ## 4. Selection
 
-`selectFacts` scores every candidate. For each date, it keeps only the strongest fact per **family**, direction and kind of period, because related measures say much the same thing. That also leaves one comparison per measure: "hottest this month" and "hottest this year" aren't both shown. The kinds are single days, runs of days, and calendar periods, so the 3 and 7 days to a day compete, and so do a month, a season and a year so far that end on the same day. The families are:
+`selectFacts` scores every candidate. For each date, it keeps only the strongest fact per measure, direction and kind of period. That leaves one comparison per measure: "hottest this month" and "hottest this year" aren't both shown. The kinds are single days, runs of days, and calendar periods, so the 3 and 7 days to a day compete, and so do a month, a season and a year so far that end on the same day. Related measures don't compete: a day can show its maximum, its 3pm temperature and the day-to-day change in its maximum, and all four humidities. Forecast, conditional and observed facts are kept apart.
+
+The measures are grouped into **families** of those that say much the same thing, which only spells and conditional facts use:
 
 - max and 3pm temperature
 - min and 9am temperature
@@ -182,21 +184,21 @@ These keep ranks easy to set from scoring too high:
 - solar
 - changes in maximum and minimum
 
-A change isn't in its measure's family. A cold change often makes a day both "the coldest day since…" and "the biggest drop in maximum since…", but the two say different things: how cold it was, and how suddenly it got there.
-
 A run of days is a **spell**, and stands for what overlaps it. A day fact in the same family and direction inside a spell that scores at least as well is dropped, and so is a weaker overlapping run. So the February 2020 rain at Olympic Park shows as "the wettest 3 days since records began in 2011" beside the wettest day, instead of four wet days in a row. The spell must score enough for its section, or it drops nothing.
 
 It then fills the sections of a page for one date (`sectionRules`). Each run makes a page for its own date and one for the next, and the site shows the page for the viewer's date (`pageFor` in `src/site/arrange.ts`), or the latest if the updates have stopped. So the page turns over at midnight, and the 10:30pm run's page for tomorrow is the one seen until the 6:30am run.
 
+Wind, solar and humidity are never in Today (`leftOutOfToday`): a day's facts about them, including a running gust, wait for Past week, which starts the next day, and they don't count towards `latest`.
+
 Today has the newest observations: the day facts of `latest`, the last date with any confirmed or provisional fact. A running value's facts don't count towards `latest`, so a running maximum doesn't push yesterday's maximum out of Today before the night is in. They are in Today while their 9am is on or after the page's date (`partialSection`): a running night stays there after midnight, and is dropped once its 9am has passed, by when a later run has settled it. On the page for the date after it, which is the 10:30pm run's page seen after midnight and the 6:30am and 8:30am runs' pages, Today keeps only the values still running at 9am on the page's date (`observationDay`). Those are the maximum and the day's other values, since the official maximum runs to 9am the next day. The night and the rain to 9am are over by 9am on their date, so they move to Past week. All of the day's facts move there once the 10:30am run brings the next date's. Every other day goes in the section its date falls in, counting back from the page's date, and a run of days in the section its first day falls in, so the 3 days to today are in Past week:
 
-| Section    | Days before the page's date | Per day | In all | First fact needs | Further facts need |
-| ---------- | --------------------------- | ------- | ------ | ---------------- | ------------------ |
-| Today      | the newest observations     | 3       | 3      | 1.75             | 2.5                |
-| Past week  | 1–6                         | 2       | 12     | 1.75             | 3.5                |
-| Past month | 7–30                        | 1       | 5      | 5                | —                  |
+| Section    | Days before the page's date | Per day  | In all | First fact needs | Further facts need |
+| ---------- | --------------------------- | -------- | ------ | ---------------- | ------------------ |
+| Today      | the newest observations     | 3        | 3      | 1.75             | 2.5                |
+| Past week  | 1–6                         | no limit | 12     | 1.75             | 1.75               |
+| Past month | 7–30                        | 1        | 5      | 3                | —                  |
 
-A score of 1.75 is a since of about 6 days, so "the warmest day since last Tuesday" can show in the last week. Older days need about a once-a-year fact.
+A score of 1.75 is a since of about 6 days, so "the warmest day since last Tuesday" can show in the last week. Past week asks no more of a day's later facts than of its first, and has no limit per day, so a fact doesn't drop out when it moves over from Today. A score of 3 is a since of about 3 weeks, which is what an older day needs.
 
 The latest complete month, season and year, and the current ones so far, go in Past month as well, with an allowance of their own so they never crowd out its days (`calendarRule`): up to 3, each scoring at least 3, about a once-in-20-years period.
 

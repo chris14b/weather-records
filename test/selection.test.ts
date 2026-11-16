@@ -82,11 +82,7 @@ const rain = series("rain", (date) => (date.endsWith("-15") ? 100 : 0), {
   "2026-11-04": 150,
   "2026-11-06": 200,
 });
-const allSeries = [
-  series("maxTemp", () => 20, maxTemps),
-  series("temp3pm", () => 20, maxTemps),
-  rain,
-];
+const allSeries = [series("maxTemp", () => 20, maxTemps), rain];
 const facts = generateDailyFacts({
   locationId: "test",
   series: allSeries,
@@ -136,7 +132,7 @@ describe("selectFacts", () => {
     expect(amongAllDays).toEqual([]);
   });
 
-  test("keeps the strongest of a day's facts about the same family of measures and direction", () => {
+  test("keeps the strongest comparison of a day's fact about a measure and direction", () => {
     const [hottest] = selected.today;
 
     expect(hottest).toMatchObject({
@@ -177,7 +173,18 @@ describe("selectFacts", () => {
     ]);
   });
 
-  test("keeps one change in temperature per day, apart from the day's other temperature facts", () => {
+  test("keeps a day's facts about related measures", () => {
+    const hotAfternoon = [
+      series("maxTemp", () => 20, { [latest]: 35 }),
+      series("temp3pm", () => 20, { [latest]: 34 }),
+    ];
+
+    const { today } = selectAll(hotAfternoon);
+
+    expect(today.map(({ measure }) => measure)).toEqual(["maxTemp", "temp3pm"]);
+  });
+
+  test("keeps the day's changes in maximum and minimum temperature alike", () => {
     const max = series("maxTemp", () => 25, {
       "2026-11-05": 35,
       "2026-11-06": 15,
@@ -211,6 +218,10 @@ describe("selectFacts", () => {
         measure: "maxTempChange",
         text: "the biggest day-to-day drop in maximum temperature since records began in 2016",
       },
+      {
+        measure: "minTempChange",
+        text: "the biggest day-to-day drop in minimum temperature since records began in 2016",
+      },
     ]);
   });
 
@@ -230,6 +241,68 @@ describe("selectFacts", () => {
         { date: yesterday, measure: "minTemp" },
       ]),
     );
+  });
+
+  test("keeps all of an earlier day's facts in Past week, not just two", () => {
+    const day = addDays(latest, -2);
+    const bigDay = [
+      series("maxTemp", () => 20, { [day]: 35 }),
+      series("minTemp", () => 10, { [day]: 25 }),
+      series("rain", () => 0, { [day]: 300 }),
+    ];
+
+    const { pastWeek } = selectAll(bigDay);
+
+    expect(
+      pastWeek.filter(({ date }) => date === day).map(({ measure }) => measure),
+    ).toHaveLength(3);
+  });
+
+  test("leaves wind, sunshine and humidity out of Today, and shows them from the next day", () => {
+    const quietDay = [
+      series("wind", () => 10, { [latest]: 50 }),
+      series("solar", () => 20, { [latest]: 1 }),
+      series("minRelHum", () => 50, { [latest]: 95 }),
+    ];
+
+    expect(selectAll(quietDay).today).toEqual([]);
+    expect(selectAll(quietDay).pastWeek).toEqual([]);
+
+    const nextDay = selectRecords({
+      date: addDays(latest, 1),
+      facts: generateCandidates({
+        locationId: "test",
+        series: quietDay,
+        windowEnd: addDays(latest, 1),
+      }),
+      series: quietDay,
+    });
+
+    expect(nextDay.today).toEqual([]);
+    expect(nextDay.pastWeek.map(({ measure }) => measure).toSorted()).toEqual([
+      "minRelHum",
+      "solar",
+      "wind",
+    ]);
+  });
+
+  test("shows a day in Past month that scores 3 to 5", () => {
+    const day = addDays(latest, -10);
+    const { pastMonth } = selectAll([
+      series("maxTemp", () => 20, {
+        "2026-08-01": 31,
+        "2026-08-15": 31,
+        "2026-09-10": 31,
+        "2026-09-20": 31,
+        [day]: 30,
+      }),
+    ]);
+
+    expect(pastMonth.filter(({ date }) => date === day)).toMatchObject([
+      { text: "the fifth hottest day since records began in 2016" },
+    ]);
+    expect(pastMonth[0]?.score).toBeGreaterThan(3);
+    expect(pastMonth[0]?.score).toBeLessThan(5);
   });
 
   test("turns the page over at midnight, keeping the day's maximum in Today", () => {
@@ -368,7 +441,7 @@ describe("selectFacts", () => {
         status: "confirmed" as const,
       }));
       const readings: Series = {
-        measure: "relHum9am",
+        measure: "temp9am",
         days,
         fullRecord: false,
       };
@@ -384,7 +457,7 @@ describe("selectFacts", () => {
         }).today.map(({ text }) => text);
 
       expect(today([readings])).toEqual([
-        "the lowest 9\u00a0am humidity since December 2026",
+        "the coldest 9\u00a0am since December 2026",
       ]);
       expect(today([pastYearSeries(readings)])).toEqual([]);
     });

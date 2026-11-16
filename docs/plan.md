@@ -29,7 +29,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
   - A running value isn't in the series (see Values still running in [facts.md](facts.md)), so today's forecast maximum is compared with yesterday's observed maximum until 9pm. Check that `withoutOvertaken` handles a change, or leave today's change out while today's maximum is still running.
 - Scope: no "what it would take" facts for changes to begin with. The reach of 2 °C either side applies to one day's value, and a change moves with two. Decide later whether they're worth having.
 - Scope: wording. `verb` in `src/site/naming.ts` gives forecasts "is forecast to be", but a change takes "had" (`isHad`), so a forecast change needs "is forecast to have".
-- Scope: selection within the forecast's allowance (the Selection section of [facts.md](facts.md)). Changes have a family of their own, so they don't push out the day's "coldest day" fact.
+- Scope: selection within the forecast's allowance (the Selection section of [facts.md](facts.md)). Changes are their own measures, so they don't push out the day's "coldest day" fact.
 - Done when: tests cover a forecast change from the last observed day, one between two forecast days, and the wording, and [facts.md](facts.md) has the changes under Forecasts.
 
 ---
@@ -84,7 +84,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
   - **Mean wind speed**, from the FTP daily files' average wind, from 2009 (2011 at Olympic Park), with none at Observatory Hill. Wording: "windiest" and "calmest", as for days.
 - Scope: the missing-days rules (see Missing days in [facts.md](facts.md)): the temperature means follow the WMO rule for months, and counts and totals need every day.
 - Scope: the 2020 Observatory Hill station change. Mean temperature has an offset of about 0 °C (+0.3 °C and −0.3 °C), and the range about +0.6 °C. Compare both ways, as the mean maximum and minimum are.
-- Scope: families in `selection.ts`, so a month shows one temperature fact rather than "the warmest", "the warmest days" and "the warmest nights" together. Decide which family mean temperature and the range belong to.
+- Scope: selection, which keeps one fact per measure, so check that a month's "the warmest", "the warmest days" and "the warmest nights" don't crowd Past month together, and decide whether they should compete.
 - Scope: wording for each, without repeating the subject ("October had the most rain days since 2016").
 - Done when: tests cover each new measure, its missing days and its wording, the selection snapshots have been reviewed, and [facts.md](facts.md) is updated.
 
@@ -100,7 +100,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 - Scope: a range for each forecast day, from its forecast maximum minus its forecast minimum, the night that ends that morning, as for observed days. Today's forecast has no minimum, so today's range takes the observed minimum and the forecast maximum, with the status `forecast`. Rank each against the observed ranges and the forecast's earlier ones, in both directions.
 - Scope: no "what it would take" facts, as for T43's changes: a range moves with two values, and the 2 °C reach is for one.
 - Scope: wording. A range takes "had" (`isHad` in `src/site/naming.ts`), so it needs the "is forecast to have" that T43 adds for changes. If this is done before T43, add it here.
-- Scope: selection within the forecast's allowance. The range is a family of its own, so it doesn't push out the day's "hottest day" fact, but check that it doesn't crowd the coming week either.
+- Scope: selection within the forecast's allowance. The range is its own measure, so it doesn't push out the day's "hottest day" fact, but check that it doesn't crowd the coming week either.
 - Done when: tests cover today's range from an observed minimum, a range between two forecast values and the wording, and [facts.md](facts.md) has the range under Forecasts.
 
 ---
@@ -176,10 +176,11 @@ The open tasks, in order of priority. Background and settled decisions are in [C
   - Observatory Hill's year so far leaves out 9 to 16 years between 1864 and 1948, each with a month or so missing, so its records carry "(not counting 16 years with gaps)". That is still long for a headline. Allowing a missing month in a year so far might be fairer.
   - A period so far shows every day until the period ends, so it can sit in Past month for months.
   - Facts for the calendar date now score their sinces and ranks below the top (weight 0.9), so most days have one. They were raised from 0.8 on 13 November 2026, which took them from 124 to 227 of the 869 facts in Past week on the 5th and 19th of every month in 2024 and 2025. Check they don't crowd Past week, and whether the 2020 Observatory Hill station change (minimums about 0.3 °C cooler) makes its "coldest for 9 November since…" nights too easy, since day facts don't take the station offset out.
-  - Facts for the day of the week (`dayOfWeek` in `comparisonWeights`, 0.7) can fill Past week in a cold week: at Sydney Airport on 5 August 2024 it had "the coldest Tuesday", "Wednesday" and "Friday since 2022 or 2023", each warmer than the one before, so none was beaten. Decide whether a page should show only the strongest of them per family and direction, as conditional facts do (`oncePerFamily`).
+  - Facts for the day of the week (`dayOfWeek` in `comparisonWeights`, 0.7) can fill Past week in a cold week: at Sydney Airport on 5 August 2024 it had "the coldest Tuesday", "Wednesday" and "Friday since 2022 or 2023", each warmer than the one before, so none was beaten. Decide whether a page should show only the strongest of them per direction, as conditional facts do (`oncePerFamily`).
   - The 9am and 3pm readings are compared only with the past year (see Series in [facts.md](facts.md)), so their facts are sinces within the year or ranks "in the past year". Check how often they get in: they first showed in a selection snapshot as "the lowest 9 am humidity since 21 September".
-  - Gust facts (`gust`, weight 0.9) are new, and come from the runs until the DWO is imported. Check how often a running gust gets into Today. Gusts share the `wind` family with the average wind, so a day shows only the stronger of the two. Past-year series now reach full strength with a year rather than 30, so their ranks score much more: check that the readings' and gusts' ranks don't crowd Past week, as at Sydney Airport on 7 November 2026, where "the equal seventh gustiest day in the past year" (3.44) took a place.
+  - Gust facts (`gust`, weight 0.9) are new, and come from the runs until the DWO is imported. Wind is never in Today (`leftOutOfToday`), so a running gust is ranked but never shown: decide whether to stop making it. Past-year series now reach full strength with a year rather than 30, so their ranks score much more: check that the readings' and gusts' ranks don't crowd Past week, as at Sydney Airport on 7 November 2026, where "the equal seventh gustiest day in the past year" (3.44) took a place.
   - Wind facts (`wind`, weight 0.9) are new. Check how often a calm day gets in: at Sydney Airport "the calmest day since 18 October" (1.98) took Past week's last place on 27 October 2026. Olympic Park's sheltered site makes its windiest days much less windy than the airport's.
+  - On 2026-11-16 the one-per-family limit and Past week's 2 a day were dropped, Past week's later facts went from 3.5 to 1.75, Past month's bar from 5 to 3, and wind, solar and humidity left Today. Check Past week and Past month aren't now crowded by weak facts, and Today isn't often bare.
   - The coming week's fallback (`forecastFloor`) can pick a conditional fact over a plainer forecast one, such as "A top of 18°C on Friday (forecast 20°C) would make it the coldest day since 3 November". Decide whether a fallback should prefer forecast facts.
 - Done when: the retuning is reviewed with the user and the snapshot tests updated.
 

@@ -2,6 +2,7 @@ import {
   isChangeMeasure,
   isForecastStatus,
   overnightMeasures,
+  readingMeasures,
   type DaylightEvent,
   type DaylightFact,
   type FactMeasure,
@@ -219,13 +220,7 @@ function verb(fact: Phrased, today: string): string {
   if (fact.status === "forecast") {
     return `${plural ? "are" : "is"} forecast to be`;
   }
-  // A value still running isn't over until its 9am, even a night's.
-  const ongoing =
-    "toDate" in fact.period
-      ? fact.period.toDate
-      : overnightMeasures.has(fact.measure) && fact.status !== "partial"
-        ? fact.date > today
-        : fact.date >= today;
+  const ongoing = isOngoing(fact, today);
   if (isHad(fact)) return ongoing ? "has" : "had";
   if (hasNights(fact)) {
     if (!ongoing) return "had";
@@ -233,6 +228,16 @@ function verb(fact: Phrased, today: string): string {
   }
   if (ongoing) return plural ? "are" : "is";
   return plural ? "were" : "was";
+}
+
+function isOngoing(fact: Phrased, today: string): boolean {
+  if ("toDate" in fact.period) return fact.period.toDate;
+  if (readingMeasures.has(fact.measure)) return false;
+  // A value still running isn't over until its 9am, even a night's.
+  if (overnightMeasures.has(fact.measure) && fact.status !== "partial") {
+    return fact.date > today;
+  }
+  return fact.date >= today;
 }
 
 // A day can be "the hottest day", but it has "the lowest peak humidity" or "the coldest 9 am".

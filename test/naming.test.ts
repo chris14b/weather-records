@@ -471,6 +471,22 @@ describe("sentence", () => {
     ],
     [
       fact({
+        measure: "relHum3pm",
+        text: "the highest 3\u00a0pm humidity since 15\u00a0October",
+        why: { value: 72 },
+      }),
+      "[Today] had the highest 3\u00a0pm humidity since 15\u00a0October, at 72%",
+    ],
+    [
+      fact({
+        measure: "temp3pm",
+        text: "the warmest 3\u00a0pm since 15\u00a0October",
+        why: { value: 31.2 },
+      }),
+      "[Today] had the warmest 3\u00a0pm since 15\u00a0October, at 31.2\u00a0°C",
+    ],
+    [
+      fact({
         date: "2026-11-05",
         measure: "maxRelHum",
         direction: "lowest",
