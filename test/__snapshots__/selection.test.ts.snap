@@ -3,12 +3,12 @@
 exports[`selectFacts on real data > chooses the facts at sydney-airport for the 31 days to 2026-10-29 1`] = `
 {
   "pastMonth": [
-    "2026-01-01..2026-10-29 4.34 minTemp the warmest nights since records began in 1939",
     "2026-10-16 3.85 rain the wettest for 16 October since 1954",
     "2026-10-14 5.57 rain the wettest since 18 January",
     "2026-10-12 5.45 maxTemp the hottest day since 22 February",
     "2026-10-02 3.77 wind the calmest October day since 2019",
     "2026-09-30 3.95 solar the sunniest September day since 2018",
+    "2026-01-01..2026-10-29 4.34 minTemp the warmest nights since records began in 1939",
   ],
   "pastWeek": [
     "2026-10-26 3.63 maxTempChange the biggest day-to-day drop in maximum temperature on 26 October since records began in 1939",
@@ -25,13 +25,13 @@ exports[`selectFacts on real data > chooses the facts at sydney-airport for the 
 exports[`selectFacts on real data > chooses the facts at sydney-observatory-hill for the 31 days to 1986-08-08 1`] = `
 {
   "pastMonth": [
-    "1986-08-01..1986-08-08 3.89 rain the wettest since records began in 1858",
-    "1986-07-01..1986-07-31 3.18 minTemp the month with the coldest nights since July 1984",
     "1986-07-28 5.93 maxTemp the coldest day since July 1985",
     "1986-07-27 8.68 minTemp the coldest since 1970",
     "1986-07-26 8.06 minTempChange the third biggest day-to-day drop in minimum temperature since records began in 1859",
     "1986-07-25 5.02 range the smallest temperature range since May 1984",
     "1986-07-24 4.93 minTemp the warmest in winter since 1982",
+    "1986-08-01..1986-08-08 3.89 rain the wettest since records began in 1858",
+    "1986-07-01..1986-07-31 3.18 minTemp the month with the coldest nights since July 1984",
   ],
   "pastWeek": [
     "1986-08-07 2.93 rain the fifth wettest for 7 August since records began in 1858",
@@ -77,14 +77,14 @@ exports[`selectFacts on real data > chooses the facts at sydney-observatory-hill
 exports[`selectFacts on real data > chooses the facts at sydney-observatory-hill for the 31 days to 2026-10-13 1`] = `
 {
   "pastMonth": [
-    "2026-01-01..2026-10-13 3.88 maxTemp so far the equal hottest year since records began in 1859",
-    "2026-01-01..2026-10-13 4.76 minTemp the warmest nights since records began in 1859 (not counting 10 years with gaps)",
     "2026-09-28..2026-10-04 4.29 rain the wettest since 23 July",
-    "2026-09-01..2026-09-30 3.54 minTemp the second warmest nights since records began in 1859",
     "2026-09-27 4.37 maxTemp the coldest spring day since October 2024",
     "2026-09-22 5.11 maxTempChange the fourth biggest day-to-day drop in maximum temperature in September since records began in 1859",
     "2026-09-21 5.22 minTemp the warmest since 19 March",
     "2026-09-19 4.81 minRelHum the lowest humidity since 5 December 2025",
+    "2026-01-01..2026-10-13 3.88 maxTemp so far the equal hottest year since records began in 1859",
+    "2026-01-01..2026-10-13 4.76 minTemp the warmest nights since records began in 1859 (not counting 10 years with gaps)",
+    "2026-09-01..2026-09-30 3.54 minTemp the second warmest nights since records began in 1859",
   ],
   "pastWeek": [
     "2026-10-12 5.46 maxTemp the hottest day since 18 February",
@@ -108,12 +108,12 @@ exports[`selectFacts on real data > chooses the facts at sydney-observatory-hill
 exports[`selectFacts on real data > chooses the facts at sydney-olympic-park for the 31 days to 2020-02-12 1`] = `
 {
   "pastMonth": [
-    "2020-01-01..2020-02-12 1.85 rain so far the wettest year since records began in 2011 (not counting 1 year with gaps)",
     "2020-02-04 3.48 maxRelHum the lowest February peak humidity since 2011",
     "2020-02-02 6.99 minTemp the warmest since February 2017",
     "2020-02-01 3.68 solar the sunniest February day since 2014",
     "2020-01-23 3.81 maxTemp the equal eighth hottest day since records began in 2011",
     "2020-01-19 4.60 wind the calmest day since 7 August 2019",
+    "2020-01-01..2020-02-12 1.85 rain so far the wettest year since records began in 2011 (not counting 1 year with gaps)",
   ],
   "pastWeek": [
     "2020-02-10 7.94 rain the wettest since records began in 2011",

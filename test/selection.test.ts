@@ -419,7 +419,7 @@ describe("selectFacts", () => {
     ]);
   });
 
-  test("adds the latest calendar periods to Past month without crowding out its days", () => {
+  test("adds the latest calendar periods to the end of Past month without crowding out its days", () => {
     const { pastMonth } = selectAll([
       series("maxTemp", () => 20, { "2026-11-06": 30 }),
       series(
@@ -432,6 +432,11 @@ describe("selectFacts", () => {
     expect(
       pastMonth.map(({ from, date, text }) => ({ from, date, text })),
     ).toEqual([
+      {
+        from: "2026-10-10",
+        date: "2026-10-10",
+        text: "the wettest since records began in 2016",
+      },
       {
         from: "2026-09-01",
         date: "2026-11-06",
@@ -446,11 +451,6 @@ describe("selectFacts", () => {
         from: "2026-10-01",
         date: "2026-10-31",
         text: "the wettest month since records began in 2016",
-      },
-      {
-        from: "2026-10-10",
-        date: "2026-10-10",
-        text: "the wettest since records began in 2016",
       },
     ]);
   });

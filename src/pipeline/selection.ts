@@ -254,8 +254,11 @@ export function selectFacts({
       case "comingWeek":
         return [...others, ...forecasts].toSorted(soonestFirst);
       case "pastWeek":
-      case "pastMonth":
         return [...others, ...forecasts].toSorted(newestFirst);
+      case "pastMonth":
+        return [...others, ...forecasts].toSorted(
+          (a, b) => calendarLast(a) - calendarLast(b) || newestFirst(a, b),
+        );
     }
   };
   return {
@@ -277,6 +280,10 @@ function soonestFirst(a: Fact, b: Fact): number {
 
 function newestFirst(a: Fact, b: Fact): number {
   return endsBefore(b, a) || alongside(a, b);
+}
+
+function calendarLast(fact: Fact): number {
+  return fact.kind === "record" && isCalendar(fact.period) ? 1 : 0;
 }
 
 // A night, its rain and its 9am readings are dated by the morning they end, before that
