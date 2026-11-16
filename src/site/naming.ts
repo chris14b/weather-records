@@ -106,6 +106,11 @@ function dayOfWeek(date: CalendarDate): string {
   return daysOfWeek[index] ?? "";
 }
 
+/** "Monday". */
+export function dayOfWeekName(date: string): string {
+  return dayOfWeek(parse(date));
+}
+
 function dayAndMonth({ day, month }: CalendarDate): string {
   return `${String(day)}\u00a0${monthName(month)}`;
 }
@@ -205,13 +210,13 @@ export function periodName(
   }
 }
 
-function addDays(date: string, days: number): string {
+export function addDays(date: string, days: number): string {
   return new Date((utcDay(parse(date)) + days) * 86_400_000)
     .toISOString()
     .slice(0, 10);
 }
 
-function capitalise(text: string): string {
+export function capitalise(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 

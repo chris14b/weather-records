@@ -37,6 +37,12 @@ export const maxSavedFromHour = 16;
 /** The hour the maximum's window closes, when its value is the day's. */
 export const maxWindowClosesHour = 21;
 
+/** The hours the maximum's and the minimum's windows open. */
+export const maxWindowOpensHour = 6;
+export const minWindowOpensHour = 18;
+
+const clock = (hour: number) => `${String(hour).padStart(2, "0")}:00`;
+
 const windows: Record<Measure, Window> = {
   rain: {
     type: "rainfall_24hr",
@@ -46,14 +52,14 @@ const windows: Record<Measure, Window> = {
   },
   minTemp: {
     type: "minimum_air_temperature",
-    start: "18:00",
+    start: clock(minWindowOpensHour),
     end: "09:00",
     creditStart: false,
   },
   maxTemp: {
     type: "maximum_air_temperature",
-    start: "06:00",
-    end: `${String(maxWindowClosesHour)}:00`,
+    start: clock(maxWindowOpensHour),
+    end: clock(maxWindowClosesHour),
     creditStart: true,
     savedFromHour: maxSavedFromHour,
   },

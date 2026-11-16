@@ -9,6 +9,7 @@ import {
   sydneyDate,
 } from "./naming.ts";
 import { locationNotes } from "./notes.ts";
+import { type Placed, type SwingView, swingView } from "./swing.ts";
 import { updateNote } from "./updates.ts";
 
 export type Children = (Node | string)[];
@@ -161,6 +162,94 @@ function headline(page: Page, today: string): HTMLElement {
   return node;
 }
 
+function placed(
+  kind: string,
+  { text, at, side }: Placed,
+  children: Children = [],
+): HTMLElement {
+  return element(
+    "span",
+    {
+      class: "swing-value",
+      "data-kind": kind,
+      ...(side === undefined ? {} : { "data-side": side }),
+      style: `left: ${String(at)}%`,
+    },
+    [text, ...children],
+  );
+}
+
+function at(className: string, position: number, kind = ""): HTMLElement {
+  return element("span", {
+    class: className,
+    ...(kind === "" ? {} : { "data-kind": kind }),
+    style: `left: ${String(position)}%`,
+  });
+}
+
+function between(
+  className: string,
+  { start, end }: { start: number; end: number },
+): HTMLElement {
+  return element("span", {
+    class: className,
+    style: `left: ${String(start)}%; width: ${String(end - start)}%`,
+  });
+}
+
+function swingFigure(view: SwingView): HTMLElement {
+  const { from, current, forecast, filled, toGo } = view;
+  const bar = element(
+    "div",
+    {
+      class: "swing-bar",
+      role: "img",
+      "aria-label": view.description,
+      style: `--colours: ${view.colours}`,
+    },
+    [
+      element("span", { class: "swing-track" }),
+      ...(filled === undefined
+        ? []
+        : [
+            element("span", {
+              class: "swing-fill",
+              style: `--start: ${String(filled.start)}%; --end: ${String(filled.end)}%`,
+            }),
+          ]),
+      ...(toGo === undefined ? [] : [between("swing-to-go", toGo)]),
+      ...(from === undefined ? [] : [at("swing-tick", from.at, "from")]),
+      ...(forecast?.passed === true
+        ? [at("swing-tick", forecast.at, "forecast")]
+        : []),
+      ...(current === undefined
+        ? []
+        : [at("swing-knob", current.at), placed("current", current)]),
+      ...(from === undefined
+        ? []
+        : [placed("from", from, [element("small", {}, [from.label])])]),
+      ...(forecast === undefined
+        ? []
+        : [placed("forecast", forecast, [element("small", {}, ["forecast"])])]),
+    ],
+  );
+  return element(
+    "section",
+    {
+      class: "swing",
+      "data-measure": view.measure,
+      "aria-labelledby": "swing",
+    },
+    [
+      element("h3", { id: "swing" }, [
+        element("span", { class: "swing-icon", "aria-hidden": "true" }),
+        view.title,
+      ]),
+      bar,
+    ],
+  );
+}
+
 function locationToggle(
   selected: Location,
   onSelect: (id: string) => void,
@@ -247,6 +336,7 @@ export function render(
   const pageFacts =
     facts === undefined ? undefined : pageFor(facts.pages, today);
   const page = pageFacts === undefined ? undefined : arrange(pageFacts);
+  const swing = facts === undefined ? undefined : swingView(facts.swing, today);
 
   const header = element("header", { class: "top" }, [
     element("h1", {}, ["Sydney Weather Records"]),
@@ -274,6 +364,7 @@ export function render(
       ...(page.today.length === 0
         ? []
         : [factList(page.today, page, today, "")]),
+      ...(swing === undefined ? [] : [swingFigure(swing)]),
     ]),
     element("div", { class: "panels" }, [
       panel("coming-week", "Coming week", [

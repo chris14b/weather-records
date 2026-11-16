@@ -115,6 +115,13 @@ describe("buildFactsFile", () => {
       iconCode: 3,
       precis: "Mostly sunny.",
     });
+    expect(facts?.swing).toEqual({
+      measure: "maxTemp",
+      date: "2026-10-30",
+      from: 16.8,
+      current: 23.9,
+      forecast: 25,
+    });
     expect(Object.keys(await savedFiles(root)).sort()).toEqual([
       "ftp-history/066037.csv",
       "ftp-history/066062.csv",

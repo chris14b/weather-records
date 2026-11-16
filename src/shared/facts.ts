@@ -212,6 +212,23 @@ export interface LocationFacts {
   pages: PageFacts[];
   /** BOM's forecast for the location's area, from the day of the run. */
   forecast: DayForecast[];
+  swing: TemperatureSwing;
+}
+
+/**
+ * The temperature's swing under way at the run: the day's rise from last night's low
+ * towards its high, or the night's fall from the day's high towards its low. It is the
+ * swing whose forecast BOM's latest issue still gives. Each value is null when unknown.
+ */
+export interface TemperatureSwing {
+  measure: ChangingMeasure;
+  /** The date the swing's value is credited to: the day itself, or the morning a night ends. */
+  date: string;
+  /** Last night's minimum for a day, the day's maximum for a night. */
+  from: number | null;
+  /** The maximum or minimum so far. */
+  current: number | null;
+  forecast: number | null;
 }
 
 export interface DayForecast {

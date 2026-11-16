@@ -5,7 +5,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 ## How to use this plan
 
 - Each task has a permanent ID, such as `T15`. An ID is never reused or renumbered, and never has a letter after it (no `T5b`). A new task, including one split off another, takes the next ID, and goes where its priority puts it. Its place in the list, not its ID, sets its priority.
-- **Next ID:** T50
+- **Next ID:** T51
 - **Depends on** lists the tasks that must be finished first. A task that is no longer in this plan is finished. Keep every task below the tasks it depends on.
 - The next task is the first one that isn't deferred or blocked and whose dependencies are all finished.
 - Statuses: `todo`, `in progress`, `blocked` (say on what), `deferred` (skip until the user says otherwise). An open task can have **Notes** for whatever a later session needs.
@@ -15,6 +15,24 @@ The open tasks, in order of priority. Background and settled decisions are in [C
   - decisions go into [CLAUDE.md](../CLAUDE.md)
   - history, such as what was tried and dropped, goes in the commit message. Git keeps the old plan (`git log -p --follow -- docs/plan.md`).
 - Refer to tasks by ID, and never to a finished one.
+
+---
+
+## T50: Rain gauge in Today
+
+**Status:** todo
+
+**Goal:** A rain gauge beside the temperature swing, showing how much rain has fallen and how much BOM forecasts, without mixing up BOM's two kinds of day.
+
+- Background: BOM records a day's rain as the 24 hours to 9 am, but forecasts calendar days, midnight to midnight. Day 0 of each issue starts at the issue time, so it covers only the rest of today: the 11:34 am issue on 2026-11-16 ran Sydney's day 0 from 11:23 am. That is why the 4 pm issue on 2026-11-06 gave today a 0% chance, though rain overnight would count towards the 24 hours to 9 am. The pipeline credits a forecast day's rain range to the 24 hours ending at 9 am the next day (`creditRain` in `forecast-facts.ts`), which is close but not exact.
+- Background: nothing free gives a 9 am to 9 am forecast. BOM's forecast grids (ADFD) have hourly temperatures and rain, but they are a paid product (about $4,000 for the NSW bundle, on BOM's charges page) and not on the anonymous FTP, and the app API forbids reuse. The Sydney metropolitan forecast (`IDN10064.xml`) adds timing and wind only as text ("becoming less likely in the late afternoon and evening"), on the same calendar days.
+- Background: the half-hourly readings (`IDN60910`) give rain since midnight, which matches BOM's forecast day. Each reading's `rain_trace` is the rain since 9 am, the 09:00 reading holds the whole 24 hours, and it resets at 09:30. So rain since midnight is the 09:00 trace minus the 00:00 trace, plus the latest trace after 9 am, or the latest minus the 00:00 trace before it. At Observatory Hill on 2026-11-16 that was 6.6 − 2.0 + 3.0 = 7.6 mm by 10:30 am. The file covers 72 hours, so midnight is always in it.
+- Background: the design the user liked, mocked up on 2026-11-16: a bar that fills blue with the rain so far, with BOM's range as a dashed box. The amounts are BOM's own range ("1–5 mm"); don't call the lower one "likely", as it only has a 50% chance. The user doesn't want BOM's chance of rain on the gauge: the range is enough.
+- Scope, first: watch BOM's issues for a week or so, and record in [pipeline.md](pipeline.md) what each issue's day 0 holds. The 11:34 am issue on 2026-11-16 gave a 90% chance but no rain range for today, so ranges may come only in the morning issues. Decide what the gauge shows when there is no range.
+- Scope: decide with the user whether the gauge follows the calendar day (rain since midnight beside the forecast for the rest of today, side by side rather than added, since the two overlap between the issue time and the run) or the 24 hours to 9 am. Claude's suggestion: the calendar day, as it pairs the observed rain with the forecast. The facts keep the 24 hours to 9 am either way.
+- Scope: if the calendar day, compute rain since midnight in the run without saving it, and hide the figure when the 00:00 or 09:00 reading is missing. Record in CLAUDE.md that the run reads more of `IDN60910` than the 9 am and 3 pm readings.
+- Scope: add the range to `facts.json` and draw the gauge in the swing's style (`src/site/swing.ts`).
+- Done when: the issues are recorded, the user has chosen, tests cover the rain since midnight and a missing reading, and the gauge has been checked in the browser for a morning, an evening and an overnight `facts.json`.
 
 ---
 
@@ -227,17 +245,17 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 ---
 
-## T33: Today's forecast and the latest reading
+## T33: The latest reading and the week's forecast
 
 **Status:** todo
 
-**Goal:** Today shows BOM's forecast for the day, and the latest reading the run saw, clearly labelled with its time.
+**Goal:** Decide with the user whether Today shows the latest reading the run saw, and whether the Coming week shows each day's forecast.
 
-- Background: the user asked for the current temperature. The site can't show a truly current one: `facts.json` is written every 2 hours from 6:30am to 10:30pm, there is no server, the browser can't reach BOM's FTP, and code must never fetch from BOM's website or app API. The honest version is the latest reading at the time of the run, such as "18.4°C at 10:30am", from IDN60920, which the pipeline already downloads. It is up to about 2 hours old by day and 8 hours old overnight, so decide with the user whether it is worth showing, and whether to hide it after the last run.
-- Scope: add each day's minimum, maximum, chance of rain and rain range to the `forecast` field of each location in `facts.json`, which already gives each day's icon code and précis.
-- Scope: show today's forecast in Today, near the headline, and decide whether the Coming week shows each day's forecast beside its facts.
-- Scope: after 9pm the day's forecast is spent, so show tomorrow's, as `forecastStart` does.
-- Done when: tests cover the new fields, and it has been checked in the browser for a morning and an evening `facts.json`.
+- Background: the user asked for the current temperature. The site can't show a truly current one: `facts.json` is written every 2 hours from 6:30am to 10:30pm, there is no server, the browser can't reach BOM's FTP, and code must never fetch from BOM's website or app API. The honest version is the latest reading at the time of the run, such as "18.4°C at 10:30am", from IDN60920, which the pipeline already downloads. It is up to about 2 hours old by day and 8 hours old overnight.
+- Background: the temperature swing at the bottom of Today (`swing` in `facts.json`, `src/site/swing.ts`) already shows today's forecast high, or tonight's low, with the high or low so far, and T50 covers the rain. On 2026-11-16 the user said they care only about the number so far and the forecast, so the latest reading may not be wanted at all.
+- Background: a fortnight ribbon was mocked up on 2026-11-16 and the user liked it: each day of the past week and the coming week as a bar from its low to its high, solid where observed and dashed where forecast, with rain columns below, today highlighted, and each column one of BOM's dates (the low from the night ending that morning, the rain the 24 hours to 9 am). It needs the forecast's minimums, maximums and rain ranges in `forecast`, and the past week's values, as T29 does.
+- Scope: ask the user about the latest reading and the ribbon, and either do them or drop them from the plan. The ribbon may belong in T29.
+- Done when: the user has decided, and anything chosen has tests and has been checked in the browser.
 
 ---
 

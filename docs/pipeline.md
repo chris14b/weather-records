@@ -17,7 +17,7 @@ All in `src/pipeline/`, except the config, the `facts.json` types and the foreca
 | Layering and series    | `layering.ts` (`layerRecent`), `series.ts` (`locationSeries` and one function per kind of series), `saved-series.ts` (`dataDirs`, `loadHistories`, `historyEnd`, `seriesFromSources`, and `readSavedSeries`, which builds the series from disk only) |
 | Facts                  | `candidates.ts`, `daily-facts.ts`, `period-facts.ts`, `forecast-facts.ts`, `thresholds.ts`, `scoring.ts`, `selection.ts`, `wording.ts`                                                                                                               |
 | Shared helpers         | `saved-table.ts` (the saved CSV files), `dates.ts` (`sydneyDate`, `sydneyHour` and date arithmetic), `errors.ts` (`inContext`)                                                                                                                       |
-| The build              | `facts-file.ts` (`buildFactsFile`, `writeFactsFile`, `factsPath`)                                                                                                                                                                                    |
+| The build              | `facts-file.ts` (`buildFactsFile`, `writeFactsFile`, `factsPath`), `swing.ts` (`temperatureSwing`)                                                                                                                                                   |
 | Commands               | `build-data.ts` (`npm run build:data`), `backfill-ftp-history.ts`, `import-dwo.ts`, and the `smoke-*.ts` scripts                                                                                                                                     |
 
 Every error from a file names the file and the line or element (`inContext`).
@@ -106,10 +106,12 @@ Every error from a file names the file and the line or element (`inContext`).
 
 - `parseForecast(feed, location.forecastArea)` finds the area by AAC code and checks its description.
 - Each `forecast-period` is one local day, checked to be consecutive and to end at midnight. Temperatures must be whole numbers, the chance must look like `80%`, and the rain range like `0 to 8 mm`; any other format fails the build.
-- Day 0 has no minimum. An afternoon issue has no maximum for today either: at 4:40pm on 2026-11-06, the feed had today with a 0% chance and no temperatures, then 7 more days.
+- Day 0 starts at the issue time, so it covers only the rest of today: in the 11:34am issue on 2026-11-16, Sydney's ran from 11:23am to midnight. Its chance of rain is for those hours, and it had no rain range despite a 90% chance.
+- Day 0 has no minimum. An afternoon issue has no maximum for today either: at 4:40pm on 2026-11-06, the feed had today with a 0% chance and no temperatures, then 7 more days. On 2026-11-16 the afternoon issue was timed at 4:00pm and was on the FTP by 4:01pm, so the 4:30pm run gets it.
 - Days with a low chance often have no `precipitation_range`, so `rain50` and `rain25` are null. The Forecasts section of [facts.md](facts.md) says when that counts as 0 mm.
 - Every day had a `forecast_icon_code` and a `precis` on 2026-11-09, but either can be missing, and is then null. An icon code BOM doesn't use (`weatherForIcon` in `src/shared/weather.ts`, which maps the codes to the site's kinds of sky) fails the build. The codes seen that day were 1, 3, 4, 9, 11, 16 and 17, and code 16 covers every précis that mentions a storm, including "Possible storm".
 - Each location's `forecast` in `facts.json` gives each day's date, icon code and précis, from the day of the run.
+- Each location's `swing` in `facts.json` (`temperatureSwing`) is the temperature's swing under way, by the run's time in Sydney. From 6am to 6pm (`maxWindowOpensHour` and `minWindowOpensHour` in `observations.ts`) it is the day's rise, from last night's minimum to the maximum so far, with today's forecast maximum. The afternoon issue has none, so from about 4pm it has no forecast. From 6pm it is tonight's fall, from today's maximum to the minimum so far, credited to tomorrow, and after midnight the night under way. Each value is the running one if there is one, otherwise the saved one, otherwise null.
 - The forecast isn't saved.
 
 ## The Daily Weather Observations

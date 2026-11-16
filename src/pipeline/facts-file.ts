@@ -25,6 +25,7 @@ import {
 import { parseRunningValues } from "./observations.ts";
 import { withoutRunning } from "./running-facts.ts";
 import { selectFacts } from "./selection.ts";
+import { temperatureSwing } from "./swing.ts";
 import {
   downloadLiveFeeds,
   type LiveFeeds,
@@ -138,6 +139,7 @@ async function buildLocationFacts({
       iconCode,
       precis,
     })),
+    swing: temperatureSwing({ now, forecast: days, series, running }),
   };
 }
 
