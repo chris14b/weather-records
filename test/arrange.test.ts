@@ -140,10 +140,10 @@ describe("standout", () => {
   test.each([
     ["today", 3.18, undefined],
     ["today", 3.2, "notable"],
-    ["pastWeek", 4.18, undefined],
-    ["pastWeek", 4.3, "notable"],
-    ["pastMonth", 5.46, undefined],
-    ["pastMonth", 5.7, "notable"],
+    ["pastWeek", 3.43, undefined],
+    ["pastWeek", 3.45, "notable"],
+    ["pastMonth", 3.68, undefined],
+    ["pastMonth", 3.7, "notable"],
     ["comingWeek", 5.18, undefined],
     ["comingWeek", 5.2, "notable"],
     ["pastMonth", 6.5, "exceptional"],
@@ -156,7 +156,7 @@ describe("standout", () => {
   );
 
   test("judges a calendar period on the same scores as a day", () => {
-    const year = fact({ score: 4.55, period: { kind: "year", toDate: true } });
+    const year = fact({ score: 3.6, period: { kind: "year", toDate: true } });
     expect(standout(year, "pastMonth")).toBeUndefined();
   });
 

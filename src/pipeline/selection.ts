@@ -1,4 +1,5 @@
 import {
+  furtherFactScores,
   isForecastStatus,
   overnightMeasures,
   type DaylightFact,
@@ -9,6 +10,7 @@ import {
   type Period,
   type RankedDay,
   type RecordFact,
+  type Section,
   type ValueStatus,
 } from "../shared/facts.ts";
 import type { CandidateFact } from "./candidates.ts";
@@ -21,8 +23,6 @@ import { scoreDaylight, scoreFact, type ScoredFact } from "./scoring.ts";
 import type { Series } from "./series.ts";
 import { describeDaylight, describeFact } from "./wording.ts";
 
-type Section = Exclude<keyof PageFacts, "date">;
-
 interface SectionRule {
   minimumScore: number;
   /** For a day's second and later facts. */
@@ -34,29 +34,29 @@ interface SectionRule {
   oncePerFamily?: boolean;
 }
 
-// A week-long since scores log(7), so "the warmest day since last Tuesday" is enough for the
-// latest week. Earlier days need a since of about 3 weeks.
+// A week-long since scores log(7), so "the warmest day since last Tuesday" is enough for
+// Today. The days before need more, or the short sinces of a quiet week fill Past week.
 const sectionRules: Record<Section, SectionRule> = {
   today: {
     minimumScore: 1.75,
-    minimumExtraScore: 2.5,
+    minimumExtraScore: furtherFactScores.today,
     perDay: 3,
     total: 3,
   },
   pastWeek: {
-    minimumScore: 1.75,
-    minimumExtraScore: 1.75,
+    minimumScore: furtherFactScores.pastWeek,
+    minimumExtraScore: furtherFactScores.pastWeek,
     total: 12,
   },
   pastMonth: {
-    minimumScore: 3,
-    minimumExtraScore: 3,
+    minimumScore: furtherFactScores.pastMonth,
+    minimumExtraScore: furtherFactScores.pastMonth,
     perDay: 1,
     total: 5,
   },
   comingWeek: {
     minimumScore: 3.5,
-    minimumExtraScore: 4.5,
+    minimumExtraScore: furtherFactScores.comingWeek,
     perDay: 2,
     total: 7,
   },

@@ -396,12 +396,6 @@ describe("selectFacts", () => {
         period: { kind: "rolling", days: 3 },
         text: "the wettest since records began in 2016",
       },
-      {
-        from: "2026-11-01",
-        date: "2026-11-01",
-        period: { kind: "day" },
-        text: "the wettest for 1\u00a0November since records began in 2016",
-      },
     ]);
   });
 

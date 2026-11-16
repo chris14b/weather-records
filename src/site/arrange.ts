@@ -1,7 +1,9 @@
 import {
   type Fact,
+  furtherFactScores,
   isForecastStatus,
   type PageFacts,
+  type Section,
 } from "../shared/facts.ts";
 
 /** A location's facts as the page lays them out. */
@@ -75,23 +77,12 @@ export function headlineSize(score: number): number {
 /** How far a fact stands out from the others in its section. */
 export type Standout = "notable" | "exceptional";
 
-/** A section of `facts.json`. */
-export type Section = "today" | "pastWeek" | "pastMonth" | "comingWeek";
-
 const sections: readonly Section[] = [
   "today",
   "pastWeek",
   "pastMonth",
   "comingWeek",
 ];
-
-// What a day's further facts need in each section, from sectionRules in src/pipeline/selection.ts.
-const sectionScores: Record<Section, number> = {
-  today: 2.5,
-  pastWeek: 3.5,
-  pastMonth: 5,
-  comingWeek: 4.5,
-};
 
 /** About a once-in-2-years day for one measure, and every 3 months or so across them all. */
 const exceptionalScore = 6.5;
@@ -106,7 +97,7 @@ export function standout(fact: Fact, section: Section): Standout | undefined {
   if (fact.kind === "daylight" || fact.status === "conditional") {
     return undefined;
   }
-  const needs = sectionScores[isForecast(fact) ? "comingWeek" : section];
+  const needs = furtherFactScores[isForecast(fact) ? "comingWeek" : section];
   if (fact.score >= exceptionalScore) return "exceptional";
   if (fact.score >= needs + Math.log(2)) return "notable";
   return undefined;

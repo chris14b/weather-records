@@ -196,6 +196,16 @@ export interface PageFacts {
   comingWeek: Fact[];
 }
 
+export type Section = Exclude<keyof PageFacts, "date">;
+
+/** What a day's second and later facts must score in each section, which its standout marks build on. */
+export const furtherFactScores: Readonly<Record<Section, number>> = {
+  today: 2.5,
+  pastWeek: 2.75,
+  pastMonth: 3,
+  comingWeek: 4.5,
+};
+
 export interface LocationFacts {
   locationId: string;
   /** The page for the day of the run and for the day after, so the page can turn over at midnight. */
