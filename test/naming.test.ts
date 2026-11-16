@@ -10,6 +10,7 @@ import {
   nightName,
   periodName,
   sentence,
+  standoutWord,
   sydneyDate,
   type Phrased,
 } from "../src/site/naming.ts";
@@ -678,5 +679,18 @@ describe("daylightSentence", () => {
     expect(words(fact, "2027-01-04")).toBe(
       "Thursday has the latest sunset of the year, at 8:10\u00a0pm",
     );
+  });
+});
+
+describe("standoutWord", () => {
+  test.each([
+    [0, "Notable"],
+    [0.49, "Notable"],
+    [0.5, "Remarkable"],
+    [0.99, "Remarkable"],
+    [1, "Exceptional"],
+    [1.5, "Exceptional"],
+  ])("reads a strength of %d as %s", (strength, word) => {
+    expect(standoutWord(strength)).toBe(word);
   });
 });

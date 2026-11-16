@@ -463,3 +463,10 @@ export function daylightSentence(fact: DaylightFact, today: string): Sentence {
     after: ` ${verb} ${fact.text}, ${daylightValue(fact)}`,
   };
 }
+
+/** A fact's standout strength as a screen reader hears it, since a smooth scale can't be read out. */
+export function standoutWord(strength: number): string {
+  if (strength >= 1) return "Exceptional";
+  if (strength >= 0.5) return "Remarkable";
+  return "Notable";
+}

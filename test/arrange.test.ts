@@ -138,22 +138,40 @@ describe("headlineSize", () => {
 
 describe("standout", () => {
   test.each([
-    ["today", 3.18, undefined],
-    ["today", 3.2, "notable"],
-    ["pastWeek", 3.43, undefined],
-    ["pastWeek", 3.45, "notable"],
-    ["pastMonth", 3.68, undefined],
-    ["pastMonth", 3.7, "notable"],
-    ["comingWeek", 5.18, undefined],
-    ["comingWeek", 5.2, "notable"],
-    ["pastMonth", 6.5, "exceptional"],
-    ["today", 6.5, "exceptional"],
+    ["today", 3.18],
+    ["pastWeek", 3.43],
+    ["pastMonth", 3.68],
+    ["comingWeek", 5.18],
   ] as const)(
-    "marks a fact in %s scoring %d as %s",
-    (section, score, level) => {
-      expect(standout(fact({ score }), section)).toBe(level);
+    "doesn't mark a fact in %s scoring %d, under twice as rare as it needs",
+    (section, score) => {
+      expect(standout(fact({ score }), section)).toBeUndefined();
     },
   );
+
+  test.each([
+    ["today", 3.2],
+    ["pastWeek", 3.45],
+    ["pastMonth", 3.7],
+    ["comingWeek", 5.195],
+  ] as const)("marks a fact in %s scoring %d faintly", (section, score) => {
+    expect(standout(fact({ score }), section)).toBe(0);
+  });
+
+  test.each(["today", "pastWeek", "pastMonth", "comingWeek"] as const)(
+    "gives an exceptional score in %s a strength of 1",
+    (section) => {
+      expect(standout(fact({ score: 6.5 }), section)).toBe(1);
+    },
+  );
+
+  test.each([
+    [4.85, 0.5],
+    [8.15, 1.5],
+    [12, 1.5],
+  ])("gives a fact in Today scoring %d a strength of %d", (score, strength) => {
+    expect(standout(fact({ score }), "today")).toBe(strength);
+  });
 
   test("judges a calendar period on the same scores as a day", () => {
     const year = fact({ score: 3.6, period: { kind: "year", toDate: true } });
@@ -164,31 +182,37 @@ describe("standout", () => {
     expect(standout({ ...longestDay, score: 10 }, "today")).toBeUndefined();
   });
 
-  test("never marks a conditional fact, which may never happen", () => {
-    const conditional = fact({ status: "conditional", score: 10 });
-    expect(standout(conditional, "comingWeek")).toBeUndefined();
-  });
+  test.each([
+    [5.18, undefined],
+    [5.195, 0],
+  ])(
+    "judges a conditional fact in Today scoring %d by the coming week's score",
+    (score, strength) => {
+      const conditional = fact({ status: "conditional", score });
+      expect(standout(conditional, "today")).toBe(strength);
+    },
+  );
 });
 
 describe("arrange's standouts", () => {
   test.each([
     [4.5, undefined],
-    [5.2, "notable"],
-  ] as const)(
+    [5.195, 0],
+  ])(
     "judges a forecast in Today scoring %d by the coming week's score",
-    (score, level) => {
+    (score, strength) => {
       const forecast = fact({ status: "forecast", score });
       const page = arrange(pageFacts({ today: [fact({}), forecast] }));
 
-      expect(page.standouts.get(forecast)).toBe(level);
+      expect(page.standouts.get(forecast)).toBe(strength);
     },
   );
 
   test("marks the headline", () => {
-    const record = fact({ score: 7 });
+    const record = fact({ score: 6.5 });
     const page = arrange(pageFacts({ today: [record] }));
 
     expect(page.headline).toBe(record);
-    expect(page.standouts.get(record)).toBe("exceptional");
+    expect(page.standouts.get(record)).toBe(1);
   });
 });

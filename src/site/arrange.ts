@@ -17,7 +17,7 @@ export interface Page {
   pastWeek: Fact[];
   pastMonth: Fact[];
   /** The facts that stand out, judged in the section the pipeline chose them for. */
-  standouts: ReadonlyMap<Fact, Standout>;
+  standouts: ReadonlyMap<Fact, number>;
 }
 
 function strongest(facts: readonly Fact[]): Fact | undefined {
@@ -49,11 +49,11 @@ export function arrange(facts: PageFacts): Page {
       ),
     );
 
-  const standouts = new Map<Fact, Standout>();
+  const standouts = new Map<Fact, number>();
   for (const section of sections) {
     for (const fact of facts[section]) {
-      const level = standout(fact, section);
-      if (level !== undefined) standouts.set(fact, level);
+      const strength = standout(fact, section);
+      if (strength !== undefined) standouts.set(fact, strength);
     }
   }
 
@@ -74,9 +74,6 @@ export function headlineSize(score: number): number {
   return Math.min(5.5, Math.max(1.75, Math.round(size * 100) / 100));
 }
 
-/** How far a fact stands out from the others in its section. */
-export type Standout = "notable" | "exceptional";
-
 const sections: readonly Section[] = [
   "today",
   "pastWeek",
@@ -86,21 +83,24 @@ const sections: readonly Section[] = [
 
 /** About a once-in-2-years day for one measure, and every 3 months or so across them all. */
 const exceptionalScore = 6.5;
+const maxStrength = 1.5;
 
 /**
- * Whether a fact stands out in its section, and how far. It is notable if it is at least
- * twice as rare as the section needs, and exceptional from the same score everywhere.
- * Forecasts keep to the coming week's rules, even in Today. Daylight comes round every
- * year, and a conditional fact may never happen.
+ * How far a fact stands out in its section, if it does: from 0 at twice as rare as the
+ * section needs to 1 at the same exceptional score everywhere, and on to 1.5. Forecasts,
+ * conditional or not, keep to the coming week's rules, even in Today. Daylight comes round
+ * every year.
  */
-export function standout(fact: Fact, section: Section): Standout | undefined {
-  if (fact.kind === "daylight" || fact.status === "conditional") {
-    return undefined;
-  }
-  const needs = furtherFactScores[isForecast(fact) ? "comingWeek" : section];
-  if (fact.score >= exceptionalScore) return "exceptional";
-  if (fact.score >= needs + Math.log(2)) return "notable";
-  return undefined;
+export function standout(fact: Fact, section: Section): number | undefined {
+  if (fact.kind === "daylight") return undefined;
+  const twiceAsRare =
+    furtherFactScores[isForecast(fact) ? "comingWeek" : section] + Math.log(2);
+  if (fact.score < twiceAsRare) return undefined;
+  const strength = Math.min(
+    maxStrength,
+    (fact.score - twiceAsRare) / (exceptionalScore - twiceAsRare),
+  );
+  return Math.round(strength * 100) / 100;
 }
 
 function isForecast(fact: Fact): boolean {

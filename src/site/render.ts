@@ -1,13 +1,13 @@
 import type { Fact, FactsFile, ValueStatus } from "../shared/facts.ts";
 import { locations, type Location } from "../shared/locations.ts";
+import { arrange, headlineSize, type Page, pageFor } from "./arrange.ts";
 import {
-  arrange,
-  headlineSize,
-  type Page,
-  pageFor,
-  type Standout,
-} from "./arrange.ts";
-import { daylightSentence, longDate, sentence, sydneyDate } from "./naming.ts";
+  daylightSentence,
+  longDate,
+  sentence,
+  standoutWord,
+  sydneyDate,
+} from "./naming.ts";
 import { locationNotes } from "./notes.ts";
 import { updateNote } from "./updates.ts";
 
@@ -51,16 +51,11 @@ function marker(status: ShownStatus): HTMLElement {
   });
 }
 
-const standoutLabels: Record<Standout, string> = {
-  notable: "Notable",
-  exceptional: "Exceptional",
-};
-
 // Read out but not shown: the dot's glow shows it, and its shape that a value is still
 // running, which the sentence doesn't say.
-function spoken(fact: Fact, level: Standout | undefined): Children {
+function spoken(fact: Fact, standout: number | undefined): Children {
   const words = [
-    ...(level === undefined ? [] : [standoutLabels[level]]),
+    ...(standout === undefined ? [] : [standoutWord(standout)]),
     ...(fact.kind === "record" && fact.status === "partial"
       ? [statusLabels.partial]
       : []),
@@ -74,14 +69,14 @@ function spoken(fact: Fact, level: Standout | undefined): Children {
 function phrase(
   fact: Fact,
   today: string,
-  level: Standout | undefined,
+  standout: number | undefined,
 ): Children {
   const { before, subject, after } =
     fact.kind === "daylight"
       ? daylightSentence(fact, today)
       : sentence(fact, today);
   return [
-    ...spoken(fact, level),
+    ...spoken(fact, standout),
     before,
     element("strong", {}, [subject]),
     `${after}.`,
@@ -91,18 +86,24 @@ function phrase(
 function factItem(
   fact: Fact,
   today: string,
-  level: Standout | undefined,
+  standout: number | undefined,
 ): HTMLElement {
   const status = shown(fact);
-  const attributes: Record<string, string> = {
-    class: "fact",
-    "data-status": status,
+  return element(
+    "li",
+    { class: "fact", "data-status": status, ...standoutAttributes(standout) },
+    [marker(status), element("p", {}, phrase(fact, today, standout))],
+  );
+}
+
+function standoutAttributes(
+  standout: number | undefined,
+): Record<string, string> {
+  if (standout === undefined) return {};
+  return {
+    "data-standout": "",
+    style: `--standout: ${String(standout)}`,
   };
-  if (level !== undefined) attributes["data-standout"] = level;
-  return element("li", attributes, [
-    marker(status),
-    element("p", {}, phrase(fact, today, level)),
-  ]);
 }
 
 function factList(
@@ -134,25 +135,25 @@ function headline(page: Page, today: string): HTMLElement {
     ]);
   }
   const status = shown(fact);
-  const level = page.standouts.get(fact);
+  const standout = page.standouts.get(fact);
   // The headline has no dot, so a value still running says so beneath it, with the glow
   // its dot would have in a list.
-  const markAttributes: Record<string, string> = {
-    class: "headline-status",
-    "aria-hidden": "true",
-  };
-  if (level !== undefined) markAttributes["data-standout"] = level;
   const mark =
     status === "partial"
       ? [
-          element("span", markAttributes, [
-            marker(status),
-            statusLabels[status],
-          ]),
+          element(
+            "span",
+            {
+              class: "headline-status",
+              "aria-hidden": "true",
+              ...standoutAttributes(standout),
+            },
+            [marker(status), statusLabels[status]],
+          ),
         ]
       : [];
   const node = element("p", { class: "headline", "data-status": status }, [
-    ...phrase(fact, today, level),
+    ...phrase(fact, today, standout),
     ...mark,
   ]);
   const size = headlineSize(fact.score);
