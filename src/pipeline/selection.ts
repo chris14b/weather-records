@@ -244,13 +244,19 @@ export function selectFacts({
     const forecasts = presentAll(
       outlook.filter(({ fact }) => sectionFor(fact) === name),
     );
-    if (name === "comingWeek") {
-      return [...forecasts, ...daylightFacts].toSorted(soonestFirst);
+    const others = [...presentAll(observed), ...daylightFacts];
+    switch (name) {
+      case "today":
+        return [
+          ...others.toSorted(strongestFirst),
+          ...forecasts.toSorted(soonestFirst),
+        ];
+      case "comingWeek":
+        return [...others, ...forecasts].toSorted(soonestFirst);
+      case "pastWeek":
+      case "pastMonth":
+        return [...others, ...forecasts].toSorted(newestFirst);
     }
-    return [
-      ...[...presentAll(observed), ...daylightFacts].toSorted(strongestFirst),
-      ...forecasts.toSorted(soonestFirst),
-    ];
   };
   return {
     date,
@@ -265,16 +271,31 @@ function strongestFirst(a: Fact, b: Fact): number {
   return b.score - a.score || b.date.localeCompare(a.date);
 }
 
-// A day's forecast facts come before what it would take, and its daylight last.
 function soonestFirst(a: Fact, b: Fact): number {
-  return (
-    a.date.localeCompare(b.date) ||
-    outlookOrder(a) - outlookOrder(b) ||
-    b.score - a.score
-  );
+  return endsBefore(a, b) || alongside(a, b);
 }
 
-function outlookOrder(fact: Fact): number {
+function newestFirst(a: Fact, b: Fact): number {
+  return endsBefore(b, a) || alongside(a, b);
+}
+
+// A night, its rain and its 9am readings are dated by the morning they end, before that
+// date's daytime values.
+function endsBefore(a: Fact, b: Fact): number {
+  return a.date.localeCompare(b.date) || partOfDay(a) - partOfDay(b);
+}
+
+function partOfDay(fact: Fact): number {
+  return fact.kind === "record" && overnightMeasures.has(fact.measure) ? 0 : 1;
+}
+
+// Facts that end together run strongest first, but what it would take comes after the
+// forecast, and daylight last.
+function alongside(a: Fact, b: Fact): number {
+  return sameDayOrder(a) - sameDayOrder(b) || b.score - a.score;
+}
+
+function sameDayOrder(fact: Fact): number {
   if (fact.kind === "daylight") return 2;
   return fact.status === "conditional" ? 1 : 0;
 }

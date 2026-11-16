@@ -258,6 +258,25 @@ describe("selectFacts", () => {
     ).toHaveLength(3);
   });
 
+  test("puts Past week newest first, a day before the night that ended on its morning", () => {
+    const earlier = addDays(latest, -5);
+    const later = addDays(latest, -2);
+    const { pastWeek } = selectAll([
+      series("maxTemp", () => 20, { "2026-06-01": 36, [later]: 35 }),
+      series("minTemp", () => 10, { [earlier]: 20, [later]: 0 }),
+      series("rain", wetFifteenth, { [earlier]: 60 }),
+    ]);
+
+    expect(pastWeek.map(({ date, measure }) => ({ date, measure }))).toEqual([
+      { date: later, measure: "maxTemp" },
+      { date: later, measure: "minTemp" },
+      { date: earlier, measure: "minTemp" },
+      { date: earlier, measure: "rain" },
+    ]);
+    expect(pastWeek[0]?.score).toBeLessThan(pastWeek[1]?.score ?? 0);
+    expect(pastWeek[2]?.score).toBeGreaterThan(pastWeek[3]?.score ?? 0);
+  });
+
   test("leaves wind, sunshine and humidity out of Today, and shows them from the next day", () => {
     const quietDay = [
       series("wind", () => 10, { [latest]: 50 }),
@@ -334,11 +353,12 @@ describe("selectFacts", () => {
       }),
     ]);
 
-    expect(pastMonth.filter(({ date }) => date === day)).toMatchObject([
+    const onTheDay = pastMonth.filter(({ date }) => date === day);
+    expect(onTheDay).toMatchObject([
       { text: "the fifth hottest day since records began in 2016" },
     ]);
-    expect(pastMonth[0]?.score).toBeGreaterThan(3);
-    expect(pastMonth[0]?.score).toBeLessThan(5);
+    expect(onTheDay[0]?.score).toBeGreaterThan(3);
+    expect(onTheDay[0]?.score).toBeLessThan(5);
   });
 
   test("turns the page over at midnight, keeping the day's maximum in Today", () => {
@@ -413,14 +433,9 @@ describe("selectFacts", () => {
       pastMonth.map(({ from, date, text }) => ({ from, date, text })),
     ).toEqual([
       {
-        from: "2026-10-10",
-        date: "2026-10-10",
-        text: "the wettest since records began in 2016",
-      },
-      {
-        from: "2026-10-01",
-        date: "2026-10-31",
-        text: "the wettest month since records began in 2016",
+        from: "2026-09-01",
+        date: "2026-11-06",
+        text: "the hottest since records began in 2016",
       },
       {
         from: "2026-01-01",
@@ -428,9 +443,14 @@ describe("selectFacts", () => {
         text: "so far the wettest year since records began in 2016",
       },
       {
-        from: "2026-09-01",
-        date: "2026-11-06",
-        text: "the hottest since records began in 2016",
+        from: "2026-10-01",
+        date: "2026-10-31",
+        text: "the wettest month since records began in 2016",
+      },
+      {
+        from: "2026-10-10",
+        date: "2026-10-10",
+        text: "the wettest since records began in 2016",
       },
     ]);
   });
@@ -579,6 +599,38 @@ describe("selectFacts with a forecast", () => {
         text: "the hottest day since records began in 1990",
       },
     ]);
+  });
+
+  test("puts a forecast night before the day that follows it", () => {
+    const morning = addDays(latest, 2);
+    const allSeries = [
+      series("maxTemp", () => 20, {}, "1990-01-01"),
+      series("minTemp", () => 15, { "2010-01-10": 31 }, "1990-01-01"),
+    ];
+    const forecast = {
+      days: forecastDays(20).map((day) =>
+        day.date === morning ? { ...day, minTemp: 30, maxTemp: 40 } : day,
+      ),
+      from: addDays(latest, 1),
+    };
+    const { comingWeek } = selectRecords({
+      date: latest,
+      facts: generateCandidates({
+        locationId: "test",
+        series: allSeries,
+        windowEnd: latest,
+        forecast,
+      }),
+      series: allSeries,
+      forecast,
+    });
+
+    const forecasts = comingWeek.filter(({ status }) => status === "forecast");
+    expect(forecasts.map(({ date, measure }) => ({ date, measure }))).toEqual([
+      { date: morning, measure: "minTemp" },
+      { date: morning, measure: "maxTemp" },
+    ]);
+    expect(forecasts[0]?.score).toBeLessThan(forecasts[1]?.score ?? 0);
   });
 
   test("shows the best forecast fact when the coming days have nothing notable", () => {

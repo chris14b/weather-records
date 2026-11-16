@@ -188,9 +188,9 @@ export interface PageFacts {
   date: string;
   /** The newest observations, then the forecasts that end by 9am the next day. */
   today: Fact[];
-  /** The 6 days before, and runs of days that start in them. */
+  /** The 6 days before, and runs of days that start in them, newest first. */
   pastWeek: Fact[];
-  /** 7 to 30 days before, and the latest calendar periods. */
+  /** 7 to 30 days before, and the latest calendar periods, newest first. */
   pastMonth: Fact[];
   /** The forecast and conditional facts after Today's, soonest first. */
   comingWeek: Fact[];
