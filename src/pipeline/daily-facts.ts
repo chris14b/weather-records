@@ -41,12 +41,22 @@ export function comparisonsFor(
 
 const minimumGapDays = 7;
 
+/** A value still building up, which can only go on beating what it already beats in `direction`. */
+export interface SettledValue {
+  measure: FactMeasure;
+  date: string;
+  value: number;
+  direction: Direction;
+}
+
 export interface DailyFactsRequest {
   locationId: string;
   series: readonly Series[];
   /** The window's last day, normally today in Sydney. */
   windowEnd: string;
   windowDays?: number;
+  /** Values after the window that count only towards which facts a later day has beaten. */
+  settled?: readonly SettledValue[];
 }
 
 /**
@@ -59,6 +69,7 @@ export function generateDailyFacts({
   series,
   windowEnd,
   windowDays = 31,
+  settled = [],
 }: DailyFactsRequest): CandidateFact[] {
   const windowStart = addDays(windowEnd, 1 - windowDays);
   return series.flatMap(({ measure, days, fullRecord, pastYear = false }) => {
@@ -93,12 +104,20 @@ export function generateDailyFacts({
             other < index && date >= scopeStart && keys[other] === key,
         );
         // In a cold week, every day could be the coldest of its day of the week.
-        const later = days.filter(
-          ({ date }, other) =>
-            other > index &&
-            date <= windowEnd &&
-            (comparison === "dayOfWeek" || keys[other] === key),
-        );
+        const later: readonly (DayValue & { direction?: Direction })[] = [
+          ...days.filter(
+            ({ date }, other) =>
+              other > index &&
+              date <= windowEnd &&
+              (comparison === "dayOfWeek" || keys[other] === key),
+          ),
+          ...settled.filter(
+            (other) =>
+              other.measure === measure &&
+              other.date > day.date &&
+              (comparison === "dayOfWeek" || keyOf(other.date) === key),
+          ),
+        ];
         return directionsFor(measure, day.value).map(
           (direction): CandidateFact => ({
             locationId,
@@ -117,7 +136,11 @@ export function generateDailyFacts({
             missingDays: missing.length,
             gaps,
             beatenBy: dayValue(
-              later.find((other) => beats(other.value, day.value, direction)),
+              later.find(
+                (other) =>
+                  (other.direction ?? direction) === direction &&
+                  beats(other.value, day.value, direction),
+              ),
             ),
           }),
         );

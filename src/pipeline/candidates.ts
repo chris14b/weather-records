@@ -12,7 +12,11 @@ import { generateDailyFacts } from "./daily-facts.ts";
 import { generateForecastFacts, type ForecastInput } from "./forecast-facts.ts";
 import type { RunningValue } from "./observations.ts";
 import { generatePeriodFacts } from "./period-facts.ts";
-import { generateRunningFacts, withoutOvertaken } from "./running-facts.ts";
+import {
+  generateRunningFacts,
+  settledValues,
+  withoutOvertaken,
+} from "./running-facts.ts";
 import type { Series } from "./series.ts";
 
 /**
@@ -88,7 +92,7 @@ export function generateCandidates(
   const { forecast, running = [] } = request;
   return withoutOvertaken(
     [
-      ...generateDailyFacts(request),
+      ...generateDailyFacts({ ...request, settled: settledValues(running) }),
       ...generatePeriodFacts(request),
       ...generateRunningFacts({ ...request, running }),
       ...(forecast === undefined

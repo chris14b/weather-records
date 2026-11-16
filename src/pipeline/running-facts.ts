@@ -1,7 +1,7 @@
 import { isForecastStatus, type Direction } from "../shared/facts.ts";
 import type { CandidateFact } from "./candidates.ts";
 import type { RecentDay } from "./daily-files.ts";
-import { beats, generateDailyFacts } from "./daily-facts.ts";
+import { beats, generateDailyFacts, type SettledValue } from "./daily-facts.ts";
 import type { RunningMeasure, RunningValue } from "./observations.ts";
 import type { Series } from "./series.ts";
 import type { FromStation } from "./stations.ts";
@@ -13,6 +13,18 @@ const settledWay: Record<RunningMeasure, Direction> = {
   rain: "highest",
   gust: "highest",
 };
+
+/** What the running values can only go on beating, for the facts about the days before them. */
+export function settledValues(
+  running: readonly RunningValue[],
+): SettledValue[] {
+  return running.map(({ measure, date, value }) => ({
+    measure,
+    date,
+    value,
+    direction: settledWay[measure],
+  }));
+}
 
 /** The saved live observations without the values still running, such as the maximum from 4pm. */
 export function withoutRunning(

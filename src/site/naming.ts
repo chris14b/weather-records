@@ -388,9 +388,24 @@ export interface Sentence {
   after: string;
 }
 
+// Rain still falling is named by when it began, since the 24 hours to 9 am it is part of
+// hasn't ended and "tomorrow" would read as a forecast: "Rain since 9 am has reached…".
+function runningRain(fact: Phrased, today: string): Sentence | undefined {
+  if (!isRainDay(fact) || fact.status !== "partial") return undefined;
+  const started = daysFrom(today, fact.date) - 1;
+  if (started !== 0 && started !== -1) return undefined;
+  return {
+    before: "",
+    subject: `Rain since 9\u00a0am${started === -1 ? " yesterday" : ""}`,
+    after: ` has reached ${amount(fact.measure, fact.why.value)}, ${fact.text.replace("wettest", "most")}`,
+  };
+}
+
 /** A fact as a sentence for the viewer's today, without its full stop. */
 export function sentence(fact: Phrased, today: string): Sentence {
   if (fact.status === "conditional") return conditional(fact, today);
+  const running = runningRain(fact, today);
+  if (running) return running;
   return {
     before: "",
     subject: capitalise(periodName(fact, today)),

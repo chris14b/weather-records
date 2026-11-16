@@ -259,7 +259,17 @@ describe("sentence", () => {
         text: "the wettest since 16\u00a0October",
         why: { value: 22.4 },
       }),
-      "[The 24 hours to 9\u00a0am today] are the wettest since 16\u00a0October, with 22.4\u00a0mm",
+      "[Rain since 9\u00a0am yesterday] has reached 22.4\u00a0mm, the most since 16\u00a0October",
+    ],
+    [
+      fact({
+        date: "2026-11-10",
+        measure: "rain",
+        status: "partial",
+        text: "the wettest since 16\u00a0October",
+        why: { value: 13.8 },
+      }),
+      "[Rain since 9\u00a0am] has reached 13.8\u00a0mm, the most since 16\u00a0October",
     ],
     [
       fact({

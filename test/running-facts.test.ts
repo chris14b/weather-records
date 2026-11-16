@@ -43,6 +43,49 @@ const runningValue = (
   date = today,
 ): RunningValue => ({ measure, date, value, observedAt });
 
+describe("generateCandidates", () => {
+  const rainFact = (running: RunningValue[]) =>
+    generateCandidates({
+      locationId: "test",
+      series: [series("rain", 0, { [today]: 6.6 }, today)],
+      windowEnd: today,
+      running,
+    }).find(
+      (fact) =>
+        fact.date === today &&
+        fact.status === "confirmed" &&
+        fact.measure === "rain" &&
+        fact.comparison === "all",
+    );
+
+  test("counts a running value that beats a day's fact as a later day that beat it", () => {
+    expect(rainFact([runningValue("rain", 13.8, tomorrow)])).toMatchObject({
+      beatenBy: { date: tomorrow, value: 13.8 },
+    });
+  });
+
+  test("leaves a day's fact unbeaten by a running value that falls short of it", () => {
+    expect(rainFact([runningValue("rain", 3, tomorrow)])?.beatenBy).toBeNull();
+  });
+
+  test("leaves a day's fact unbeaten by a running value that could still fall back", () => {
+    const fact = generateCandidates({
+      locationId: "test",
+      series: [series("minTemp", 15, { [today]: 9 }, today)],
+      windowEnd: today,
+      running: [runningValue("minTemp", 12, tomorrow)],
+    }).find(
+      (candidate) =>
+        candidate.date === today &&
+        candidate.status === "confirmed" &&
+        candidate.direction === "highest" &&
+        candidate.comparison === "all",
+    );
+
+    expect(fact?.beatenBy).toBeNull();
+  });
+});
+
 describe("generateRunningFacts", () => {
   test("ranks a running maximum as its day's, only as the hottest", () => {
     const facts = generateRunningFacts({
