@@ -122,12 +122,11 @@ const daylightSections: readonly Section[] = [
 ];
 
 /**
- * Wind, sunshine and humidity aren't the day's news: a day's facts about them wait for
- * Past week, and never count towards the newest observations.
+ * Average wind, sunshine and humidity aren't the day's news: a day's facts about them wait
+ * for Past week, and never count towards the newest observations. A gust is.
  */
 const leftOutOfToday: ReadonlySet<FactMeasure> = new Set([
   "wind",
-  "gust",
   "solar",
   "maxRelHum",
   "minRelHum",

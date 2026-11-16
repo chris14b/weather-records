@@ -286,6 +286,42 @@ describe("selectFacts", () => {
     ]);
   });
 
+  test("puts the day's gust so far in Today", () => {
+    const gusts = series("gust", () => 20, {});
+    const beforeToday = {
+      ...gusts,
+      days: gusts.days.filter(({ date }) => date < latest),
+    };
+
+    const { today } = selectRecords({
+      date: latest,
+      facts: generateCandidates({
+        locationId: "test",
+        series: [beforeToday],
+        windowEnd: latest,
+        running: [
+          {
+            measure: "gust",
+            date: latest,
+            value: 90,
+            observedAt: `${latest}T05:00:00Z`,
+          },
+        ],
+      }),
+      series: [beforeToday],
+    });
+
+    expect(
+      today.map(({ measure, status, text }) => ({ measure, status, text })),
+    ).toEqual([
+      {
+        measure: "gust",
+        status: "partial",
+        text: "the gustiest day since records began in 2016",
+      },
+    ]);
+  });
+
   test("shows a day in Past month that scores 3 to 5", () => {
     const day = addDays(latest, -10);
     const { pastMonth } = selectAll([
