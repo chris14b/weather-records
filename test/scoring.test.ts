@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { previousOccurrence, scoreFact } from "../src/pipeline/scoring.ts";
+import type { Comparison } from "../src/shared/facts.ts";
 import { dailyFact } from "./facts.ts";
 
 const score = (...fact: Parameters<typeof dailyFact>) =>
@@ -80,26 +81,23 @@ describe("scoreFact", () => {
     expect(score({ ties: 4 })).toBeCloseTo(Math.log(10_000));
   });
 
-  test("scores narrow comparisons lower", () => {
-    const all = score({ compared: 5000 });
-    const season = score({ comparison: "season", compared: 5000 });
-    const month = score({ comparison: "month", compared: 5000 });
-
-    expect(season).toBeLessThan(all);
-    expect(month).toBeLessThan(season);
-  });
-
-  test.each(["calendarDate", "year"] as const)(
-    "scores the %s between a month and every day, since it reads well",
+  test.each(["month", "season"] as const)(
+    "counts the %s in full, since it is matched to the time of year",
     (comparison) => {
-      const scored = score({ comparison, rank: 3, compared: 300 });
-
-      expect(scored).toBeGreaterThan(
-        score({ comparison: "month", rank: 3, compared: 300 }),
+      expect(score({ comparison, compared: 5000 })).toBeCloseTo(
+        score({ compared: 5000 }),
       );
-      expect(scored).toBeLessThan(score({ rank: 3, compared: 300 }));
     },
   );
+
+  test("scores the calendar date, the year and the day of the week less than a month, in that order", () => {
+    const scored = (comparison: Comparison) =>
+      score({ comparison, rank: 3, compared: 300 });
+
+    expect(scored("calendarDate")).toBeLessThan(scored("month"));
+    expect(scored("year")).toBeLessThan(scored("calendarDate"));
+    expect(scored("dayOfWeek")).toBeLessThan(scored("year"));
+  });
 
   test("scores the coldest night for the date in 27 years above the biggest rise in minimum in 8 days", () => {
     const forTheDate = score({

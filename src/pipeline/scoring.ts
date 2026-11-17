@@ -28,14 +28,14 @@ const pastYearFullStrengthDays = 365;
 /** Below this share of comparable days having a value, a rank must say what is missing. */
 export const minimumCoverage = 0.95;
 
-// Narrow comparisons make records easy to set. A calendar date and the year so far weigh
-// more than that alone would give them, because they read well.
+// A comparison matched to the time of year counts in full. The calendar date rests on few
+// days, and the year so far and the day of the week aren't matched, so they weigh less.
 const comparisonWeights: Record<Comparison, number> = {
   all: 1,
   calendarDate: 0.9,
-  season: 0.85,
+  season: 1,
   year: 0.85,
-  month: 0.8,
+  month: 1,
   dayOfWeek: 0.7,
 };
 
@@ -64,6 +64,8 @@ const changeSinceWeight = 0.8;
 /** The year has six turning points in its daylight, so each comes about once in 61 days. */
 const daylightScore = Math.log(365.25 / 6);
 
+const seasonDaylightWeight = 0.85;
+
 // The solstices are the turning points people know.
 const daylightWeights: Record<DaylightEvent, number> = {
   longestDay: 1,
@@ -76,7 +78,7 @@ const daylightWeights: Record<DaylightEvent, number> = {
 
 /** Scores a turning point in the daylight on the same scale as a day's facts; see docs/facts.md. */
 export function scoreDaylight({ event, scope }: DaylightCandidate): number {
-  const scopeWeight = scope === "season" ? comparisonWeights.season : 1;
+  const scopeWeight = scope === "season" ? seasonDaylightWeight : 1;
   return daylightScore * daylightWeights[event] * scopeWeight;
 }
 

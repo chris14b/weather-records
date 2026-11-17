@@ -345,10 +345,10 @@ describe("selectFacts", () => {
     const day = addDays(latest, -10);
     const { pastMonth } = selectAll([
       series("maxTemp", () => 20, {
-        "2026-08-01": 31,
-        "2026-08-15": 31,
-        "2026-09-10": 31,
-        "2026-09-20": 31,
+        "2026-10-01": 31,
+        "2026-10-02": 31,
+        "2026-10-03": 31,
+        "2026-10-04": 31,
         [day]: 30,
       }),
     ]);
@@ -443,9 +443,9 @@ describe("selectFacts", () => {
         text: "the hottest since records began in 2016",
       },
       {
-        from: "2026-01-01",
+        from: "2026-09-01",
         date: "2026-11-06",
-        text: "so far the wettest year since records began in 2016",
+        text: "the wettest since records began in 2016",
       },
       {
         from: "2026-10-01",
