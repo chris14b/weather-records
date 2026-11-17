@@ -754,6 +754,12 @@ h2,
   animation-delay: 0.35s;
 }
 
+/* A fact that may never happen only glows, so the ripple stays for what has or will. */
+.fact[data-status="conditional"][data-standout] > .marker::before,
+.fact[data-status="conditional"][data-standout] > .marker::after {
+  display: none;
+}
+
 @keyframes shockwave {
   0% {
     inset: 0;
