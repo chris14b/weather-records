@@ -719,7 +719,10 @@ h2,
   --boost: clamp(0, calc((var(--standout) - 0.9) * 10), 1);
   --reach: calc(5px + 10px * var(--standout) + 50px * var(--boost));
   --strength: min(1, calc(0.5 + 0.5 * var(--standout)));
-  --glow: calc(0.5 + 0.5 * var(--standout) + 0.75 * var(--boost));
+  --glow-scale: 1;
+  --glow: calc(
+    (0.5 + 0.5 * var(--standout) + 0.75 * var(--boost)) * var(--glow-scale)
+  );
   --echo: clamp(0, calc((var(--standout) - 0.6) * 2), 1);
   --ring-width: calc(2px + 1.5px * var(--boost));
 }
@@ -754,7 +757,11 @@ h2,
   animation-delay: 0.35s;
 }
 
-/* A fact that may never happen only glows, so the ripple stays for what has or will. */
+/* A fact that may never happen only glows, and less, so the ripple stays for what has or will. */
+.fact[data-status="conditional"][data-standout] {
+  --glow-scale: 0.6;
+}
+
 .fact[data-status="conditional"][data-standout] > .marker::before,
 .fact[data-status="conditional"][data-standout] > .marker::after {
   display: none;
