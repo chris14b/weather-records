@@ -286,14 +286,16 @@ function calendarLast(fact: Fact): number {
   return fact.kind === "record" && isCalendar(fact.period) ? 1 : 0;
 }
 
-// A night, its rain and its 9am readings are dated by the morning they end, before that
+// A night and its rain end at 9am on their date, then comes the 9am reading, then that
 // date's daytime values.
 function endsBefore(a: Fact, b: Fact): number {
   return a.date.localeCompare(b.date) || partOfDay(a) - partOfDay(b);
 }
 
 function partOfDay(fact: Fact): number {
-  return fact.kind === "record" && overnightMeasures.has(fact.measure) ? 0 : 1;
+  if (fact.kind !== "record") return 2;
+  if (fact.measure === "temp9am" || fact.measure === "relHum9am") return 1;
+  return overnightMeasures.has(fact.measure) ? 0 : 2;
 }
 
 // Facts that end together run strongest first, but what it would take comes after the

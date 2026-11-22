@@ -15,8 +15,8 @@ exports[`selectFacts on real data > chooses the facts at sydney-airport for the 
   "pastWeek": [
     "2026-10-26 3.63 maxTempChange the biggest day-to-day drop in maximum temperature on 26 October since records began in 1939",
     "2026-10-25 3.41 maxTemp the second hottest 25 October since records began in 1939",
-    "2026-10-25 5.29 minTemp the warmest since 10 April",
     "2026-10-25 2.82 temp9am the warmest 9 am since 21 September",
+    "2026-10-25 5.29 minTemp the warmest since 10 April",
   ],
   "today": [
     "2026-10-29 2.64 minTemp the coldest since 15 October",

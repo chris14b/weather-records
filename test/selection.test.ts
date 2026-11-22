@@ -277,6 +277,22 @@ describe("selectFacts", () => {
     expect(pastWeek[2]?.score).toBeGreaterThan(pastWeek[3]?.score ?? 0);
   });
 
+  test("puts the 9 am reading between a day and the night that ended with it, however strong the night", () => {
+    const day = addDays(latest, -2);
+    const { pastWeek } = selectAll([
+      series("maxTemp", () => 20, { [day]: 35 }),
+      series("minTemp", () => 10, { [day]: 25 }),
+      series("temp9am", () => 15, { [day]: 30 }, "2024-01-01"),
+    ]);
+
+    expect(pastWeek.map(({ date, measure }) => ({ date, measure }))).toEqual([
+      { date: day, measure: "maxTemp" },
+      { date: day, measure: "temp9am" },
+      { date: day, measure: "minTemp" },
+    ]);
+    expect(pastWeek[1]?.score).toBeLessThan(pastWeek[2]?.score ?? 0);
+  });
+
   test("leaves wind, sunshine and humidity out of Today, and shows them from the next day", () => {
     const quietDay = [
       series("wind", () => 10, { [latest]: 50 }),
