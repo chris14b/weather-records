@@ -4,6 +4,7 @@
   /* Darker on a light, cloudy day, so the text stays clear. */
   --glass: rgb(12 18 40 / calc(0.3 + 0.1 * var(--daylight) * var(--heavy)));
   --glass-edge: rgb(255 255 255 / 0.22);
+  --rain: #5b9cf5;
   --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
   --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
   /* The sky for the sun's height, set by drawSky in sky.ts. These are deep night's. */
@@ -461,7 +462,8 @@ h1 {
 }
 
 h2,
-.swing h3 {
+.swing h3,
+.rainfall h3 {
   margin: 0 0 0.75rem;
   font-size: 0.8125rem;
   font-weight: 600;
@@ -515,14 +517,28 @@ h2,
   text-align: left;
 }
 
-.swing {
-  max-width: 44rem;
+.figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.75rem 3rem;
+  max-width: 48rem;
   margin: 1.5rem auto 0;
   padding-top: 1.25rem;
   border-top: 1px solid var(--glass-edge);
 }
 
-.swing h3 {
+.swing {
+  flex: 1 1 18rem;
+  min-width: 0;
+}
+
+.rainfall {
+  flex: 0 1 11rem;
+  text-align: center;
+}
+
+.swing h3,
+.rainfall h3 {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -636,6 +652,31 @@ h2,
 .swing-value[data-side="after"] {
   text-align: left;
   transform: translateX(-0.5rem);
+}
+
+.rainfall-icon {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50% 0 50% 50%;
+  background: var(--rain);
+  box-shadow: 0 0 0.5rem rgb(91 156 245 / 0.6);
+  transform: rotate(-45deg);
+}
+
+.rainfall-value {
+  margin: 0.9rem 0 0;
+  font-size: 1.875rem;
+  font-weight: 600;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.rainfall-value small {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text-soft);
 }
 
 .panels {

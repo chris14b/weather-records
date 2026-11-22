@@ -31,6 +31,8 @@ export type DailyReadings = SavedRow<typeof readingSchema>;
 type Reading = {
   date: string;
   time: string;
+  /** The observation as the feed gives it, for the fields not read for every row. */
+  row: unknown;
 } & Record<Field, number | null>;
 
 /**
@@ -49,28 +51,9 @@ export function parseReadings(
   archive: Uint8Array,
   location: Location,
 ): FromStation<DailyReadings>[] {
-  const station = currentStation(location);
-  const { wmo } = station;
-  if (wmo === undefined) {
-    throw new Error(`Station ${station.station} has no WMO number`);
-  }
-  const name = `IDN60910.${wmo}.json`;
-  const files = parseTar(gunzipSync(archive), {
-    filter: (file) => file.name === name,
-  });
-  const [file] = files;
-  if (file?.data === undefined || files.length > 1) {
-    throw new Error(
-      `${readingsArchivePath} should hold one ${name}, found ${String(files.length)}`,
-    );
-  }
-
+  const { name, wmo, station, data } = stationFile(archive, location);
   return inContext(name, () => {
-    const readings = parseRows(
-      JSON.parse(new TextDecoder().decode(file.data)),
-      wmo,
-      location.name,
-    );
+    const readings = parseRows(data, wmo, location.name);
     const days = new Map<string, FromStation<DailyReadings>>();
     const seen = new Map<string, Reading>();
     for (const reading of readings) {
@@ -107,6 +90,88 @@ export function parseReadings(
     }
     return [...days.values()].sort((a, b) => a.date.localeCompare(b.date));
   });
+}
+
+/**
+ * The rain in mm that has fallen at the location's current station since midnight on
+ * `today`, or null if a half-hourly reading it needs is missing. `rain_trace` is the rain
+ * since 9am, reset at 09:30, so the 09:00 reading holds the whole 24 hours to 9am. Midnight
+ * to 9am is that reading less the midnight one, and rain after 9am is the latest trace.
+ */
+export function parseRainSinceMidnight(
+  archive: Uint8Array,
+  location: Location,
+  today: string,
+): number | null {
+  const { name, wmo, data } = stationFile(archive, location);
+  return inContext(name, () => {
+    const todays = parseRows(data, wmo, location.name)
+      .filter(({ date }) => date === today)
+      .filter(({ time }) => /^(00|30)00$/.test(time.slice(2)));
+    const at = (time: string) =>
+      todays.find((reading) => reading.time === time);
+    const latest = todays.reduce<Reading | undefined>(
+      (best, reading) =>
+        best === undefined || reading.time > best.time ? reading : best,
+      undefined,
+    );
+    const midnight = at(midnightTime);
+    if (midnight === undefined || latest === undefined) return null;
+    const [start, since9am] = [rainTrace(midnight), rainTrace(latest)];
+    if (start === null || since9am === null) return null;
+
+    if (latest.time <= nineAmTime) return roundRain(since9am - start);
+    const nineAm = at(nineAmTime);
+    const toNineAm = nineAm === undefined ? null : rainTrace(nineAm);
+    return toNineAm === null ? null : roundRain(toNineAm - start + since9am);
+  });
+}
+
+const midnightTime = "000000";
+const nineAmTime = readingTimes["9am"];
+
+function roundRain(value: number): number {
+  return Math.round(value * 10) / 10;
+}
+
+/** A reading's `rain_trace`, which the feed gives as text, or null if it has none. */
+function rainTrace({ row }: Reading): number | null {
+  const value = field(row, "rain_trace");
+  if (value === null || value === "-") return null;
+  const number = typeof value === "string" ? Number(value) : value;
+  if (
+    typeof number !== "number" ||
+    Number.isNaN(number) ||
+    (typeof value === "string" && value.trim() === "")
+  ) {
+    throw new Error(`invalid rain_trace ${JSON.stringify(value)}`);
+  }
+  return number;
+}
+
+/** The location's current station's file in the archive, parsed from its JSON. */
+function stationFile(archive: Uint8Array, location: Location) {
+  const station = currentStation(location);
+  const { wmo } = station;
+  if (wmo === undefined) {
+    throw new Error(`Station ${station.station} has no WMO number`);
+  }
+  const name = `IDN60910.${wmo}.json`;
+  const files = parseTar(gunzipSync(archive), {
+    filter: (file) => file.name === name,
+  });
+  const [file] = files;
+  if (file?.data === undefined || files.length > 1) {
+    throw new Error(
+      `${readingsArchivePath} should hold one ${name}, found ${String(files.length)}`,
+    );
+  }
+  return {
+    name,
+    wmo,
+    station,
+    data: JSON.parse(new TextDecoder().decode(file.data)) as unknown,
+  };
 }
 
 function parseRows(
@@ -151,6 +216,7 @@ function parseRows(
       return {
         date: `${local.slice(0, 4)}-${local.slice(4, 6)}-${local.slice(6, 8)}`,
         time: local.slice(8),
+        row,
         ...values,
       } as Reading;
     }),

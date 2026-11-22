@@ -122,6 +122,7 @@ describe("buildFactsFile", () => {
       current: 23.9,
       forecast: 25,
     });
+    expect(facts?.rainToday).toEqual({ date: "2026-10-30", soFar: 0 });
     expect(Object.keys(await savedFiles(root)).sort()).toEqual([
       "ftp-history/066037.csv",
       "ftp-history/066062.csv",

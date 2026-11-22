@@ -23,6 +23,7 @@ import {
   seriesFromSources,
 } from "./saved-series.ts";
 import { parseRunningValues } from "./observations.ts";
+import { parseRainSinceMidnight } from "./readings.ts";
 import { withoutRunning } from "./running-facts.ts";
 import { selectFacts } from "./selection.ts";
 import { temperatureSwing } from "./swing.ts";
@@ -140,6 +141,10 @@ async function buildLocationFacts({
       precis,
     })),
     swing: temperatureSwing({ now, forecast: days, series, running }),
+    rainToday: {
+      date: today,
+      soFar: parseRainSinceMidnight(feeds.readings, location, today),
+    },
   };
 }
 

@@ -213,6 +213,15 @@ export interface LocationFacts {
   /** BOM's forecast for the location's area, from the day of the run. */
   forecast: DayForecast[];
   swing: TemperatureSwing;
+  rainToday: RainToday;
+}
+
+/** The rain on the day of the run by the calendar day, which BOM forecasts, not the 24 hours to 9 am. */
+export interface RainToday {
+  /** The day of the run, whose midnight the rain is counted from. */
+  date: string;
+  /** Rain since midnight in mm, or null when a reading it is worked out from is missing. */
+  soFar: number | null;
 }
 
 /**

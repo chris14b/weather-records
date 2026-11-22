@@ -9,6 +9,7 @@ import {
   sydneyDate,
 } from "./naming.ts";
 import { locationNotes } from "./notes.ts";
+import { type RainView, rainView } from "./rain.ts";
 import { type Placed, type SwingView, swingView } from "./swing.ts";
 import { updateNote } from "./updates.ts";
 
@@ -197,6 +198,23 @@ function between(
   });
 }
 
+function rainFigure(view: RainView): HTMLElement {
+  return element(
+    "section",
+    { class: "rainfall", "aria-labelledby": "rainfall" },
+    [
+      element("h3", { id: "rainfall" }, [
+        element("span", { class: "rainfall-icon", "aria-hidden": "true" }),
+        view.title,
+      ]),
+      element("p", { class: "rainfall-value" }, [
+        view.text,
+        element("small", {}, ["since midnight"]),
+      ]),
+    ],
+  );
+}
+
 function swingFigure(view: SwingView): HTMLElement {
   const { from, current, forecast, filled, toGo } = view;
   const bar = element(
@@ -337,6 +355,8 @@ export function render(
     facts === undefined ? undefined : pageFor(facts.pages, today);
   const page = pageFacts === undefined ? undefined : arrange(pageFacts);
   const swing = facts === undefined ? undefined : swingView(facts.swing, today);
+  const rain =
+    facts === undefined ? undefined : rainView(facts.rainToday, today);
 
   const header = element("header", { class: "top" }, [
     element("h1", {}, ["Sydney Weather Records"]),
@@ -364,7 +384,14 @@ export function render(
       ...(page.today.length === 0
         ? []
         : [factList(page.today, page, today, "")]),
-      ...(swing === undefined ? [] : [swingFigure(swing)]),
+      ...(swing === undefined && rain === undefined
+        ? []
+        : [
+            element("div", { class: "figures" }, [
+              ...(swing === undefined ? [] : [swingFigure(swing)]),
+              ...(rain === undefined ? [] : [rainFigure(rain)]),
+            ]),
+          ]),
     ]),
     element("div", { class: "panels" }, [
       panel("coming-week", "Coming week", [

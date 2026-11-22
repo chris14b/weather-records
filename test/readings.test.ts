@@ -1,6 +1,10 @@
 import { describe, expect, test } from "vitest";
 import { locations, type Location } from "../src/shared/locations.ts";
-import { parseReadings, readingsKeptFrom } from "../src/pipeline/readings.ts";
+import {
+  parseRainSinceMidnight,
+  parseReadings,
+  readingsKeptFrom,
+} from "../src/pipeline/readings.ts";
 import {
   fixture,
   readingsArchive,
@@ -141,6 +145,121 @@ describe("parseReadings", () => {
     expect(() =>
       parseReadings(readingsArchive({ [fileName]: json }), observatoryHill),
     ).toThrow(error);
+  });
+});
+
+const sinceMidnight = (rows: readonly Row[], today = "2026-11-21") =>
+  parseRainSinceMidnight(
+    readingsArchive({ [fileName]: readingsJson("94768", stationName, rows) }),
+    observatoryHill,
+    today,
+  );
+
+const trace = (local: string, rain_trace: string | null): Row => ({
+  local,
+  rain_trace,
+});
+
+describe("parseRainSinceMidnight", () => {
+  test("is the latest trace less the midnight one before 9am, when both are since yesterday's 9am", () => {
+    expect(
+      sinceMidnight([
+        trace("20261121000000", "2.8"),
+        trace("20261121063000", "3.4"),
+      ]),
+    ).toBe(0.6);
+  });
+
+  test("adds the rain since 9am to the rain from midnight to 9am once it has reset", () => {
+    expect(
+      sinceMidnight([
+        trace("20261121000000", "2.0"),
+        trace("20261121090000", "6.6"),
+        trace("20261121093000", "0.0"),
+        trace("20261121103000", "3.0"),
+      ]),
+    ).toBe(7.6);
+  });
+
+  test("takes the 9am reading itself as the latest, without counting it twice", () => {
+    expect(
+      sinceMidnight([
+        trace("20261121000000", "2.8"),
+        trace("20261121090000", "4.4"),
+      ]),
+    ).toBe(1.6);
+  });
+
+  test("counts only today's readings", () => {
+    expect(
+      sinceMidnight([
+        trace("20261120000000", "9.0"),
+        trace("20261120150000", "9.0"),
+        trace("20261121000000", "2.8"),
+        trace("20261121030000", "3.0"),
+      ]),
+    ).toBe(0.2);
+  });
+
+  test("ignores a reading that isn't on the half hour", () => {
+    expect(
+      sinceMidnight([
+        trace("20261121000000", "2.8"),
+        trace("20261121063000", "3.4"),
+        trace("20261121064100", "5.0"),
+      ]),
+    ).toBe(0.6);
+  });
+
+  test("gives none for a day with no readings yet", () => {
+    expect(sinceMidnight([trace("20261120000000", "1.0")])).toBeNull();
+  });
+
+  test.each([
+    {
+      reading: "the midnight one",
+      rows: [trace("20261121000000", "-"), trace("20261121063000", "3.4")],
+    },
+    {
+      reading: "the latest",
+      rows: [trace("20261121000000", "2.8"), trace("20261121063000", null)],
+    },
+    {
+      reading: "the midnight one, with nothing else today",
+      rows: [trace("20261121063000", "3.4")],
+    },
+    {
+      reading: "the 9am one, after 9am",
+      rows: [trace("20261121000000", "2.0"), trace("20261121103000", "3.0")],
+    },
+  ])("gives none when $reading is missing", ({ rows }) => {
+    expect(sinceMidnight(rows)).toBeNull();
+  });
+
+  test("reads a trace given as a number", () => {
+    expect(
+      sinceMidnight([
+        { local: "20261121000000", rain_trace: 2.8 },
+        { local: "20261121063000", rain_trace: 3.4 },
+      ]),
+    ).toBe(0.6);
+  });
+
+  test("fails on a trace that isn't a number", () => {
+    expect(() =>
+      sinceMidnight([
+        trace("20261121000000", "Tr"),
+        trace("20261121063000", "3.4"),
+      ]),
+    ).toThrow('invalid rain_trace "Tr"');
+  });
+
+  test("reads the real file", () => {
+    const archive = readingsArchive({ [fileName]: fixture(fileName) });
+
+    expect(parseRainSinceMidnight(archive, observatoryHill, "2026-10-30")).toBe(
+      0,
+    );
   });
 });
 
