@@ -178,6 +178,39 @@ describe("skyStyle under the weather", () => {
     }
   });
 
+  test("turns dusk grey in every kind of rain, snow and cyclone", () => {
+    for (const weather of [
+      "heavyShowers",
+      "lightRain",
+      "snow",
+      "cyclone",
+    ] as const) {
+      const [red, green, blue] = horizon(skyStyle(sunset, weather));
+
+      expect(red).toBe(green);
+      expect(green).toBe(blue);
+    }
+  });
+
+  test("keeps more of dusk's colour in light showers than in showers", () => {
+    expect(warmth(skyStyle(sunset, "lightShowers"))).toBeGreaterThan(
+      warmth(skyStyle(sunset, "showers")),
+    );
+  });
+
+  test("keeps the colours of dusk through haze and frost", () => {
+    const clear = warmth(skyStyle(sunset, "clear"));
+
+    expect(warmth(skyStyle(sunset, "haze"))).toBe(clear);
+    expect(warmth(skyStyle(sunset, "frost"))).toBe(clear);
+  });
+
+  test("mutes the sun more in a cyclone than in a storm", () => {
+    expect(glowAt(skyStyle(midday, "cyclone")).alpha).toBeLessThan(
+      glowAt(skyStyle(midday, "storm")).alpha,
+    );
+  });
+
   test("keeps the midday blue whatever the weather", () => {
     expect(skyStyle(midday, "storm")["--sky"]).toBe(
       skyStyle(midday, "clear")["--sky"],

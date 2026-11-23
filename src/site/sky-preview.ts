@@ -13,13 +13,21 @@ export interface SkyPreview {
 
 const weatherLabels: Record<Weather, string> = {
   clear: "Clear",
+  frost: "Frost",
   partlyCloudy: "Partly cloudy",
   cloudy: "Cloudy",
-  showers: "Showers",
-  rain: "Rain",
-  storm: "Storm",
+  haze: "Haze",
+  dust: "Dust",
   fog: "Fog",
   windy: "Windy",
+  lightShowers: "Light showers",
+  showers: "Showers",
+  heavyShowers: "Heavy showers",
+  lightRain: "Light rain",
+  rain: "Rain",
+  storm: "Storm",
+  cyclone: "Tropical cyclone",
+  snow: "Snow",
 };
 
 const choices: [SkyPreview["weather"], string][] = [

@@ -219,13 +219,21 @@ interface WeatherLight {
 // breaks by evening, so it keeps a hint of colour; rain and storms don't.
 const weatherLight: Record<Weather, WeatherLight> = {
   clear: { warmth: 1, sunlight: 1 },
+  frost: { warmth: 1, sunlight: 0.9 },
   partlyCloudy: { warmth: 1, sunlight: 0.8 },
   windy: { warmth: 1, sunlight: 0.9 },
+  haze: { warmth: 1, sunlight: 0.5 },
+  dust: { warmth: 0.6, sunlight: 0.3 },
   cloudy: { warmth: 0.25, sunlight: 0.35 },
-  showers: { warmth: 0.25, sunlight: 0.45 },
   fog: { warmth: 0.25, sunlight: 0.3 },
+  lightShowers: { warmth: 0.4, sunlight: 0.6 },
+  showers: { warmth: 0.25, sunlight: 0.45 },
+  heavyShowers: { warmth: 0, sunlight: 0.3 },
+  lightRain: { warmth: 0, sunlight: 0.3 },
   rain: { warmth: 0, sunlight: 0.25 },
+  snow: { warmth: 0, sunlight: 0.3 },
   storm: { warmth: 0, sunlight: 0.15 },
+  cyclone: { warmth: 0, sunlight: 0.1 },
 };
 
 const clearSky: WeatherLight = { warmth: 1, sunlight: 1 };

@@ -48,6 +48,18 @@ body {
   --near-clouds: 0;
   --far-drift: 240s;
   --near-drift: 150s;
+  --wind-drift: 7s;
+
+  /* Rain's density is its opacity and how far apart its drops are (1 is ordinary, more is sparser). */
+  --rain-opacity: 0.85;
+  --rain-spread: 1;
+  --rain-fall: 0.55s;
+  --rain-tilt: 10deg;
+  --rain-bleed: -10%;
+
+  /* The colour of haze and dust as red, green and blue, and how strongly it tints the sky. */
+  --tint: 214 150 90;
+  --tint-strength: 0;
 }
 
 :root[data-weather="partlyCloudy"] {
@@ -62,11 +74,42 @@ body {
   --near-clouds: 0.9;
 }
 
+:root[data-weather="lightShowers"] {
+  --heavy: 0.6;
+  --veil: 0.4;
+  --far-clouds: 0.9;
+  --near-clouds: 0.7;
+  --rain-opacity: 0.65;
+  --rain-spread: 1.8;
+  --rain-fall: 0.7s;
+}
+
 :root[data-weather="showers"] {
   --heavy: 1;
   --veil: 0.55;
   --far-clouds: 1;
   --near-clouds: 0.9;
+  --rain-opacity: 0.8;
+}
+
+:root[data-weather="heavyShowers"] {
+  --heavy: 1;
+  --veil: 0.7;
+  --far-clouds: 1;
+  --near-clouds: 1;
+  --rain-opacity: 1;
+  --rain-spread: 0.7;
+  --rain-fall: 0.45s;
+}
+
+:root[data-weather="lightRain"] {
+  --heavy: 1;
+  --veil: 0.6;
+  --far-clouds: 1;
+  --near-clouds: 0.9;
+  --rain-opacity: 0.65;
+  --rain-spread: 1.8;
+  --rain-fall: 0.7s;
 }
 
 :root[data-weather="rain"] {
@@ -84,10 +127,47 @@ body {
   --near-drift: 80s;
 }
 
+:root[data-weather="cyclone"] {
+  --overcast: #0a0c14;
+  --heavy: 1;
+  --veil: 0.9;
+  --far-clouds: 1;
+  --near-clouds: 1;
+  --far-drift: 90s;
+  --near-drift: 40s;
+  --wind-drift: 3.5s;
+  --rain-opacity: 1;
+  --rain-spread: 0.6;
+  --rain-fall: 0.35s;
+  --rain-tilt: 24deg;
+  --rain-bleed: -25%;
+}
+
+:root[data-weather="snow"] {
+  --heavy: 1;
+  --veil: 0.65;
+  --far-clouds: 1;
+  --near-clouds: 0.9;
+}
+
 :root[data-weather="fog"] {
   --heavy: 1;
   --veil: 0.75;
   --overcast: var(--fog);
+}
+
+:root[data-weather="haze"] {
+  --heavy: 0.5;
+  --veil: 0.12;
+  --tint-strength: 0.55;
+}
+
+:root[data-weather="dust"] {
+  --heavy: 1;
+  --veil: 0.5;
+  --tint: 196 110 62;
+  --tint-strength: 0.65;
+  --mist: rgb(var(--tint) / calc(0.15 + 0.3 * var(--daylight)));
 }
 
 :root[data-weather="windy"] {
@@ -111,36 +191,57 @@ body {
 
 :root:is(
     [data-weather="cloudy"],
+    [data-weather="haze"],
+    [data-weather="dust"],
+    [data-weather="fog"],
+    [data-weather="lightShowers"],
     [data-weather="showers"],
+    [data-weather="heavyShowers"],
+    [data-weather="lightRain"],
     [data-weather="rain"],
     [data-weather="storm"],
-    [data-weather="fog"]
+    [data-weather="cyclone"],
+    [data-weather="snow"]
   )
   .veil,
 :root:is(
     [data-weather="partlyCloudy"],
     [data-weather="cloudy"],
+    [data-weather="lightShowers"],
     [data-weather="showers"],
+    [data-weather="heavyShowers"],
+    [data-weather="lightRain"],
     [data-weather="rain"],
     [data-weather="storm"],
+    [data-weather="cyclone"],
+    [data-weather="snow"],
     [data-weather="windy"]
   )
   .clouds,
 :root:is(
     [data-weather="clear"],
+    [data-weather="frost"],
     [data-weather="partlyCloudy"],
+    [data-weather="haze"],
     [data-weather="windy"]
   )
   .stars,
-:root[data-weather="fog"] .fog,
+:root:is([data-weather="fog"], [data-weather="dust"]) .fog,
+:root:is([data-weather="haze"], [data-weather="dust"]) .haze,
+:root[data-weather="frost"] .frost,
 :root:is(
+    [data-weather="lightShowers"],
     [data-weather="showers"],
+    [data-weather="heavyShowers"],
+    [data-weather="lightRain"],
     [data-weather="rain"],
-    [data-weather="storm"]
+    [data-weather="storm"],
+    [data-weather="cyclone"]
   )
   .rain,
-:root[data-weather="windy"] .wind,
-:root[data-weather="storm"] .flash {
+:root[data-weather="snow"] .snow,
+:root:is([data-weather="windy"], [data-weather="cyclone"]) .wind,
+:root:is([data-weather="storm"], [data-weather="cyclone"]) .flash {
   display: block;
 }
 
@@ -216,7 +317,15 @@ body {
     radial-gradient(ellipse 11% 9% at 74% 57%, var(--cloud), transparent 70%);
 }
 
-:root:is([data-weather="cloudy"], [data-weather="rain"]) .near {
+:root:is(
+    [data-weather="cloudy"],
+    [data-weather="heavyShowers"],
+    [data-weather="lightRain"],
+    [data-weather="rain"],
+    [data-weather="cyclone"],
+    [data-weather="snow"]
+  )
+  .near {
   background-image:
     radial-gradient(ellipse 22% 14% at 10% 40%, var(--cloud), transparent 70%),
     radial-gradient(ellipse 20% 12% at 38% 55%, var(--cloud), transparent 70%),
@@ -233,10 +342,31 @@ body {
     radial-gradient(ellipse 35% 10% at 40% 85%, var(--mist), transparent 70%);
 }
 
+.haze {
+  background: linear-gradient(
+    180deg,
+    rgb(var(--tint) / 0.7),
+    rgb(var(--tint) / 1)
+  );
+  opacity: calc(var(--tint-strength) * (0.35 + 0.65 * var(--daylight)));
+}
+
+/* Frost creeps in from the edges and glitters, mostly by night. */
+.frost {
+  box-shadow: inset 0 0 8rem 1.5rem rgb(214 236 255 / 0.4);
+  background:
+    radial-gradient(2.5px 2.5px at 15% 25%, #fff, transparent) 0 0 / 260px 220px,
+    radial-gradient(2px 2px at 62% 70%, #fff, transparent) 0 0 / 190px 170px,
+    radial-gradient(2.5px 2.5px at 85% 40%, #fff, transparent) 0 0 / 310px 260px,
+    linear-gradient(0deg, rgb(200 228 255 / 0.22), transparent 40%);
+  animation: twinkle 6s ease-in-out infinite;
+}
+
 /* Tiles are all 160px tall, so falling 160px loops without a seam. */
 .rain {
-  inset: -10%;
-  transform: rotate(10deg);
+  inset: var(--rain-bleed);
+  transform: rotate(var(--rain-tilt));
+  opacity: var(--rain-opacity);
 }
 
 .rain::before,
@@ -244,41 +374,75 @@ body {
   content: "";
   position: absolute;
   inset: -160px 0 0;
-  animation: fall 0.55s linear infinite;
+  animation: fall var(--rain-fall) linear infinite;
   background:
-    radial-gradient(1.2px 13px at 20% 30%, var(--drop), transparent) 0 0 / 97px
-      160px,
-    radial-gradient(1.2px 16px at 60% 70%, var(--drop), transparent) 0 0 / 131px
-      160px,
-    radial-gradient(1px 10px at 40% 10%, var(--drop), transparent) 0 0 / 61px
-      80px;
+    radial-gradient(1.2px 13px at 20% 30%, var(--drop), transparent) 0 0 /
+      calc(97px * var(--rain-spread)) 160px,
+    radial-gradient(1.2px 16px at 60% 70%, var(--drop), transparent) 0 0 /
+      calc(131px * var(--rain-spread)) 160px,
+    radial-gradient(1px 10px at 40% 10%, var(--drop), transparent) 0 0 /
+      calc(61px * var(--rain-spread)) 80px;
 }
 
 .rain::after {
   display: none;
-  animation-duration: 0.4s;
+  animation-duration: calc(var(--rain-fall) * 0.75);
   background:
-    radial-gradient(1.5px 18px at 80% 50%, var(--drop), transparent) 0 0 / 73px
-      160px,
-    radial-gradient(1.2px 14px at 30% 85%, var(--drop), transparent) 0 0 / 47px
-      160px;
+    radial-gradient(1.5px 18px at 80% 50%, var(--drop), transparent) 0 0 /
+      calc(73px * var(--rain-spread)) 160px,
+    radial-gradient(1.2px 14px at 30% 85%, var(--drop), transparent) 0 0 /
+      calc(47px * var(--rain-spread)) 160px;
 }
 
-:root[data-weather="showers"] .rain {
-  opacity: 0.6;
+:root:is(
+    [data-weather="lightShowers"],
+    [data-weather="showers"],
+    [data-weather="heavyShowers"]
+  )
+  .rain {
   animation: passing-showers 16s ease-in-out infinite;
 }
 
-:root[data-weather="rain"] .rain {
-  opacity: 0.85;
-}
-
-:root:is([data-weather="rain"], [data-weather="storm"]) .rain::after {
+:root:is(
+    [data-weather="heavyShowers"],
+    [data-weather="rain"],
+    [data-weather="storm"],
+    [data-weather="cyclone"]
+  )
+  .rain::after {
   display: block;
 }
 
+/* Snow falls slowly in two layers, and the whole fall sways. Every tile's height divides 600px, so falling 600px loops without a seam. */
+.snow {
+  inset: -5%;
+  animation: sway 7s ease-in-out infinite alternate;
+}
+
+.snow::before,
+.snow::after {
+  content: "";
+  position: absolute;
+  inset: -600px 0 0;
+  animation: snowfall 12s linear infinite;
+  background:
+    radial-gradient(4px 4px at 20% 30%, #fff, transparent) 0 0 / 113px 200px,
+    radial-gradient(3px 3px at 70% 60%, rgb(255 255 255 / 0.9), transparent) 0
+      0 / 89px 300px,
+    radial-gradient(3.5px 3.5px at 45% 85%, #fff, transparent) 0 0 / 151px 600px;
+}
+
+.snow::after {
+  animation-duration: 18s;
+  background:
+    radial-gradient(8px 8px at 30% 40%, rgb(255 255 255 / 0.85), transparent) 0
+      0 / 211px 300px,
+    radial-gradient(6px 6px at 75% 80%, rgb(255 255 255 / 0.8), transparent) 0
+      0 / 173px 600px;
+}
+
 .wind {
-  animation-duration: 7s;
+  animation-duration: var(--wind-drift);
   background-image:
     radial-gradient(70px 1.5px at 15% 20%, rgb(255 255 255 / 0.6), transparent),
     radial-gradient(
@@ -319,15 +483,42 @@ body {
   }
 }
 
+@keyframes snowfall {
+  to {
+    transform: translateY(600px);
+  }
+}
+
+@keyframes sway {
+  from {
+    transform: translateX(-14px);
+  }
+
+  to {
+    transform: translateX(14px);
+  }
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
 @keyframes passing-showers {
   0%,
   100% {
-    opacity: 0.05;
+    opacity: calc(var(--rain-opacity) * 0.06);
   }
 
   30%,
   60% {
-    opacity: 0.8;
+    opacity: var(--rain-opacity);
   }
 }
 

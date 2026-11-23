@@ -83,25 +83,6 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 ---
 
-## T37: More forecast icon looks
-
-**Status:** todo
-
-**Goal:** The weather sky tells apart the forecasts Sydney actually gets that now share a look.
-
-- Background: `weatherForIcon` (`src/shared/weather.ts`) maps BOM's 17 icon codes onto 8 kinds of sky. Light showers, showers and heavy showers look the same, and haze and dust borrow the grey fog.
-- Scope: light, ordinary and heavy rain, by the density of the rain layer, for showers (codes 17, 11 and 18) and rain (8 and 12).
-- Scope: a brownish-orange tint for haze and dust (codes 6 and 13), since bushfire smoke haze is common in Sydney, separate from fog (10).
-- Out of scope: snow (15), tropical cyclone (19) and frost (14), which Sydney almost never gets. Their current looks stay.
-- Scope: check the rain and storm skies on a real phone. The glass panels re-blur everything moving behind them on every frame, which headless measurement doesn't capture. If they stutter or drain the battery, slow or thin the rain on small screens.
-- Done when: each new look has been checked in the browser by day and night, and with reduced motion.
-
-**Notes:**
-
-- With `npm run dev`, `/?sky` opens a panel that sets the sky to any date, time and kind of weather. Add the new looks to its weather list (`weathers` in `src/shared/weather.ts`).
-
----
-
 ## T12: Near-miss facts
 
 **Status:** todo
