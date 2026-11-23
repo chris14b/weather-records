@@ -1,10 +1,12 @@
 import { describe, expect, test } from "vitest";
 import type { LayeredRecord } from "../src/pipeline/layering.ts";
 import {
+  averageSeries,
   changeSeries,
   columnSeries,
   gustSeries,
   layeredSeries,
+  rainDaySeries,
   rangeSeries,
   type Series,
   windSeries,
@@ -122,6 +124,84 @@ describe("rangeSeries", () => {
       ],
       fullRecord: true,
     });
+  });
+});
+
+describe("averageSeries", () => {
+  const max: Series = {
+    measure: "maxTemp",
+    days: [
+      { date: "2026-11-01", value: 25.3, status: "confirmed" },
+      { date: "2026-11-02", value: 27.1, status: "provisional" },
+      { date: "2026-11-03", value: 22, status: "confirmed" },
+    ],
+    fullRecord: true,
+  };
+  const min: Series = {
+    measure: "minTemp",
+    days: [
+      { date: "2026-11-01", value: 14.1, status: "confirmed" },
+      { date: "2026-11-02", value: 16.5, status: "confirmed" },
+    ],
+    fullRecord: false,
+  };
+
+  test("averages two series on the days that have both, for periods only", () => {
+    const [first, second, ...others] = averageSeries("meanTemp", max, min).days;
+
+    expect(first?.value).toBeCloseTo(19.7);
+    expect(second).toMatchObject({ date: "2026-11-02", status: "provisional" });
+    expect(second?.value).toBeCloseTo(21.8);
+    expect(others).toEqual([]);
+  });
+
+  test("goes back to when records began only if both do", () => {
+    expect(averageSeries("meanTemp", max, min)).toMatchObject({
+      measure: "meanTemp",
+      fullRecord: false,
+      periodsOnly: true,
+    });
+  });
+});
+
+describe("rainDaySeries", () => {
+  const rain = layeredSeries("rain", [
+    record("2026-11-01", 0.9),
+    record("2026-11-02", 1),
+    record("2026-11-03", 14.2, { source: "snapshot", quality: null }),
+    record("2026-11-06", 0.4, { periodDays: 3 }),
+    record("2026-11-09", 3, { periodDays: 2 }),
+  ]);
+
+  test("counts a day with at least 1 mm as 1 and a lighter one as 0, for periods only", () => {
+    const counted = rainDaySeries(rain);
+
+    expect(counted).toMatchObject({
+      measure: "rainDays",
+      fullRecord: true,
+      periodsOnly: true,
+    });
+    expect(counted.days.slice(0, 3)).toEqual([
+      { date: "2026-11-01", value: 0, status: "confirmed" },
+      { date: "2026-11-02", value: 1, status: "confirmed" },
+      { date: "2026-11-03", value: 1, status: "provisional" },
+    ]);
+  });
+
+  test("counts the days of a multi-day total under 1 mm as dry, and leaves a larger one's missing", () => {
+    expect(rainDaySeries(rain).days.map(({ date }) => date)).toEqual([
+      "2026-11-01",
+      "2026-11-02",
+      "2026-11-03",
+      "2026-11-04",
+      "2026-11-05",
+      "2026-11-06",
+    ]);
+    expect(rainDaySeries(rain).days.slice(3)).toEqual([
+      { date: "2026-11-04", value: 0, status: "confirmed" },
+      { date: "2026-11-05", value: 0, status: "confirmed" },
+      { date: "2026-11-06", value: 0, status: "confirmed" },
+    ]);
   });
 });
 

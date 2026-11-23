@@ -227,7 +227,7 @@ function verb(fact: Phrased, today: string): string {
   }
   const ongoing = isOngoing(fact, today);
   if (isHad(fact)) return ongoing ? "has" : "had";
-  if (hasNights(fact)) {
+  if (hasPeriodNoun(fact)) {
     if (!ongoing) return "had";
     return fact.period.kind === "year" ? "has so far had" : "has had";
   }
@@ -265,8 +265,9 @@ function isHad({ measure, direction, period }: Phrased): boolean {
 }
 
 // "October had the warmest nights since 2019", but "was the month with the warmest nights".
-function hasNights({ period, measure, comparison }: Phrased): boolean {
-  if (measure !== "minTemp") return false;
+// The same goes for rain days.
+function hasPeriodNoun({ period, measure, comparison }: Phrased): boolean {
+  if (measure !== "minTemp" && measure !== "rainDays") return false;
   if (period.kind === "day" || period.kind === "rolling") return false;
   return !(period.kind === "month" && comparison === "all");
 }
@@ -298,6 +299,9 @@ const units: Record<FactMeasure, string> = {
   relHum3pm: "%",
   maxTempChange: "°C",
   minTempChange: "°C",
+  meanTemp: "°C",
+  rainDays: "days",
+  meanRelHum: "%",
 };
 
 const isHumidity = (measure: FactMeasure) => units[measure] === "%";
@@ -313,8 +317,13 @@ export function amount(
   forecast = false,
 ): string {
   const humidity = isHumidity(measure);
-  const format = forecast || humidity || measure === "gust" ? whole : decimal;
-  return `${format.format(Math.abs(value))}${humidity ? "" : "\u00a0"}${units[measure]}`;
+  const format =
+    forecast || humidity || measure === "gust" || measure === "rainDays"
+      ? whole
+      : decimal;
+  const unit =
+    measure === "rainDays" && Math.abs(value) === 1 ? "day" : units[measure];
+  return `${format.format(Math.abs(value))}${humidity ? "" : "\u00a0"}${unit}`;
 }
 
 function valueClause({ measure, period, direction, status, why }: Phrased) {
@@ -322,6 +331,11 @@ function valueClause({ measure, period, direction, status, why }: Phrased) {
   if (period.kind !== "day" && period.kind !== "rolling") {
     if (measure === "maxTemp") return `with an average top of ${value}`;
     if (measure === "minTemp") return `with an average low of ${value}`;
+    if (measure === "meanTemp")
+      return `with an average temperature of ${value}`;
+    if (measure === "solar") return `with an average of ${value} a day`;
+    if (measure === "meanRelHum") return `with an average humidity of ${value}`;
+    if (measure === "rainDays") return `with ${value}`;
   }
   if (isChangeMeasure(measure)) {
     return `${direction === "highest" ? "up" : "down"} ${value}`;

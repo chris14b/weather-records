@@ -1,10 +1,12 @@
 import type {
   ChangeMeasure,
   ChangingMeasure,
+  DayMeasure,
   FactMeasure,
+  PeriodOnlyMeasure,
   ValueStatus,
 } from "../shared/facts.ts";
-import { addDays } from "./dates.ts";
+import { addDays, daysBetween } from "./dates.ts";
 import type { FtpHistoryDay } from "./ftp-history.ts";
 import type { SavedGust } from "./gusts.ts";
 import type { DailyRecord } from "./history.ts";
@@ -32,7 +34,12 @@ export interface Series<Measure extends FactMeasure = FactMeasure> {
   fullRecord: boolean;
   /** Whether the values are kept for only about a year, so each day is compared with the year before it. */
   pastYear?: true;
+  /** Whether only months, seasons and years are ranked on it, not its days. */
+  periodsOnly?: true;
 }
+
+/** A day with at least this much rain, in mm, is a rain day, as BOM counts them. */
+export const rainDayMillimetres = 1;
 
 /**
  * Keeps a layered ZIP measure's single-day values. Multi-day values are kept apart, so
@@ -124,6 +131,62 @@ export function changeSeries(
   };
 }
 
+/** The average of two series on each day that has both, such as a day's mean temperature. */
+export function averageSeries<Measure extends PeriodOnlyMeasure>(
+  measure: Measure,
+  a: Series,
+  b: Series,
+): Series<Measure> {
+  const others = new Map(b.days.map((day) => [day.date, day]));
+  return {
+    measure,
+    days: a.days.flatMap(({ date, value, status }) => {
+      const other = others.get(date);
+      if (other === undefined) return [];
+      return [
+        {
+          date,
+          value: (value + other.value) / 2,
+          status: combinedStatus(status, other.status),
+        },
+      ];
+    }),
+    fullRecord: a.fullRecord && b.fullRecord,
+    periodsOnly: true,
+  };
+}
+
+/**
+ * Each day as 1 if it had a rain day's worth of rain, otherwise 0. A multi-day total under
+ * that much leaves every day it covers dry, so they count as 0. A larger one says nothing
+ * about any one day, so they stay missing.
+ */
+export function rainDaySeries(rain: Series): Series<"rainDays"> {
+  const counted = new Set(rain.days.map(({ date }) => date));
+  const dry = (rain.multiDay ?? [])
+    .filter(({ value }) => value < rainDayMillimetres)
+    .flatMap(({ from, date, status }) =>
+      Array.from({ length: daysBetween(from, date) + 1 }, (_, index) =>
+        addDays(from, index),
+      )
+        .filter((day) => !counted.has(day))
+        .map((day) => ({ date: day, value: 0, status })),
+    );
+  return {
+    measure: "rainDays",
+    days: [
+      ...rain.days.map(({ date, value, status }) => ({
+        date,
+        value: value >= rainDayMillimetres ? 1 : 0,
+        status,
+      })),
+      ...dry,
+    ].sort((a, b) => a.date.localeCompare(b.date)),
+    fullRecord: rain.fullRecord,
+    periodsOnly: true,
+  };
+}
+
 function roundedDifference(value: number, other: number): number {
   return Math.round((value - other) * 10) / 10;
 }
@@ -147,13 +210,16 @@ export interface LocationData {
 export function locationSeries(data: LocationData): Series[] {
   const maxTemp = layeredSeries("maxTemp", data.maxTemp);
   const minTemp = layeredSeries("minTemp", data.minTemp);
+  const rain = layeredSeries("rain", data.rain);
+  const maxRelHum = columnSeries("maxRelHum", data.ftpHistory);
+  const minRelHum = columnSeries("minRelHum", data.ftpHistory);
   return [
     maxTemp,
     minTemp,
-    layeredSeries("rain", data.rain),
+    rain,
     rangeSeries(maxTemp, minTemp),
-    columnSeries("maxRelHum", data.ftpHistory),
-    columnSeries("minRelHum", data.ftpHistory),
+    maxRelHum,
+    minRelHum,
     windSeries(columnSeries("wind", data.ftpHistory)),
     columnSeries("solar", data.ftpHistory),
     pastYearSeries(columnSeries("temp9am", data.readings)),
@@ -163,6 +229,9 @@ export function locationSeries(data: LocationData): Series[] {
     gustSeries(data.gusts),
     changeSeries(maxTemp),
     changeSeries(minTemp),
+    averageSeries("meanTemp", maxTemp, minTemp),
+    rainDaySeries(rain),
+    averageSeries("meanRelHum", maxRelHum, minRelHum),
   ];
 }
 
@@ -170,7 +239,7 @@ export function locationSeries(data: LocationData): Series[] {
  * Takes one column of saved rows, such as the FTP history or the 9am and 3pm readings,
  * whose history starts after records began.
  */
-export function columnSeries<Column extends FactMeasure>(
+export function columnSeries<Column extends DayMeasure>(
   measure: Column,
   rows: readonly ({ date: string } & Record<Column, number | null>)[],
 ): Series<Column> {

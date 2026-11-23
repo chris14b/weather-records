@@ -13,7 +13,7 @@ Facts about daylight are made apart from these, from where the location is (see 
 
 ## 1. Series
 
-A series is one measure's single-day values for a location, in date order (`series.ts`). There are 15:
+A series is one measure's single-day values for a location, in date order (`series.ts`). There are 18:
 
 | Measure                                        | From                                            | Starts                                                |
 | ---------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------- |
@@ -23,6 +23,7 @@ A series is one measure's single-day values for a location, in date order (`seri
 | `temp9am`, `relHum9am`, `temp3pm`, `relHum3pm` | saved readings (`data/recent/readings/`)        | the 1st of the month a year ago (`readingsKeptFrom`)  |
 | `gust`                                         | saved gusts (`data/recent/gusts/`)              | the same, none at Observatory Hill                    |
 | `maxTempChange`, `minTempChange`               | each day's value minus the day before's         | when records began                                    |
+| `meanTemp`, `rainDays`, `meanRelHum`           | derived from the series above (see below)       | as the series they come from                          |
 
 - A series whose history goes back to when records began has `fullRecord` set. Only those may say "since records began in 1859"; the others say "since 2009" and so on.
 - The 9am and 3pm readings are kept for only about 13 months, as long as the Daily Weather Observations keep them, so they are **past-year** series (`pastYearSeries`, `pastYear`). Each day is compared only with the 365 days to it, from the day after the same date a year earlier (`yearBefore`), or from the series' first day if that is later. The readings are kept from the 1st of the month a year ago, so every one is in some day's year, but the oldest days in the 31-day window can have a few weeks less than a year: on 13 November 2026, 14 October needed readings from 15 October 2025, and they began on 1 November. Within a year, a month, a season or a date has nothing to be compared with but itself, so they are compared only among all days and the year so far (`comparisonsFor`).
@@ -31,6 +32,7 @@ A series is one measure's single-day values for a location, in date order (`seri
 - Missing days are simply absent. Nothing is filled in, and nothing is counted through a gap.
 - A multi-day rain or temperature total is left out of the days, so the days it covers count as missing. It is kept apart, as the series' `multiDay`, for rain totals over periods (see Periods). A ZIP value with a blank period counts as a single day only on a series' first day or after a day with a value. Otherwise it probably is an accumulation, and is left out too.
 - A **change** is left out when either its day or the day before has no value, so a change is never taken across a gap. Only the maximum and minimum have changes. Changes in rain, range and humidity were judged not worth showing.
+- `meanTemp` is a day's maximum and minimum averaged, as BOM does for monthly means, on days with both. `meanRelHum` is the same for the day's highest and lowest humidity. `rainDays` is 1 for a day with at least 1 mm, BOM's own rain day, and otherwise 0. A multi-day rain total under 1 mm leaves each day it covers dry, so they count as 0, but a larger one says nothing about any one day, so they stay missing. These three are **periods only** (`periodsOnly`): months, seasons and years are ranked on them, but not their days, which would only repeat the maximum, the minimum and the rain.
 - A value from a live snapshot is `provisional`. Everything else is `confirmed`. A range is provisional if either its max or its min is, and a change if either day's value is.
 
 ## 2. Ranking
@@ -65,14 +67,15 @@ For example, if the maximums so far are 30, 35, 28, 33, then the 33 is the 2nd h
 
 `generatePeriodFacts` ranks periods longer than a day the same way, with the same fields. A period is named by its last day, its `date`, and also has a `from`. Every period compared with it has the same kind, so the dates in its why are last days too.
 
-| Period                                      | Measures                               | Facts for                                          | Comparisons                          |
-| ------------------------------------------- | -------------------------------------- | -------------------------------------------------- | ------------------------------------ |
-| `rolling`: the 3 or 7 days to a day         | total rain                             | every day in the window                            | all, season, month (of its last day) |
-| `month`, complete                           | total rain, mean maximum, mean minimum | the latest complete one, if it ended in the window | all months, the same month           |
-| `season`, complete                          | the same                               | the same                                           | the same season                      |
-| `year`, complete                            | the same                               | the same                                           | all years                            |
-| `month`, `season`, `year` so far (`toDate`) | the same                               | the current one, to the measure's latest day       | the same days of every earlier year  |
+| Period                                      | Measures           | Facts for                                          | Comparisons                          |
+| ------------------------------------------- | ------------------ | -------------------------------------------------- | ------------------------------------ |
+| `rolling`: the 3 or 7 days to a day         | total rain         | every day in the window                            | all, season, month (of its last day) |
+| `month`, complete                           | the measures below | the latest complete one, if it ended in the window | all months, the same month           |
+| `season`, complete                          | the same           | the same                                           | the same season                      |
+| `year`, complete                            | the same           | the same                                           | all years                            |
+| `month`, `season`, `year` so far (`toDate`) | the same           | the current one, to the measure's latest day       | the same days of every earlier year  |
 
+- **Measures of a calendar period:** total rain, rain days (`rainDays`), mean maximum, mean minimum, mean temperature (`meanTemp`), mean solar exposure, mean wind speed and mean humidity (`meanRelHum`). The first two are totals and need every day, and the rest are means (see Missing days). Solar, wind and humidity come from the FTP daily files, so they start in 2009 (2011 at Olympic Park), and Observatory Hill has no wind and no solar from 2018-04 to 2020-07, so its periods over those months have no value.
 - **Complete** means the period's last day is no later than the measure's latest day. Until then, it is a period so far. A period so far needs at least 7 days, and a season or year so far must be past its first month, or it would only repeat a shorter one. On its last day, a period is complete instead.
 - **So far** compares, for example, 1–10 November with 1–10 November of every earlier year. 29 February is compared with the 28th in other years.
 - **Directions:** both for calendar periods ("the wettest October", "the driest October"). Runs of days have only `highest`, since a dry week is not news.
@@ -81,9 +84,9 @@ For example, if the maximums so far are 30, 35, 28, 33, then the 33 is the 2nd h
 
 A period with too many missing days has no value. It isn't compared, and counts towards the fact's `missingDays` and `gaps`, as a missing day does. Nothing is filled in.
 
-- **Rain** must have every day: a missing day might have been the wettest. A multi-day total counts when it falls wholly inside the period. One that crosses the period's start or end leaves the period incomplete.
-- **Temperatures** are averaged over the days that have values. In each calendar month the period covers, at most a sixth of the days may be missing (5 of 30 or 31, 4 of 28), and no more than 3 in a row. This follows the WMO's rule for monthly means. The multi-day temperature values are left out, as for days.
-- Means are rounded to 0.1°C, as BOM does, and totals to 0.1 mm.
+- **Rain and rain days** must have every day: a missing day might have been the wettest, or a rain day. A multi-day total counts when it falls wholly inside the period. One that crosses the period's start or end leaves the period incomplete.
+- **Means** (temperature, solar, wind, humidity) are averaged over the days that have values. In each calendar month the period covers, at most a sixth of the days may be missing (5 of 30 or 31, 4 of 28), and no more than 3 in a row. This follows the WMO's rule for monthly means. The multi-day temperature values are left out, as for days. Sydney Airport's multi-day rain totals over 1 mm leave those months without a rain-day count.
+- Means are rounded to 0.1, as BOM does for temperature, and rain totals to 0.1 mm.
 
 #### Runs of days
 
@@ -95,7 +98,7 @@ Runs of days overlap, so they need three rules of their own:
 
 #### The 2020 Observatory Hill station change
 
-066214 reads about 0.3°C warmer than 066062 for maximums and 0.3°C cooler for minimums (`reads` in `locations.ts`). A mean over a month is much more sensitive to that than a day's extreme. So a mean temperature is compared twice: as measured, and with each period's average station offset taken out. A period beats another only if it does so both ways, and it is matched if either way matches it. This only ever makes a fact weaker: to 29 October 2026, Observatory Hill's start to the year is the 3rd hottest rather than the hottest, because 2013's and 2019's were within the offset. Pass `offsets: stationOffsets(location)`.
+066214 reads about 0.3°C warmer than 066062 for maximums and 0.3°C cooler for minimums (`reads` in `locations.ts`). A mean over a month is much more sensitive to that than a day's extreme. So a mean temperature is compared twice: as measured, and with each period's average station offset taken out. A period beats another only if it does so both ways, and it is matched if either way matches it. This only ever makes a fact weaker: to 29 October 2026, Observatory Hill's start to the year is the 3rd hottest rather than the hottest, because 2013's and 2019's were within the offset. The mean temperature's offset is the average of the two, about 0°C, so the second comparison rarely changes it. Rain days, solar, wind and humidity have no offset, since no overlap has been measured for them (see T23's research). Pass `offsets: stationOffsets(location)`.
 
 ### Values still running
 
@@ -161,7 +164,7 @@ These keep ranks easy to set from scoring too high:
 - **Sinces that don't count:** there is no since score for `year`, because its since is always the same day as the `all` since. There is none when a gap falls after the since day, since the gap might have held a day that matched it. A day's or run's since for `month` or `season` counts only if it reaches back before the same month or season last year (`previousOccurrence`): "the coldest November night since 13 November 2025" covers only about 20 November days, but sounds like a year. A since for the day of the week counts only if it reaches back more than 52 weeks, since "the wettest Saturday since 31 October" is only a week.
 - **Sinces for changes:** a since for a day-to-day change is multiplied by 0.8 (`changeSinceWeight`). "The biggest day-to-day drop in minimum temperature since 12 April" doesn't tell the reader whether that is unusual, as "the equal third biggest of the year so far" does.
 - **Comparison weight:** all, season and month 1, calendar date 0.9, year 0.85, day of the week 0.7 (`comparisonWeights`). A comparison matched to the time of year counts in full: "the coldest November day since 2023" compares like with like over about 100 days, where "the hottest day since 21 March" among all days is partly the season turning, so a month or a season isn't marked down for being narrower. The others weigh less. The calendar date rests on a few days of one date, and the year so far and the day of the week aren't matched to the season. On 9 November 2026 at Observatory Hill, "the coldest night for the date since 1999" scores log(27) × 0.9, about 3.0, and a short since such as "the biggest day-to-day rise in minimum temperature since 1 November" scores 1.41, so a quiet day usually still has a fact for its date. On the 5th and 19th of every month in 2024 and 2025, across the three locations, facts for a calendar date were 36 of the 195 facts in Today and 126 of the 831 in Past week, and facts for the year so far 45 and 101. The day of the week weighs least: its interest is in the reading, "the wettest Saturday since 2022", not its rarity. On the same days, facts for the day of the week were 4 of the facts in Today, 22 in Past week and 10 in Past month.
-- **Measure weight:** 1 for temperature and rain, 0.9 for wind, gusts and solar, down to 0.75 for 9am and 3pm humidity and the temperature range (`measureWeights`). The range says less than the temperatures it comes from: "the hottest day since 25 October" beats "the biggest temperature range since 12 October". Changes weigh less than their measures: 0.9 for the maximum and 0.85 for the minimum.
+- **Measure weight:** 1 for temperature and rain, 0.9 for wind, gusts, solar and rain days, down to 0.75 for 9am and 3pm humidity and the temperature range, and 0.8 for mean humidity (`measureWeights`). The range says less than the temperatures it comes from: "the hottest day since 25 October" beats "the biggest temperature range since 12 October". Changes weigh less than their measures: 0.9 for the maximum and 0.85 for the minimum.
 
 ### Worked examples
 
@@ -183,6 +186,8 @@ The measures are grouped into **families** of those that say much the same thing
 - wind: the average and the gusts
 - solar
 - changes in maximum and minimum
+
+Calendar periods are grouped more widely: a period's rain total and rain days say much the same, so for each date, direction and kind of period only the strongest of the two shows (`calendarFamilies` in `selection.ts`). Its mean maximum, mean minimum and mean temperature don't compete, and nor do solar, wind and humidity.
 
 A run of days is a **spell**, and stands for what overlaps it. A day fact in the same family and direction inside a spell that scores at least as well is dropped, and so is a weaker overlapping run. So the February 2020 rain at Olympic Park shows as "the wettest 3 days since records began in 2011" beside the wettest day, instead of four wet days in a row. The spell must score enough for its section, or it drops nothing.
 
@@ -235,7 +240,8 @@ Today's observed and daylight facts run strongest first, followed by its forecas
 - **Periods:**
   - The site names the period, so one compared with its own kind has no noun: "the wettest" for an October among Octobers, a spring or a month so far, and "the wettest in spring" for 7 days among spring's. "October was the wettest October" would say it twice.
   - Months among all months and years keep theirs: "the third hottest month", "the hottest year", and for the year so far "so far the third hottest year", since "start to the year" reads oddly by November.
-  - A period's minimum is its nights: "the warmest nights" (the site says "October had…"), or "the month with the coldest nights" among all months.
+  - A period's minimum is its nights: "the warmest nights" (the site says "October had…"), or "the month with the coldest nights" among all months. Its rain days are the same: "the most rain days", "the month with the fewest rain days".
+  - The others have no noun: "the warmest" and "the coldest" for the mean temperature, "the sunniest" and "the gloomiest" for solar, "the windiest" and "the calmest", and "the most humid" and "the least humid" ("humid", never "driest", which means rain).
   - A since is a day for a run of days ("since 8 February"). For months among all months it is a month ("since March", "since March 2025") or a year. Everything else is compared once a year, so its since is a year.
 
 ### The sentence
@@ -243,8 +249,8 @@ Today's observed and daylight facts run strongest first, followed by its forecas
 `sentence` in `src/site/naming.ts` makes the sentence for when the page is viewed, in Sydney time. It has three parts, so the page can set the day apart.
 
 - **Subject:** "Today", "Yesterday", its day of the week within 6 days, otherwise a date ("12 October"). A minimum is for the 24 hours to 9am, so it names the night that ends on its date by its evening: "Last night", "Tonight", "Thursday night", "The night of 2 November". A forecast or a running value for last night is for the night still under way after midnight, so it is named by its day of the week: "Sunday night is forecast to be…", "Sunday night is the coldest since 2007". A day's rain is "The 24 hours to 9 am Friday", except the rain still falling, named by when it began and worded as it stands: "Rain since 9 am has reached 13.8 mm, the most since 4 November", or "Rain since 9 am yesterday" after midnight. A fact for the day of the week would say the day twice ("Thursday was the hottest Thursday"), so a day or night that would be named by its day of the week is named by its date instead: "5 November was the hottest Thursday since 2019", "The night of 5 November was the coldest Thursday night". Today, yesterday, tomorrow, last night, tonight and tomorrow night keep their names, and so does a day's rain, whose day of the week is the day before its 9am. Periods are "October", "October 2025" in another year, "The 3 days to Tuesday", "November so far", "Spring", "2026" for the year so far, and "2025".
-- **Verb:** "is" or "was" by whether the day is over. A night, the rain to 9am and the 9am readings are over by the time the page shows them, unless the value is still running, which isn't over until its 9am. Rain days and runs of days take "were". Measures that aren't a kind of day take "had": changes, ranges, humidity and the 9am and 3pm readings ("Thursday had the lowest peak humidity"). A period's nights take "had", "has had" or, for the year so far, "has so far had". Forecasts are "is forecast to be".
-- **Value**, with its unit from the measure: "with a top of 23.6 °C", "with a low of 11.6 °C", "with 49.6 mm", "up 6.7 °C" for a change, "at 79%", "with an average wind speed of 25.6 km/h", "with a gust of 85 km/h", "with an average top of 23.6 °C" for a period. Observed values show one decimal, apart from humidity and gusts, which BOM gives in whole numbers, and forecasts show whole degrees as BOM gives them.
+- **Verb:** "is" or "was" by whether the day is over. A night, the rain to 9am and the 9am readings are over by the time the page shows them, unless the value is still running, which isn't over until its 9am. Rain days and runs of days take "were". Measures that aren't a kind of day take "had": changes, ranges, humidity and the 9am and 3pm readings ("Thursday had the lowest peak humidity"). A period's nights and rain days take "had", "has had" or, for the year so far, "has so far had". Forecasts are "is forecast to be".
+- **Value**, with its unit from the measure: "with a top of 23.6 °C", "with a low of 11.6 °C", "with 49.6 mm", "up 6.7 °C" for a change, "at 79%", "with an average wind speed of 25.6 km/h", "with a gust of 85 km/h", "with an average top of 23.6 °C" for a period, and likewise "an average low", "an average temperature of 21.4 °C", "an average of 22.3 MJ/m² a day", "an average humidity of 63.5%", and "with 14 days" for rain days. Observed values show one decimal, apart from humidity and gusts, which BOM gives in whole numbers, and forecasts show whole degrees as BOM gives them.
 - **Provisional:** shown exactly like a confirmed fact, with no words and the same dot ("Observed" in the legend). The live feed is treated as fact.
 - **Partial:** worded like an observed fact, with no words of its own: "Today is the hottest day since February, with a top of 31.2 °C". Its dot is a ring with a smaller dot inside, an observed dot not yet filled out ("So far" in the legend). The headline has no dot, so a running headline has the mark and "So far" beneath it, with the ripple its dot would have in a list. Screen readers hear "So far" before the sentence.
 - **Conditional:** built around what it needs: "A low of 10 °C tonight (forecast 12 °C) would make it the coldest night in November since 2006", "A top of 36.6 °C on Thursday (forecast 35 °C) would make it…", "90.1 mm in the 7 days to Sunday (forecast 70 mm) would make them…". A single day's rain is a chance: "The 24 hours to 9 am Monday have a 25% chance of being the wettest since 4 November, with 20 mm or more".

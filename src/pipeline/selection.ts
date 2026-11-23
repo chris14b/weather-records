@@ -111,6 +111,15 @@ const families: Record<FactMeasure, string> = {
   solar: "solar",
   maxTempChange: "temperatureChange",
   minTempChange: "temperatureChange",
+  meanTemp: "meanTemp",
+  rainDays: "rainDays",
+  meanRelHum: "humidity",
+};
+
+// A period's rain total and rain days say much the same, so it shows only the strongest.
+const calendarFamilies: Partial<Record<FactMeasure, string>> = {
+  rain: "rain",
+  rainDays: "rain",
 };
 
 // A turning point in the daylight is news for about a week either side, and turning points
@@ -173,8 +182,10 @@ export function selectFacts({
     isCalendar(period) ? "calendar" : period.kind;
   const kindKey = ({ fact }: ScoredFact) =>
     `${families[fact.measure]} ${fact.direction} ${periodKind(fact)}`;
+  const competesAs = ({ measure, period }: CandidateFact) =>
+    isCalendar(period) ? (calendarFamilies[measure] ?? measure) : measure;
   const groupKey = ({ fact }: ScoredFact) =>
-    `${fact.date} ${fact.measure} ${fact.direction} ${periodKind(fact)}`;
+    `${fact.date} ${competesAs(fact)} ${fact.direction} ${periodKind(fact)}`;
   // A fact that a later day beat would only send the reader to that day's.
   const scored = facts
     .filter(({ beatenBy }) => beatenBy === null)

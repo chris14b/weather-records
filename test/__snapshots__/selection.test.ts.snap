@@ -8,9 +8,9 @@ exports[`selectFacts on real data > chooses the facts at sydney-airport for the 
     "2026-10-07 4.61 wind the windiest October day since 2020",
     "2026-10-02 4.72 wind the calmest October day since 2019",
     "2026-09-30 4.93 solar the sunniest September day since 2018",
+    "2026-01-01..2026-10-29 4.34 meanTemp so far the warmest year since records began in 1939",
     "2026-01-01..2026-10-29 4.34 minTemp the warmest nights since records began in 1939",
-    "2026-09-01..2026-09-30 3.09 maxTemp the fourth hottest since records began in 1939",
-    "2026-09-01..2026-09-30 3.73 minTemp the second warmest nights since records began in 1939",
+    "2026-09-01..2026-09-30 3.73 meanTemp the second warmest since records began in 1939",
   ],
   "pastWeek": [
     "2026-10-26 3.63 maxTempChange the biggest day-to-day drop in maximum temperature on 26 October since records began in 1939",
@@ -60,6 +60,8 @@ exports[`selectFacts on real data > chooses the facts at sydney-observatory-hill
     "2012-12-31 5.93 solar the sunniest day since January 2011",
     "2012-12-26 5.28 rain the wettest since 12 June",
     "2012-12-20 4.91 maxTemp the hottest December day since 2008",
+    "2013-01-01..2013-01-18 3.66 meanTemp the fourth warmest since records began in 1859",
+    "2013-01-01..2013-01-18 3.65 rainDays the fewest rain days since 1955",
     "2013-01-01..2013-01-18 3.43 maxTemp the fifth hottest since records began in 1859",
   ],
   "pastWeek": [
@@ -85,9 +87,9 @@ exports[`selectFacts on real data > chooses the facts at sydney-observatory-hill
     "2026-09-22 6.38 maxTempChange the fourth biggest day-to-day drop in maximum temperature in September since records began in 1859",
     "2026-09-21 5.22 minTemp the warmest since 19 March",
     "2026-09-19 4.81 minRelHum the lowest humidity since 5 December 2025",
-    "2026-01-01..2026-10-13 3.88 maxTemp so far the equal hottest year since records began in 1859",
+    "2026-01-01..2026-10-13 4.65 meanTemp so far the warmest year since records began in 1859 (not counting 13 years with gaps)",
     "2026-01-01..2026-10-13 4.76 minTemp the warmest nights since records began in 1859 (not counting 10 years with gaps)",
-    "2026-09-01..2026-09-30 4.43 minTemp the second warmest nights since records began in 1859",
+    "2026-09-01..2026-09-30 4.43 meanTemp the second warmest since records began in 1859",
   ],
   "pastWeek": [
     "2026-10-12 5.46 maxTemp the hottest day since 18 February",
@@ -116,6 +118,8 @@ exports[`selectFacts on real data > chooses the facts at sydney-olympic-park for
     "2020-02-01 4.61 solar the sunniest February day since 2014",
     "2020-01-19 5.13 wind the calmest summer day since 2016",
     "2020-01-13 4.01 minTemp the coldest in January since 2018",
+    "2020-01-01..2020-02-12 1.98 solar so far the gloomiest year since 2011",
+    "2020-02-01..2020-02-12 1.98 wind the windiest since 2011",
     "2020-02-01..2020-02-12 2.20 rain the wettest since records began in 2011",
   ],
   "pastWeek": [

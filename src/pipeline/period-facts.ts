@@ -4,6 +4,7 @@ import type {
   DateRange,
   DayValue,
   Direction,
+  FactMeasure,
   Period,
   ValueStatus,
 } from "../shared/facts.ts";
@@ -13,9 +14,24 @@ import { beats, comparisonKey } from "./daily-facts.ts";
 import { addDays } from "./dates.ts";
 import type { Series } from "./series.ts";
 
-type PeriodMeasure = "rain" | "maxTemp" | "minTemp";
+// The mean temperature comes first, so it stands in for its maximum and minimum when it
+// scores as well as either.
+const periodMeasures: readonly FactMeasure[] = [
+  "rain",
+  "rainDays",
+  "meanTemp",
+  "maxTemp",
+  "minTemp",
+  "solar",
+  "wind",
+  "meanRelHum",
+];
 
-const periodMeasures: readonly PeriodMeasure[] = ["rain", "maxTemp", "minTemp"];
+/** Totalled over a period, which then needs every day. The rest are averaged. */
+const totalledMeasures: ReadonlySet<FactMeasure> = new Set([
+  "rain",
+  "rainDays",
+]);
 
 /** Rain totals over this many days to each day. */
 const rollingDays = [3, 7];
@@ -66,9 +82,9 @@ interface PeriodValue {
 type ValuedPeriod = PeriodValue & { value: number };
 
 /**
- * Ranks rain totals over the 3 and 7 days to each day in the window, and the total rain
- * and mean maximum and minimum of the latest complete month, season and year and of the
- * current ones so far. See docs/facts.md.
+ * Ranks rain totals over the 3 and 7 days to each day in the window, and the totals and
+ * means of the latest complete month, season and year and of the current ones so far. See
+ * docs/facts.md.
  */
 export function generatePeriodFacts({
   locationId,
@@ -485,7 +501,7 @@ function dailyValues(
   series: Series,
   offsets: readonly StationOffset[],
 ): DailyValues {
-  const measure = series.measure as PeriodMeasure;
+  const { measure } = series;
   const firstDay = dayNumber(series.days[0]?.date ?? "1970-01-01");
   const values: number[] = [];
   const provisional: boolean[] = [];
@@ -498,10 +514,20 @@ function dailyValues(
     fromDay: dayNumber(total.from),
     toDay: dayNumber(total.date),
   }));
-  const offsetOn = (date: string) =>
-    measure === "rain"
-      ? 0
-      : (offsets.findLast((o) => o.from <= date)?.[measure] ?? 0);
+  const offsetOn = (date: string) => {
+    const offset = offsets.findLast((o) => o.from <= date);
+    if (offset === undefined) return 0;
+    switch (measure) {
+      case "maxTemp":
+        return offset.maxTemp;
+      case "minTemp":
+        return offset.minTemp;
+      case "meanTemp":
+        return (offset.maxTemp + offset.minTemp) / 2;
+      default:
+        return 0;
+    }
+  };
   const value = (day: number) => values[day - firstDay] ?? Number.NaN;
 
   const sum = (fromDay: number, toDay: number) => {
@@ -569,7 +595,10 @@ function dailyValues(
     firstDay,
     value,
     aggregate: (fromDay, toDay) => {
-      const result = (measure === "rain" ? sum : mean)(fromDay, toDay);
+      const result = (totalledMeasures.has(measure) ? sum : mean)(
+        fromDay,
+        toDay,
+      );
       return {
         from: dateOf(fromDay),
         to: dateOf(toDay),

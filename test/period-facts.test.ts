@@ -5,7 +5,12 @@ import {
   comparablePeriods,
   generatePeriodFacts,
 } from "../src/pipeline/period-facts.ts";
-import type { MultiDayValue, Series } from "../src/pipeline/series.ts";
+import {
+  averageSeries,
+  rainDaySeries,
+  type MultiDayValue,
+  type Series,
+} from "../src/pipeline/series.ts";
 import type {
   Comparison,
   Direction,
@@ -494,4 +499,94 @@ describe("generatePeriodFacts across a station change", () => {
       }),
     ).toMatchObject({ rank: 1, since: null });
   });
+});
+
+describe("generatePeriodFacts for the other measures", () => {
+  const hotOctober = (hot: number, normal: number) => (date: string) =>
+    inMonth(date, ["2026-10"]) ? hot : normal;
+
+  test("ranks the mean temperature, the average of the maximum and the minimum", () => {
+    const mean = averageSeries(
+      "meanTemp",
+      series("maxTemp", "2016-01-01", "2026-11-06", hotOctober(30, 20)),
+      series("minTemp", "2016-01-01", "2026-11-06", hotOctober(20, 10)),
+    );
+
+    expect(find(factsFor(mean, "2026-11-06"), { period: month })).toMatchObject(
+      { measure: "meanTemp", value: 25, rank: 1, since: null },
+    );
+  });
+
+  test("takes the mean of the two stations' offsets out of the mean temperature", () => {
+    const offsets = [{ from: "2020-09-01", maxTemp: 0.6, minTemp: 0.2 }];
+    const mean = averageSeries(
+      "meanTemp",
+      series("maxTemp", "2016-01-01", "2026-02-10", (date) =>
+        inMonth(date, ["2019-01"])
+          ? 26
+          : inMonth(date, ["2026-01"])
+            ? 26.2
+            : 20,
+      ),
+      series("minTemp", "2016-01-01", "2026-02-10", (date) =>
+        inMonth(date, ["2019-01"])
+          ? 16
+          : inMonth(date, ["2026-01"])
+            ? 16.2
+            : 10,
+      ),
+    );
+    const january = { period: month, comparison: "month" } as const;
+
+    expect(find(factsFor(mean, "2026-02-10"), january).rank).toBe(1);
+    expect(find(factsFor(mean, "2026-02-10", offsets), january)).toMatchObject({
+      rank: 2,
+      since: { date: "2019-01-31", value: 21 },
+    });
+  });
+
+  describe("rain days", () => {
+    const rainDays = (value: (date: string) => number | null) =>
+      rainDaySeries(series("rain", "2016-01-01", "2026-11-06", value));
+
+    test("counts the days with at least 1 mm, and ranks them both ways", () => {
+      const facts = factsFor(
+        rainDays((date) => (inMonth(date, ["2026-10"]) ? 5 : 0.9)),
+        "2026-11-06",
+      );
+
+      expect(find(facts, { period: month })).toMatchObject({
+        measure: "rainDays",
+        value: 31,
+        rank: 1,
+      });
+      expect(find(facts, { period: month, direction: "lowest" })).toMatchObject(
+        { rank: 130, ties: 0 },
+      );
+    });
+
+    test("leaves a month with a missing day without a value", () => {
+      const facts = factsFor(
+        rainDays((date) => (date === "2026-10-12" ? null : 5)),
+        "2026-11-06",
+      );
+
+      expect(matching(facts, { period: month })).toEqual([]);
+    });
+  });
+
+  test.each(["solar", "wind", "meanRelHum"] as const)(
+    "averages the %s of a month, and ranks it both ways",
+    (measure) => {
+      const facts = factsFor(
+        series(measure, "2016-01-01", "2026-11-06", hotOctober(10, 20)),
+        "2026-11-06",
+      );
+
+      expect(find(facts, { period: month, direction: "lowest" })).toMatchObject(
+        { measure, value: 10, rank: 1 },
+      );
+      expect(find(facts, { period: month })).toMatchObject({ rank: 130 });
+    },
+  );
 });

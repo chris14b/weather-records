@@ -446,6 +446,75 @@ describe("sentence", () => {
     ],
     [
       fact({
+        period: { kind: "month", toDate: false },
+        from: "2026-10-01",
+        date: "2026-10-31",
+        measure: "meanTemp",
+        text: "the warmest since records began in 1859",
+        why: { value: 21.4 },
+      }),
+      "[October] was the warmest since records began in 1859, with an average temperature of 21.4\u00a0°C",
+    ],
+    [
+      fact({
+        period: { kind: "season", toDate: false },
+        from: "2026-09-01",
+        date: "2026-11-30",
+        measure: "rainDays",
+        direction: "lowest",
+        text: "the fewest rain days since 2019",
+        why: { value: 1 },
+      }),
+      "[Spring] had the fewest rain days since 2019, with 1\u00a0day",
+    ],
+    [
+      fact({
+        period: { kind: "month", toDate: false },
+        from: "2026-10-01",
+        date: "2026-10-31",
+        measure: "rainDays",
+        comparison: "all",
+        text: "the month with the most rain days since 2016",
+        why: { value: 14 },
+      }),
+      "[October] was the month with the most rain days since 2016, with 14\u00a0days",
+    ],
+    [
+      fact({
+        period: { kind: "month", toDate: false },
+        from: "2026-10-01",
+        date: "2026-10-31",
+        measure: "solar",
+        text: "the sunniest since 2009",
+        why: { value: 22.3 },
+      }),
+      "[October] was the sunniest since 2009, with an average of 22.3\u00a0MJ/m² a day",
+    ],
+    [
+      fact({
+        period: { kind: "month", toDate: false },
+        from: "2026-10-01",
+        date: "2026-10-31",
+        measure: "wind",
+        direction: "lowest",
+        text: "the calmest since 2011",
+        why: { value: 12.4 },
+      }),
+      "[October] was the calmest since 2011, with an average wind speed of 12.4\u00a0km/h",
+    ],
+    [
+      fact({
+        period: { kind: "year", toDate: false },
+        from: "2025-01-01",
+        date: "2025-12-31",
+        measure: "meanRelHum",
+        text: "the most humid year since 2011",
+        why: { value: 63.5 },
+      }),
+      "[2025] was the most humid year since 2011, with an average humidity of 63.5%",
+    ],
+    [
+      fact({
         period: { kind: "month", toDate: true },
         from: "2026-11-01",
         date: "2026-11-09",

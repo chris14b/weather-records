@@ -1,11 +1,13 @@
-import type {
-  ChangingMeasure,
-  DateRange,
-  DaylightEvent,
-  Direction,
-  FactMeasure,
-  Lead,
-  Period,
+import {
+  isPeriodOnlyMeasure,
+  type ChangingMeasure,
+  type DateRange,
+  type DayMeasure,
+  type DaylightEvent,
+  type Direction,
+  type FactMeasure,
+  type Lead,
+  type Period,
 } from "../shared/facts.ts";
 import type { CandidateFact } from "./candidates.ts";
 import { comparisonKey, dayKey, keyedDate } from "./daily-facts.ts";
@@ -36,7 +38,7 @@ function changePhrases(measure: ChangingMeasure): Record<Direction, Phrase> {
   return { highest: phrase("rise"), lowest: phrase("drop") };
 }
 
-const phrases: Record<FactMeasure, Record<Direction, Phrase>> = {
+const phrases: Record<DayMeasure, Record<Direction, Phrase>> = {
   maxTemp: {
     highest: { superlative: "hottest", noun: "day" },
     lowest: { superlative: "coldest", noun: "day" },
@@ -109,8 +111,20 @@ const periodSuperlatives: Partial<
   Record<FactMeasure, Record<Direction, string>>
 > = {
   rain: { highest: "wettest", lowest: "driest" },
+  rainDays: { highest: "most", lowest: "fewest" },
   maxTemp: { highest: "hottest", lowest: "coldest" },
   minTemp: { highest: "warmest", lowest: "coldest" },
+  meanTemp: { highest: "warmest", lowest: "coldest" },
+  solar: { highest: "sunniest", lowest: "gloomiest" },
+  wind: { highest: "windiest", lowest: "calmest" },
+  meanRelHum: { highest: "most humid", lowest: "least humid" },
+};
+
+// A period's measure that needs saying, since the site names only the period: "October had
+// the warmest nights", "the month with the most rain days".
+const periodNouns: Partial<Record<FactMeasure, string>> = {
+  minTemp: "nights",
+  rainDays: "rain days",
 };
 
 /**
@@ -175,6 +189,9 @@ export function ordinal(n: number): string {
 // A conditional fact names its night only in passing ("A low of 10 °C tonight would make
 // it…"), so it needs the noun.
 function dayPhrase({ measure, direction, status }: CandidateFact): Phrase {
+  if (isPeriodOnlyMeasure(measure)) {
+    throw new Error(`There are no day facts about ${measure}`);
+  }
   const phrase = phrases[measure][direction];
   return measure === "minTemp" && status === "conditional"
     ? { ...phrase, noun: "night" }
@@ -190,7 +207,7 @@ function dayHead(fact: CandidateFact, ranked: string): string {
 
 // The site names the period, so a period compared with its own kind needs no noun:
 // "October was the wettest since 2019", "The 3 days to Friday were the wettest in October".
-// Its minimum needs saying: "had the warmest nights".
+// Its minimum and rain days need saying: "had the warmest nights".
 function periodHead(
   { measure, direction, comparison, date }: CandidateFact,
   period: Exclude<Period, { kind: "day" }>,
@@ -202,10 +219,11 @@ function periodHead(
   }
   const head = `the ${ranked}${superlative}`;
   const amongAllMonths = period.kind === "month" && comparison === "all";
-  if (measure === "minTemp") {
+  const noun = periodNouns[measure];
+  if (noun !== undefined) {
     return amongAllMonths
-      ? `the month with the ${ranked}${superlative} nights`
-      : `${head} nights`;
+      ? `the month with the ${ranked}${superlative} ${noun}`
+      : `${head} ${noun}`;
   }
   switch (period.kind) {
     case "rolling":

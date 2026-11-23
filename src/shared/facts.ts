@@ -4,8 +4,8 @@ export type ChangingMeasure = "maxTemp" | "minTemp";
 /** A day's value minus the day before's, e.g. `maxTempChange`. */
 export type ChangeMeasure = `${ChangingMeasure}Change`;
 
-/** A daily measure that facts can be about. */
-export type FactMeasure =
+/** A measure of single days. */
+export type DayMeasure =
   | "maxTemp"
   | "minTemp"
   | "rain"
@@ -20,6 +20,20 @@ export type FactMeasure =
   | "temp3pm"
   | "relHum3pm"
   | ChangeMeasure;
+
+/** A measure that only months, seasons and years have, worked out from the days. */
+export type PeriodOnlyMeasure = "meanTemp" | "rainDays" | "meanRelHum";
+
+/** A measure that facts can be about. */
+export type FactMeasure = DayMeasure | PeriodOnlyMeasure;
+
+export function isPeriodOnlyMeasure(
+  measure: FactMeasure,
+): measure is PeriodOnlyMeasure {
+  return (
+    measure === "meanTemp" || measure === "rainDays" || measure === "meanRelHum"
+  );
+}
 
 export function isChangeMeasure(
   measure: FactMeasure,

@@ -493,3 +493,12 @@ describe("generateDailyFacts for a past-year series", () => {
     expect(fact).toMatchObject({ rank: 1, missingDays: 1, compared: 364 });
   });
 });
+
+describe("generateDailyFacts for a series only periods are ranked on", () => {
+  test("makes no facts about its days", () => {
+    const days = series("2026-10-01", [20, 21, 22, 30], "maxTemp");
+
+    expect(factsFor({ ...days, periodsOnly: true }, "2026-10-04")).toEqual([]);
+    expect(factsFor(days, "2026-10-04")).not.toEqual([]);
+  });
+});

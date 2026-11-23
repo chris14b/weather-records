@@ -9,8 +9,10 @@ import {
 } from "../src/pipeline/selection.ts";
 import type { ForecastDay } from "../src/pipeline/forecast.ts";
 import {
+  averageSeries,
   changeSeries,
   pastYearSeries,
+  rainDaySeries,
   type Series,
 } from "../src/pipeline/series.ts";
 import type {
@@ -106,6 +108,39 @@ function selectAll(allSeries: readonly Series[]) {
 }
 
 const wetFifteenth = (date: string) => (date.endsWith("-15") ? 100 : 0);
+
+describe("selectFacts for calendar periods", () => {
+  const october = (value: number) =>
+    Object.fromEntries(
+      Array.from({ length: 31 }, (_, index) => [
+        `2026-10-${String(index + 1).padStart(2, "0")}`,
+        value,
+      ]),
+    );
+  const monthFacts = (allSeries: readonly Series[]) =>
+    selectAll(allSeries).pastMonth.filter(
+      ({ period }) => period.kind === "month" && !period.toDate,
+    );
+
+  test("shows a month's mean maximum, minimum and temperature together", () => {
+    const max = series("maxTemp", () => 20, october(30));
+    const min = series("minTemp", () => 10, october(20));
+
+    expect(
+      monthFacts([max, min, averageSeries("meanTemp", max, min)])
+        .map(({ measure }) => measure)
+        .toSorted(),
+    ).toEqual(["maxTemp", "meanTemp", "minTemp"]);
+  });
+
+  test("shows only the strongest of a month's rain total and rain days", () => {
+    const wet = series("rain", () => 0, october(5));
+
+    expect(
+      monthFacts([wet, rainDaySeries(wet)]).map(({ measure }) => measure),
+    ).toHaveLength(1);
+  });
+});
 
 describe("selectFacts", () => {
   test("puts the page's day's strongest facts in Today", () => {

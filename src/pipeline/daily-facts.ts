@@ -72,9 +72,10 @@ export function generateDailyFacts({
   settled = [],
 }: DailyFactsRequest): CandidateFact[] {
   const windowStart = addDays(windowEnd, 1 - windowDays);
-  return series.flatMap(({ measure, days, fullRecord, pastYear = false }) => {
+  return series.flatMap((source) => {
+    const { measure, days, fullRecord, pastYear = false } = source;
     const first = days[0];
-    if (first === undefined) return [];
+    if (first === undefined || source.periodsOnly === true) return [];
     const runs = missingRuns(days);
     const inWindow = [...days.entries()].filter(
       ([, { date }]) => date >= windowStart && date <= windowEnd,

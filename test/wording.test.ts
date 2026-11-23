@@ -487,8 +487,68 @@ describe("describeFact", () => {
       { period: { kind: "rolling" as const, days: 7 }, rank: 2 },
       "the second wettest in October since records began in 1866",
     ],
+    [
+      { measure: "meanTemp" as const },
+      "the warmest since records began in 1866",
+    ],
+    [
+      {
+        measure: "meanTemp" as const,
+        direction: "lowest" as const,
+        comparison: "all" as const,
+      },
+      "the coldest month since records began in 1866",
+    ],
+    [
+      { measure: "rainDays" as const, rank: 2 },
+      "the second most rain days since records began in 1866",
+    ],
+    [
+      {
+        measure: "rainDays" as const,
+        direction: "lowest" as const,
+        comparison: "all" as const,
+      },
+      "the month with the fewest rain days since records began in 1866",
+    ],
+    [
+      {
+        measure: "solar" as const,
+        direction: "lowest" as const,
+        fullRecord: false,
+        recordStart: "2009-01-01",
+      },
+      "the gloomiest since 2009",
+    ],
+    [
+      {
+        measure: "wind" as const,
+        period: { kind: "year" as const, toDate: false },
+        comparison: "all" as const,
+        fullRecord: false,
+        recordStart: "2009-01-01",
+      },
+      "the windiest year since 2009",
+    ],
+    [
+      {
+        measure: "meanRelHum" as const,
+        direction: "lowest" as const,
+        period: { kind: "year" as const, toDate: true },
+        comparison: "all" as const,
+        fullRecord: false,
+        recordStart: "2009-01-01",
+      },
+      "so far the least humid year since 2009",
+    ],
   ])("words a period: %o", (fact, expected) => {
     expect(describeFact(periodFact(fact), "rank")).toBe(expected);
+  });
+
+  test("has no day facts about a measure that only periods have", () => {
+    expect(() => words({ measure: "meanTemp" })).toThrow(
+      "There are no day facts about meanTemp",
+    );
   });
 
   test.each([

@@ -68,28 +68,6 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 ---
 
-## T46: More statistics for months, seasons and years
-
-**Status:** todo
-
-**Goal:** More facts for calendar periods, such as "October was the sunniest October since 2009" or "Spring had the most rain days since 2016".
-
-- Background: months, seasons and years, complete and so far, are ranked only by total rain, mean maximum and mean minimum (`periodMeasures` in `period-facts.ts`).
-- Scope: choose from these with the user, and add the ones chosen:
-  - **Mean temperature**, the average of the maximum and the minimum, which is what BOM's monthly climate summaries lead with ("the warmest October on record").
-  - **Rain days**, the days with at least 1 mm, BOM's own measure of a rain day, so it needs no threshold of our own. Like the total, it needs every day to have a value.
-  - **Mean solar exposure**, from 2009 (2011 at Olympic Park), and longer once T21 is done. Observatory Hill has none from 2018-04 to 2020-07. Wording: "sunniest" and "dullest", or "cloudiest".
-  - **Mean temperature range**, from `range`. Very sensitive to the station change: 066214's range is about 0.6 °C wider than 066062's.
-  - **Mean humidity**, from the FTP daily files' highest and lowest relative humidity, from 2009.
-  - **Mean wind speed**, from the FTP daily files' average wind, from 2009 (2011 at Olympic Park), with none at Observatory Hill. Wording: "windiest" and "calmest", as for days.
-- Scope: the missing-days rules (see Missing days in [facts.md](facts.md)): the temperature means follow the WMO rule for months, and counts and totals need every day.
-- Scope: the 2020 Observatory Hill station change. Mean temperature has an offset of about 0 °C (+0.3 °C and −0.3 °C), and the range about +0.6 °C. Compare both ways, as the mean maximum and minimum are.
-- Scope: selection, which keeps one fact per measure, so check that a month's "the warmest", "the warmest days" and "the warmest nights" don't crowd Past month together, and decide whether they should compete.
-- Scope: wording for each, without repeating the subject ("October had the most rain days since 2016").
-- Done when: tests cover each new measure, its missing days and its wording, the selection snapshots have been reviewed, and [facts.md](facts.md) is updated.
-
----
-
 ## T47: Forecast temperature range
 
 **Status:** todo
@@ -116,6 +94,13 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 - Scope: selection rules of its own in `selection.ts`, within the Selection section of [facts.md](facts.md), so a strong month stays for the year but doesn't crowd the section.
 - Scope: a This year panel on the page, after Past month, with its periods named as the site names the others.
 - Done when: tests and the selection snapshots cover the section, and it has been checked in the browser.
+
+**Notes:**
+
+- Calendar periods now have 8 measures (see Periods in [facts.md](facts.md)), so a year has far more candidates than T28 first assumed: each complete month, season and year, for each measure, both directions. Past month's `calendarRule` (3 facts, each scoring at least 3) won't fit a 12-month section, so the section needs rules of its own. The mean maximum, mean minimum and mean temperature are meant to show together, so a record winter is up to three facts. Consider limiting a section by period (one or two facts per month or season) or by measure, so one warm winter doesn't fill it.
+- A month and the season holding it often say the same thing: on 2026 data, Observatory Hill and Sydney Airport had their warmest June and warmest winter on record, and the warmest year so far. Decide whether a season and its months compete.
+- `generatePeriodFacts` only makes facts for the latest complete month, season and year that ended in the window (`candidate.toDay < windowStart` returns nothing), so it needs a wider window for calendar periods, and each of its facts needs its own `beatenBy` and "so far" handling.
+- The all-time-record exemption (`isAllTimeRecord`) lets a short record's outright record in at any score. Over 12 months, with solar, wind and humidity starting in 2009 and Olympic Park and Norah Head's short records, it would let in many weak records ("the windiest since 2011"): decide whether the section needs a minimum score for them.
 
 ---
 
@@ -181,6 +166,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
   - Gust facts (`gust`, weight 0.9) are new, and come from the runs until the DWO is imported. Check how often a running gust gets into Today. Past-year series now reach full strength with a year rather than 30, so their ranks score much more: check that the readings' and gusts' ranks don't crowd Past week, as at Sydney Airport on 7 November 2026, where "the equal seventh gustiest day in the past year" (3.44) took a place.
   - Wind facts (`wind`, weight 0.9) are new. Check how often a calm day gets in: at Sydney Airport "the calmest day since 18 October" (1.98) took Past week's last place on 27 October 2026. Olympic Park's sheltered site makes its windiest days much less windy than the airport's.
   - On 2026-11-16 the one-per-family limit and Past week's 2 a day were dropped, Past week's later facts went from 3.5 to 1.75, Past month's bar from 5 to 3, and wind, solar and humidity left Today. Check Past week and Past month aren't now crowded by weak facts, and Today isn't often bare. Later that day Past week's bar went up to 2.75, as all 12 of its places were filling with facts scoring about 2.4 and up, and the site's standout marks were found to be still on the old bars (3.5 and 5): they now share `furtherFactScores`, so Past month marks from 3.69 rather than 5.69. Check it doesn't now mark too much. Since then every marked fact glows and sends out a ripple, stronger the higher it scores, so marking too much now shows as too much movement.
+  - Calendar periods now have solar, wind, humidity, rain days and mean temperature as well as the rain total and mean maximum and minimum, and up to 3 show in Past month. A short record's outright record shows however little it scores, so at Olympic Park and Norah Head (and for solar, wind and humidity everywhere, from 2009) a weak record such as "the windiest since 2011" for 12 days of February can take a place: in the Olympic Park snapshot (to 12 February 2020) all 3 went to records scoring 1.98, 1.98 and 2.20. Check how often that happens, and whether a record in a record shorter than about 15 years should need a minimum score. A hot month can now show its mean maximum, minimum and mean temperature together, which says much the same three times: check they don't crowd Past month.
   - The coming week's fallback (`forecastFloor`) can pick a conditional fact over a plainer forecast one, such as "A top of 18°C on Friday (forecast 20°C) would make it the coldest day since 3 November". Decide whether a fallback should prefer forecast facts.
 - Done when: the retuning is reviewed with the user and the snapshot tests updated.
 

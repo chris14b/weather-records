@@ -55,6 +55,9 @@ const measureWeights: Record<FactMeasure, number> = {
   relHum3pm: 0.75,
   maxTempChange: 0.9,
   minTempChange: 0.85,
+  meanTemp: 1,
+  rainDays: 0.9,
+  meanRelHum: 0.8,
 };
 
 // "The biggest drop in minimum temperature since 12 April" doesn't say whether that is
