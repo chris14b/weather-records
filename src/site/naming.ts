@@ -203,7 +203,15 @@ export function periodName(
     }
     case "season": {
       const season = seasonName(start.month);
-      return period.toDate ? `${season} so far` : season;
+      if (period.toDate) return `${season} so far`;
+      // A season that ended before this year is named by its year, or by both for summer.
+      const end = parse(date);
+      if (end.year === parse(today).year) return season;
+      const years =
+        end.year === start.year
+          ? String(start.year)
+          : `${String(start.year)}\u2013${String(end.year).slice(2)}`;
+      return `${season} ${years}`;
     }
     case "year":
       return String(start.year);

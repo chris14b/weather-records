@@ -204,8 +204,10 @@ export interface PageFacts {
   today: Fact[];
   /** The 6 days before, and runs of days that start in them, newest first. */
   pastWeek: Fact[];
-  /** 7 to 30 days before, newest first, then the latest calendar periods, newest first. */
+  /** 7 to 30 days before, newest first. */
   pastMonth: Fact[];
+  /** The months, seasons and year of the past 12 months and the ones so far, newest first. */
+  thisYear: Fact[];
   /** The forecast and conditional facts after Today's, soonest first. */
   comingWeek: Fact[];
 }
@@ -216,8 +218,9 @@ export type Section = Exclude<keyof PageFacts, "date">;
 export const furtherFactScores: Readonly<Record<Section, number>> = {
   today: 2.5,
   pastWeek: 2.75,
-  pastMonth: 3,
-  comingWeek: 4.5,
+  pastMonth: 4,
+  thisYear: 4,
+  comingWeek: 2.75,
 };
 
 export interface LocationFacts {

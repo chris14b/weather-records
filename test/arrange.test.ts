@@ -55,6 +55,7 @@ const pageFacts = (sections: Partial<PageFacts>): PageFacts => ({
   today: [],
   pastWeek: [],
   pastMonth: [],
+  thisYear: [],
   comingWeek: [],
   ...sections,
 });
@@ -140,8 +141,9 @@ describe("standout", () => {
   test.each([
     ["today", 3.18],
     ["pastWeek", 3.43],
-    ["pastMonth", 3.68],
-    ["comingWeek", 5.18],
+    ["pastMonth", 4.68],
+    ["thisYear", 4.68],
+    ["comingWeek", 3.43],
   ] as const)(
     "doesn't mark a fact in %s scoring %d, under twice as rare as it needs",
     (section, score) => {
@@ -152,18 +154,22 @@ describe("standout", () => {
   test.each([
     ["today", 3.2],
     ["pastWeek", 3.45],
-    ["pastMonth", 3.7],
-    ["comingWeek", 5.195],
+    ["pastMonth", 4.7],
+    ["thisYear", 4.7],
+    ["comingWeek", 3.45],
   ] as const)("marks a fact in %s scoring %d faintly", (section, score) => {
     expect(standout(fact({ score }), section)).toBe(0);
   });
 
-  test.each(["today", "pastWeek", "pastMonth", "comingWeek"] as const)(
-    "gives an exceptional score in %s a strength of 1",
-    (section) => {
-      expect(standout(fact({ score: 6.5 }), section)).toBe(1);
-    },
-  );
+  test.each([
+    "today",
+    "pastWeek",
+    "pastMonth",
+    "thisYear",
+    "comingWeek",
+  ] as const)("gives an exceptional score in %s a strength of 1", (section) => {
+    expect(standout(fact({ score: 6.5 }), section)).toBe(1);
+  });
 
   test.each([
     [4.85, 0.5],
@@ -175,7 +181,7 @@ describe("standout", () => {
 
   test("judges a calendar period on the same scores as a day", () => {
     const year = fact({ score: 3.6, period: { kind: "year", toDate: true } });
-    expect(standout(year, "pastMonth")).toBeUndefined();
+    expect(standout(year, "thisYear")).toBeUndefined();
   });
 
   test("never marks daylight, which comes round every year", () => {
@@ -183,8 +189,8 @@ describe("standout", () => {
   });
 
   test.each([
-    [5.18, undefined],
-    [5.195, 0],
+    [3.43, undefined],
+    [3.45, 0],
   ])(
     "judges a conditional fact in Today scoring %d by the coming week's score",
     (score, strength) => {
@@ -196,8 +202,8 @@ describe("standout", () => {
 
 describe("arrange's standouts", () => {
   test.each([
-    [4.5, undefined],
-    [5.195, 0],
+    [3.43, undefined],
+    [3.45, 0],
   ])(
     "judges a forecast in Today scoring %d by the coming week's score",
     (score, strength) => {

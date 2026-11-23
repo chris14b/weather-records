@@ -90,13 +90,13 @@ describe("scoreFact", () => {
     },
   );
 
-  test("scores the calendar date, the year and the day of the week less than a month, in that order", () => {
+  test("scores the year, the calendar date and the day of the week less than a month, in that order", () => {
     const scored = (comparison: Comparison) =>
       score({ comparison, rank: 3, compared: 300 });
 
-    expect(scored("calendarDate")).toBeLessThan(scored("month"));
-    expect(scored("year")).toBeLessThan(scored("calendarDate"));
-    expect(scored("dayOfWeek")).toBeLessThan(scored("year"));
+    expect(scored("year")).toBeLessThan(scored("month"));
+    expect(scored("calendarDate")).toBeLessThan(scored("year"));
+    expect(scored("dayOfWeek")).toBeLessThan(scored("calendarDate"));
   });
 
   test("scores the coldest night for the date in 27 years above the biggest rise in minimum in 8 days", () => {
@@ -129,7 +129,7 @@ describe("scoreFact", () => {
   test.each([
     ["a week", "2026-10-30", 0],
     ["just under a year", "2025-11-07", 0],
-    ["over a year", "2025-10-31", Math.log(54) * 0.7],
+    ["over a year", "2025-10-31", Math.log(54) * 0.35],
   ])(
     "scores a since for the day of the week that reaches back %s",
     (_, sinceDate, expected) => {
@@ -147,7 +147,7 @@ describe("scoreFact", () => {
   test("scores a rank below the top for its calendar date", () => {
     expect(
       score({ comparison: "calendarDate", rank: 2, compared: 120 }),
-    ).toBeCloseTo(Math.log(60) * 0.9);
+    ).toBeCloseTo(Math.log(60) * 0.5);
   });
 
   test("scores a rank lower in a short record, but not a since", () => {

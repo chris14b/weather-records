@@ -60,6 +60,9 @@ export const rollingComparisons: readonly Comparison[] = [
 /** A run of days is a spell only if no one day holds this share of its rain. */
 const largestDayShare = 2 / 3;
 
+/** A complete month, season or year has facts for this many days after it ends. */
+const calendarWindowDays = 365;
+
 /** A period so far needs this many days to say anything a day can't. */
 const minimumToDateDays = 7;
 
@@ -83,7 +86,8 @@ type ValuedPeriod = PeriodValue & { value: number };
 
 /**
  * Ranks rain totals over the 3 and 7 days to each day in the window, and the totals and
- * means of the latest complete month, season and year and of the current ones so far. See
+ * means of every complete month, season and year that ended in the last year, and the
+ * current month, season and year so far. See
  * docs/facts.md.
  */
 export function generatePeriodFacts({
@@ -94,6 +98,7 @@ export function generatePeriodFacts({
   offsets = [],
 }: CandidatesRequest): CandidateFact[] {
   const windowStart = dayNumber(addDays(windowEnd, 1 - windowDays));
+  const calendarStart = dayNumber(addDays(windowEnd, 1 - calendarWindowDays));
   return periodMeasures.flatMap((measure) => {
     const source = series.find((s) => s.measure === measure);
     const first = source?.days[0];
@@ -158,21 +163,21 @@ export function generatePeriodFacts({
         const period: Period = { kind, toDate };
         if (toDate && !hasToDate(kind, lastDay)) return [];
         const periods = allPeriods(daily, period, lastDay);
-        const candidate = periods.at(-1);
-        if (
-          candidate === undefined ||
-          !isValued(candidate) ||
-          candidate.toDay < windowStart
-        )
-          return [];
+        const candidates = toDate
+          ? periods.slice(-1)
+          : periods.filter((p) => p.toDay >= calendarStart);
         const comparisons = toDate
           ? [toDateComparison[kind]]
           : completeComparisons[kind];
-        return comparisons.flatMap((comparison) =>
-          (["highest", "lowest"] as const).flatMap((direction) =>
-            fact(period, comparison, periods, candidate, direction),
-          ),
-        );
+        return candidates
+          .filter(isValued)
+          .flatMap((candidate) =>
+            comparisons.flatMap((comparison) =>
+              (["highest", "lowest"] as const).flatMap((direction) =>
+                fact(period, comparison, periods, candidate, direction),
+              ),
+            ),
+          );
       }),
     );
 

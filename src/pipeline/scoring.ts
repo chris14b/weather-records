@@ -28,15 +28,16 @@ const pastYearFullStrengthDays = 365;
 /** Below this share of comparable days having a value, a rank must say what is missing. */
 export const minimumCoverage = 0.95;
 
-// A comparison matched to the time of year counts in full. The calendar date rests on few
-// days, and the year so far and the day of the week aren't matched, so they weigh less.
+// A comparison matched to the time of year counts in full. The year so far isn't matched,
+// so it weighs less. A calendar date and a day of the week are about the day, not the
+// weather, and are meant to stay out unless nothing else says it, so they weigh least.
 const comparisonWeights: Record<Comparison, number> = {
   all: 1,
-  calendarDate: 0.9,
+  calendarDate: 0.5,
   season: 1,
   year: 0.85,
   month: 1,
-  dayOfWeek: 0.7,
+  dayOfWeek: 0.35,
 };
 
 const measureWeights: Record<FactMeasure, number> = {

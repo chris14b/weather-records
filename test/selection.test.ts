@@ -46,6 +46,7 @@ function selectRecords(request: SelectionRequest): {
     today: records(selected.today),
     pastWeek: records(selected.pastWeek),
     pastMonth: records(selected.pastMonth),
+    thisYear: records(selected.thisYear),
     comingWeek: records(selected.comingWeek),
   };
 }
@@ -56,18 +57,16 @@ function series<Measure extends FactMeasure>(
   baseline: (date: string) => number,
   values: Readonly<Record<string, number>>,
   from = "2016-01-01",
+  to = latest,
 ): Series<Measure> {
-  const days = Array.from(
-    { length: daysBetween(from, latest) + 1 },
-    (_, index) => {
-      const date = addDays(from, index);
-      return {
-        date,
-        value: values[date] ?? baseline(date),
-        status: "confirmed" as const,
-      };
-    },
-  );
+  const days = Array.from({ length: daysBetween(from, to) + 1 }, (_, index) => {
+    const date = addDays(from, index);
+    return {
+      date,
+      value: values[date] ?? baseline(date),
+      status: "confirmed" as const,
+    };
+  });
   return { measure, days, fullRecord: true };
 }
 
@@ -118,7 +117,7 @@ describe("selectFacts for calendar periods", () => {
       ]),
     );
   const monthFacts = (allSeries: readonly Series[]) =>
-    selectAll(allSeries).pastMonth.filter(
+    selectAll(allSeries).thisYear.filter(
       ({ period }) => period.kind === "month" && !period.toDate,
     );
 
@@ -131,6 +130,118 @@ describe("selectFacts for calendar periods", () => {
         .map(({ measure }) => measure)
         .toSorted(),
     ).toEqual(["maxTemp", "meanTemp", "minTemp"]);
+  });
+
+  test("keeps calendar periods out of Past month", () => {
+    const { pastMonth, thisYear } = selectAll([
+      series("rain", wetFifteenth, october(5)),
+    ]);
+
+    expect(pastMonth.filter(({ period }) => period.kind !== "day")).toEqual([]);
+    expect(thisYear.length).toBeGreaterThan(0);
+  });
+
+  test("shows each month and season of the year, newest first", () => {
+    const { thisYear } = selectAll([
+      series("rain", wetFifteenth, { "2026-04-10": 400 }),
+      series("maxTemp", () => 20, october(30)),
+    ]);
+
+    expect(
+      thisYear.map(({ from, date, measure, period }) => ({
+        from,
+        date,
+        measure,
+        kind: period.kind,
+      })),
+    ).toEqual([
+      {
+        from: "2026-10-01",
+        date: "2026-10-31",
+        measure: "maxTemp",
+        kind: "month",
+      },
+      {
+        from: "2026-04-01",
+        date: "2026-04-30",
+        measure: "rain",
+        kind: "month",
+      },
+    ]);
+  });
+
+  test("lets a month stand for the season that ends with it, but not the months before", () => {
+    const { thisYear } = selectAll([
+      series(
+        "rain",
+        wetFifteenth,
+        { "2026-06-10": 700, "2026-08-10": 500 },
+        "2000-01-01",
+      ),
+    ]);
+
+    expect(
+      thisYear
+        .filter(({ period }) => period.kind !== "year")
+        .map(({ from, date, period }) => ({ from, date, kind: period.kind })),
+    ).toEqual([
+      { from: "2026-08-01", date: "2026-08-31", kind: "month" },
+      { from: "2026-06-01", date: "2026-06-30", kind: "month" },
+    ]);
+  });
+
+  describe("so far", () => {
+    const tenth = "2026-11-10";
+    const selectTo = (allSeries: readonly Series[]) =>
+      selectRecords({
+        date: tenth,
+        facts: generateCandidates({
+          locationId: "test",
+          series: allSeries,
+          windowEnd: tenth,
+        }),
+        series: allSeries,
+      });
+    const hot = (to: string) =>
+      series(
+        "maxTemp",
+        (date) => (date >= "2026-01-01" ? 30 : 20),
+        {},
+        "2000-01-01",
+        to,
+      );
+    const soFar = (facts: readonly RecordFact[]) =>
+      facts
+        .filter(({ period }) => "toDate" in period && period.toDate)
+        .map(({ period }) => period.kind);
+
+    test("keeps the month so far in Past month, and the season and year so far in Past year", () => {
+      const { pastMonth, thisYear } = selectTo([hot(tenth)]);
+
+      expect(soFar(pastMonth)).toEqual(["month"]);
+      expect(soFar(thisYear).toSorted()).toEqual(["season", "year"]);
+    });
+
+    test("starts Past year with the year so far, ahead of periods that end later", () => {
+      const rain = series(
+        "rain",
+        (date) => (date >= "2026-09-01" ? 5 : 1),
+        {},
+        "2000-01-01",
+        tenth,
+      );
+      const { thisYear } = selectTo([hot("2026-11-08"), rain]);
+
+      expect(thisYear.slice(0, 2).map(({ period }) => period.kind)).toEqual([
+        "year",
+        "year",
+      ]);
+      expect(
+        thisYear.some(
+          ({ period, date }) => period.kind === "season" && date === tenth,
+        ),
+      ).toBe(true);
+    });
   });
 
   test("shows only the strongest of a month's rain total and rain days", () => {
@@ -165,6 +276,39 @@ describe("selectFacts", () => {
     );
 
     expect(amongAllDays).toEqual([]);
+  });
+
+  test("limits neither a day's facts nor a section's", () => {
+    const days = Array.from({ length: 8 }, (_, index) => ({
+      date: addDays(latest, -20 + index),
+      decline: index,
+    }));
+    const descending = (
+      measure: "maxTemp" | "minTemp",
+      top: number,
+      baseline: number,
+    ) =>
+      series(
+        measure,
+        () => baseline,
+        Object.fromEntries(
+          days.map(({ date, decline }) => [date, top - decline]),
+        ),
+      );
+    const { pastMonth } = selectAll([
+      descending("maxTemp", 40, 20),
+      descending("minTemp", 30, 10),
+    ]);
+
+    expect(
+      pastMonth.filter(({ measure }) => measure === "maxTemp"),
+    ).toHaveLength(8);
+    expect(
+      pastMonth.filter(({ measure }) => measure === "minTemp"),
+    ).toHaveLength(8);
+    expect(pastMonth.filter(({ date }) => date === days[0]?.date)).toHaveLength(
+      2,
+    );
   });
 
   test("keeps the strongest comparison of a day's fact about a measure and direction", () => {
@@ -392,7 +536,7 @@ describe("selectFacts", () => {
     ]);
   });
 
-  test("shows a day in Past month that scores 3 to 5", () => {
+  test("shows a day in Past month that scores 4 to 5", () => {
     const day = addDays(latest, -10);
     const { pastMonth } = selectAll([
       series("maxTemp", () => 20, {
@@ -408,7 +552,7 @@ describe("selectFacts", () => {
     expect(onTheDay).toMatchObject([
       { text: "the fifth hottest day since records began in 2016" },
     ]);
-    expect(onTheDay[0]?.score).toBeGreaterThan(3);
+    expect(onTheDay[0]?.score).toBeGreaterThan(4);
     expect(onTheDay[0]?.score).toBeLessThan(5);
   });
 
@@ -470,13 +614,14 @@ describe("selectFacts", () => {
     ]);
   });
 
-  test("adds the latest calendar periods to the end of Past month without crowding out its days", () => {
-    const { pastMonth } = selectAll([
-      series("maxTemp", () => 20, { "2026-11-06": 30 }),
+  test("puts the months, seasons and years so far in Past year, not among Past month's days", () => {
+    const { pastMonth, thisYear } = selectAll([
+      series("maxTemp", () => 20, { "2026-11-06": 30 }, "2010-01-01"),
       series(
         "rain",
         (date) => wetFifteenth(date) || (date.startsWith("2026-10") ? 5 : 1),
         { "2026-10-10": 300 },
+        "2010-01-01",
       ),
     ]);
 
@@ -486,29 +631,45 @@ describe("selectFacts", () => {
       {
         from: "2026-10-10",
         date: "2026-10-10",
-        text: "the wettest since records began in 2016",
+        text: "the wettest since records began in 2010",
+      },
+    ]);
+    expect(
+      thisYear.map(({ from, date, text }) => ({ from, date, text })),
+    ).toEqual([
+      {
+        from: "2026-01-01",
+        date: "2026-11-06",
+        text: "so far the wettest year since records began in 2010",
       },
       {
         from: "2026-09-01",
         date: "2026-11-06",
-        text: "the hottest since records began in 2016",
+        text: "the wettest since records began in 2010",
       },
       {
         from: "2026-09-01",
         date: "2026-11-06",
-        text: "the wettest since records began in 2016",
+        text: "the hottest since records began in 2010",
       },
       {
         from: "2026-10-01",
         date: "2026-10-31",
-        text: "the wettest month since records began in 2016",
+        text: "the wettest month since records began in 2010",
       },
     ]);
   });
 
   describe("over a short record", () => {
-    // Only the year so far stands out: no 2026 month, season or day beats an earlier one.
-    const hotStart = (hotYear: string, otherHotYear?: string) =>
+    // The hot start to 2026 is also a run of hot months, so look only at the year so far.
+    const yearFacts = (facts: readonly RecordFact[]) =>
+      facts.filter(({ period }) => period.kind === "year");
+
+    const hotStart = (
+      hotYear: string,
+      otherHotYear?: string,
+      from = "2010-01-01",
+    ) =>
       series(
         "maxTemp",
         (date) => {
@@ -520,18 +681,27 @@ describe("selectFacts", () => {
             : 20;
         },
         {},
+        from,
       );
 
     test("shows an all-time record however little it scores", () => {
-      const { pastMonth } = selectAll([hotStart("2026")]);
+      const thisYear = yearFacts(selectAll([hotStart("2026")]).thisYear);
 
-      expect(pastMonth.map(({ text, score }) => ({ text, score }))).toEqual([
+      expect(thisYear.map(({ text, score }) => ({ text, score }))).toEqual([
         {
-          text: "so far the hottest year since records began in 2016",
+          text: "so far the hottest year since records began in 2010",
           score: expect.any(Number) as number,
         },
       ]);
-      expect(pastMonth[0]?.score).toBeLessThan(3);
+      expect(thisYear[0]?.score).toBeLessThan(3);
+    });
+
+    test("leaves out an all-time record among under 12 periods", () => {
+      expect(
+        yearFacts(
+          selectAll([hotStart("2026", undefined, "2016-01-01")]).thisYear,
+        ),
+      ).toEqual([]);
     });
 
     test("doesn't count a record in the past year as an all-time one", () => {
@@ -564,7 +734,9 @@ describe("selectFacts", () => {
     });
 
     test("leaves out a lesser rank that scores too little", () => {
-      expect(selectAll([hotStart("2026", "2020")]).pastMonth).toEqual([]);
+      expect(yearFacts(selectAll([hotStart("2026", "2020")]).thisYear)).toEqual(
+        [],
+      );
     });
   });
 
@@ -574,6 +746,7 @@ describe("selectFacts", () => {
       today: [],
       pastWeek: [],
       pastMonth: [],
+      thisYear: [],
       comingWeek: [],
     });
   });
@@ -632,20 +805,19 @@ describe("selectFacts with a forecast", () => {
   );
 
   test("puts the forecast's facts in the coming week, soonest first, and what it would take after them", () => {
+    const dates = nearRecord.comingWeek.map(({ date }) => date);
+
+    expect(dates).toEqual(dates.toSorted());
     expect(
-      nearRecord.comingWeek.map(({ date, status, text }) => ({
-        date,
-        status,
-        text,
-      })),
+      nearRecord.comingWeek
+        .filter(({ date }) => date === "2026-11-08")
+        .map(({ status, text }) => ({ status, text })),
     ).toEqual([
       {
-        date: "2026-11-08",
         status: "forecast",
         text: "the third hottest day since records began in 1990",
       },
       {
-        date: "2026-11-08",
         status: "conditional",
         text: "the hottest day since records began in 1990",
       },
@@ -684,24 +856,17 @@ describe("selectFacts with a forecast", () => {
     expect(forecasts[0]?.score).toBeLessThan(forecasts[1]?.score ?? 0);
   });
 
-  test("shows the best forecast fact when the coming days have nothing notable", () => {
+  test("shows a forecast that clears its bar without anything hypothetical", () => {
+    const { comingWeek } = selectWithForecast({}, 40);
+
+    expect(comingWeek.map(({ status }) => status)).toEqual(["forecast"]);
+    expect(comingWeek[0]?.score).toBeGreaterThan(2);
+  });
+
+  test("keeps a calendar date or day of the week out of the coming week", () => {
     const { comingWeek } = selectWithForecast({}, 20);
 
-    expect(
-      comingWeek.map(({ date, status, score, text }) => ({
-        date,
-        status,
-        score,
-        text,
-      })),
-    ).toEqual([
-      {
-        date: "2026-11-07",
-        status: "forecast",
-        score: 3.25,
-        text: "the coldest 7\u00a0November since records began in 1990",
-      },
-    ]);
+    expect(comingWeek).toEqual([]);
   });
 
   test("puts the forecast for the observation day under way in Today", () => {
@@ -809,7 +974,9 @@ describe("selectFacts with a forecast", () => {
   });
 
   test("explains a conditional fact with the forecast and the value it needs", () => {
-    const why = nearRecord.comingWeek[1]?.why;
+    const why = nearRecord.comingWeek.find(
+      ({ status }) => status === "conditional",
+    )?.why;
 
     expect(why).toMatchObject({ value: 36.6, forecast: 35, rank: 1 });
     expect(why?.leaders.slice(0, 3)).toEqual([
@@ -817,11 +984,10 @@ describe("selectFacts with a forecast", () => {
       { date: "2019-01-10", value: 36.5, rank: 2 },
       { date: "2021-01-10", value: 35.5, rank: 3 },
     ]);
-    expect(nearRecord.comingWeek[0]?.why.leaders[2]).toEqual({
-      date: "2026-11-08",
-      value: 35,
-      rank: 3,
-    });
+    expect(
+      nearRecord.comingWeek.find(({ date }) => date === "2026-11-08")?.why
+        .leaders[2],
+    ).toEqual({ date: "2026-11-08", value: 35, rank: 3 });
   });
 
   test("leaves out what it would take when that is not much rarer than the forecast", () => {
@@ -830,7 +996,7 @@ describe("selectFacts with a forecast", () => {
       35,
     );
 
-    expect(comingWeek.map(({ status }) => status)).toEqual(["forecast"]);
+    expect(comingWeek.map(({ status }) => status)).not.toContain("conditional");
   });
 
   test("leaves out what it would take when another day's forecast already gets it", () => {
@@ -842,7 +1008,9 @@ describe("selectFacts with a forecast", () => {
     );
 
     expect(
-      comingWeek.map(({ date, status, text }) => ({ date, status, text })),
+      comingWeek
+        .filter(({ date }) => date === "2026-11-08" || date === "2026-11-10")
+        .map(({ date, status, text }) => ({ date, status, text })),
     ).toEqual([
       {
         date: "2026-11-08",
@@ -872,17 +1040,19 @@ describe("selectFacts on real data", () => {
 
   const sections = (facts: ReturnType<typeof selectRecords>) =>
     Object.fromEntries(
-      (["today", "pastWeek", "pastMonth"] as const).map((section) => [
-        section,
-        facts[section].map(({ from, date, score, measure, text }) =>
-          [
-            from === date ? date : `${from}..${date}`,
-            score.toFixed(2),
-            measure,
-            text,
-          ].join(" "),
-        ),
-      ]),
+      (["today", "pastWeek", "pastMonth", "thisYear"] as const).map(
+        (section) => [
+          section,
+          facts[section].map(({ from, date, score, measure, text }) =>
+            [
+              from === date ? date : `${from}..${date}`,
+              score.toFixed(2),
+              measure,
+              text,
+            ].join(" "),
+          ),
+        ],
+      ),
     );
 
   test.each([

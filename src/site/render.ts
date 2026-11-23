@@ -130,6 +130,65 @@ function panel(id: string, title: string, children: Children): HTMLElement {
   ]);
 }
 
+interface PanelSpec {
+  id: string;
+  title: string;
+  facts: readonly Fact[];
+  empty: string;
+}
+
+function panelSpecs(page: Page): PanelSpec[] {
+  return [
+    {
+      id: "coming-week",
+      title: "Coming week",
+      facts: page.comingWeek,
+      empty: "Nothing notable in the forecast.",
+    },
+    {
+      id: "past-week",
+      title: "Past week",
+      facts: page.pastWeek,
+      empty: "Nothing notable in the past week.",
+    },
+    {
+      id: "past-month",
+      title: "Past month",
+      facts: page.pastMonth,
+      empty: "Nothing notable in the past month.",
+    },
+    {
+      id: "past-year",
+      title: "Past year",
+      facts: page.thisYear,
+      empty: "Nothing notable in the past year.",
+    },
+  ];
+}
+
+// What the viewer has opened lasts across the page's redraws, which come with every update.
+let yearOpen = false;
+
+/** Past year is the longest list, so it spans the page and is folded away until opened. */
+function collapsiblePanel(
+  { id, title, facts, empty }: PanelSpec,
+  page: Page,
+  today: string,
+): HTMLElement {
+  const details = element("details", { class: "glass panel year" }, [
+    element("summary", {}, [
+      element("h2", { id }, [title]),
+      element("span", { class: "count" }, [String(facts.length)]),
+    ]),
+    factList(facts, page, today, empty),
+  ]);
+  details.open = yearOpen;
+  details.addEventListener("toggle", () => {
+    yearOpen = details.open;
+  });
+  return details;
+}
+
 function headline(page: Page, today: string): HTMLElement {
   const fact = page.headline;
   if (fact === undefined) {
@@ -413,32 +472,22 @@ export function render(
             ]),
           ]),
     ]),
-    element("div", { class: "panels" }, [
-      panel("coming-week", "Coming week", [
-        factList(
-          page.comingWeek,
-          page,
-          today,
-          "Nothing notable in the forecast.",
-        ),
-      ]),
-      panel("past-week", "Past week", [
-        factList(
-          page.pastWeek,
-          page,
-          today,
-          "Nothing notable in the past week.",
-        ),
-      ]),
-      panel("past-month", "Past month", [
-        factList(
-          page.pastMonth,
-          page,
-          today,
-          "Nothing notable in the past month.",
-        ),
-      ]),
-    ]),
+    ...panelsFor(page, today),
     footer(location, file.generatedAt, now),
   );
+}
+
+function panelsFor(page: Page, today: string): HTMLElement[] {
+  const specs = panelSpecs(page);
+  const year = specs.pop();
+  return [
+    element(
+      "div",
+      { class: "panels" },
+      specs.map(({ id, title, facts, empty }) =>
+        panel(id, title, [factList(facts, page, today, empty)]),
+      ),
+    ),
+    ...(year === undefined ? [] : [collapsiblePanel(year, page, today)]),
+  ];
 }

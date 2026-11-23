@@ -71,9 +71,12 @@ function matching(
   );
 }
 
+/** The one fact for the latest period that matches. */
 function find(facts: readonly CandidateFact[], wanted: Wanted): CandidateFact {
-  const [fact, ...others] = matching(facts, wanted);
-  if (fact === undefined || others.length > 0) {
+  const [fact, ...others] = matching(facts, wanted).toSorted((a, b) =>
+    b.date.localeCompare(a.date),
+  );
+  if (fact === undefined || others.some(({ date }) => date === fact.date)) {
     throw new Error(`Not exactly one fact for ${JSON.stringify(wanted)}`);
   }
   return fact;
@@ -163,13 +166,64 @@ describe("generatePeriodFacts for complete periods", () => {
     });
   });
 
-  test("leaves out the latest complete period once it ended before the window", () => {
+  test("keeps a complete month and season for a year, and ranks each as it stood", () => {
+    const later = factsFor(rain, "2027-01-10");
+
     expect(
-      matching(factsFor(rain, "2027-01-10"), {
+      matching(later, { period: season, comparison: "season" }).map(
+        ({ from }) => from,
+      ),
+    ).toEqual(["2025-12-01", "2026-03-01", "2026-06-01", "2026-09-01"]);
+    expect(
+      matching(later, { period: month, comparison: "month" }).map(
+        ({ from }) => from,
+      ),
+    ).toHaveLength(12);
+    expect(
+      find(later, { period: month, comparison: "month", from: "2026-10-01" }),
+    ).toMatchObject({ rank: 2, compared: 11, beatenBy: null });
+  });
+
+  test("leaves out a month or season that ended more than a year before", () => {
+    const earliest = (facts: readonly CandidateFact[], wanted: Wanted) =>
+      matching(facts, wanted).map(({ date }) => date)[0];
+
+    expect(earliest(factsFor(rain, "2027-01-10"), { period: month })).toBe(
+      "2026-01-31",
+    );
+    expect(
+      earliest(factsFor(rain, "2027-01-10"), {
         period: season,
         comparison: "season",
       }),
-    ).toEqual([]);
+    ).toBe("2026-02-28");
+  });
+
+  test("keeps a complete year for a year, as it does a month", () => {
+    const longer = series("rain", "2016-01-01", "2028-01-10", () => 1);
+    const yearsAt = (windowEnd: string) =>
+      matching(factsFor(longer, windowEnd), { period: year }).map(
+        ({ date }) => date,
+      );
+
+    expect(yearsAt("2027-12-30")).toEqual(["2026-12-31"]);
+    expect(yearsAt("2028-01-10")).toEqual(["2027-12-31"]);
+  });
+
+  test("marks an earlier month that a later one beat", () => {
+    const hot = series("maxTemp", "2016-01-01", "2026-11-06", (date) => {
+      if (inMonth(date, ["2026-08"])) return 25;
+      return inMonth(date, ["2026-10"]) ? 30 : 20;
+    });
+
+    expect(
+      find(factsFor(hot, "2026-11-06"), {
+        period: month,
+        from: "2026-08-01",
+      }),
+    ).toMatchObject({
+      beatenBy: { date: "2026-10-31", value: 30 },
+    });
   });
 });
 
@@ -279,6 +333,7 @@ describe("generatePeriodFacts with missing days", () => {
       expect(
         matching(factsFor(missingIn(missing), "2026-11-06"), {
           period: month,
+          from: "2026-10-01",
         }),
       ).toHaveLength(compared ? 1 : 0);
     },
@@ -302,9 +357,12 @@ describe("generatePeriodFacts with missing days", () => {
       date === "2026-10-15" ? null : 1,
     );
 
-    expect(matching(factsFor(rain, "2026-11-06"), { period: month })).toEqual(
-      [],
-    );
+    expect(
+      matching(factsFor(rain, "2026-11-06"), {
+        period: month,
+        from: "2026-10-01",
+      }),
+    ).toEqual([]);
   });
 
   test("counts a multi-day rain total that falls wholly inside a period", () => {
@@ -344,9 +402,12 @@ describe("generatePeriodFacts with missing days", () => {
       ],
     );
 
-    expect(matching(factsFor(rain, "2026-11-06"), { period: month })).toEqual(
-      [],
-    );
+    expect(
+      matching(factsFor(rain, "2026-11-06"), {
+        period: month,
+        from: "2026-10-01",
+      }),
+    ).toEqual([]);
   });
 
   test("marks a period provisional if any of its days is", () => {
@@ -571,7 +632,9 @@ describe("generatePeriodFacts for the other measures", () => {
         "2026-11-06",
       );
 
-      expect(matching(facts, { period: month })).toEqual([]);
+      expect(matching(facts, { period: month, from: "2026-10-01" })).toEqual(
+        [],
+      );
     });
   });
 

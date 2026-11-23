@@ -83,27 +83,6 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 ---
 
-## T28: This year
-
-**Status:** todo
-
-**Goal:** A This year section with the standout months and seasons of the past 12 months, such as "February was the hottest February since 2012".
-
-- Background: the pipeline already ranks complete months, seasons and years, and the current ones so far (the Periods section of [facts.md](facts.md)). It drops a complete period once it ended more than 31 days ago, and shows the rest in Past month under `calendarRule`.
-- Scope: a `thisYear` section in `PageFacts` for the complete months and seasons that ended in the last 12 months, and the year so far. Decide whether calendar periods leave Past month for it, or Past month keeps the latest complete month.
-- Scope: selection rules of its own in `selection.ts`, within the Selection section of [facts.md](facts.md), so a strong month stays for the year but doesn't crowd the section.
-- Scope: a This year panel on the page, after Past month, with its periods named as the site names the others.
-- Done when: tests and the selection snapshots cover the section, and it has been checked in the browser.
-
-**Notes:**
-
-- Calendar periods now have 8 measures (see Periods in [facts.md](facts.md)), so a year has far more candidates than T28 first assumed: each complete month, season and year, for each measure, both directions. Past month's `calendarRule` (3 facts, each scoring at least 3) won't fit a 12-month section, so the section needs rules of its own. The mean maximum, mean minimum and mean temperature are meant to show together, so a record winter is up to three facts. Consider limiting a section by period (one or two facts per month or season) or by measure, so one warm winter doesn't fill it.
-- A month and the season holding it often say the same thing: on 2026 data, Observatory Hill and Sydney Airport had their warmest June and warmest winter on record, and the warmest year so far. Decide whether a season and its months compete.
-- `generatePeriodFacts` only makes facts for the latest complete month, season and year that ended in the window (`candidate.toDay < windowStart` returns nothing), so it needs a wider window for calendar periods, and each of its facts needs its own `beatenBy` and "so far" handling.
-- The all-time-record exemption (`isAllTimeRecord`) lets a short record's outright record in at any score. Over 12 months, with solar, wind and humidity starting in 2009 and Olympic Park and Norah Head's short records, it would let in many weak records ("the windiest since 2011"): decide whether the section needs a minimum score for them.
-
----
-
 ## T37: More forecast icon looks
 
 **Status:** todo
@@ -154,20 +133,20 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 **Goal:** Tune the facts against real output.
 
-- Scope: a pass over scoring, selection and wording, using the output of the scheduled runs. The constants are `sectionRules`, `calendarRule` and `conditionalRule` in `selection.ts`, and the weights in `scoring.ts`. Weak spots found so far:
+- Scope: a pass over scoring, selection and wording, using the output of the scheduled runs. The constants are `sectionRules` (with its `thisYear` rule) and `conditionalRule` in `selection.ts`, and the weights in `scoring.ts`. Weak spots found so far:
   - Past week is often filled by short sinces such as "the coldest night since 20 October". These are true, but much alike from day to day.
   - Year-so-far ranks such as "the 9th wettest day of the year so far" or "the 7th biggest day-to-day drop in maximum temperature of the year so far" still get in at around 2.4.
   - Quiet days give Today nothing at all, as on 2026-10-30, whose only data is a minimum and rain.
   - Observatory Hill's year so far leaves out 9 to 16 years between 1864 and 1948, each with a month or so missing, so its records carry "(not counting 16 years with gaps)". That is still long for a headline. Allowing a missing month in a year so far might be fairer.
-  - A period so far shows every day until the period ends, so it can sit in Past month for months.
-  - Facts for the calendar date now score their sinces and ranks below the top (weight 0.9), so most days have one. They were raised from 0.8 on 13 November 2026, which took them from 124 to 227 of the 869 facts in Past week on the 5th and 19th of every month in 2024 and 2025. Check they don't crowd Past week, and whether the 2020 Observatory Hill station change (minimums about 0.3 °C cooler) makes its "coldest for 9 November since…" nights too easy, since day facts don't take the station offset out.
-  - Facts for the day of the week (`dayOfWeek` in `comparisonWeights`, 0.7) can fill Past week in a cold week: at Sydney Airport on 5 August 2024 it had "the coldest Tuesday", "Wednesday" and "Friday since 2022 or 2023", each warmer than the one before, so none was beaten. Decide whether a page should show only the strongest of them per direction, as conditional facts do (`oncePerFamily`).
+  - A period so far shows every day until the period ends, so the month so far stays in Past month and the season and year so far are in Past year.
+  - Facts for the calendar date and the day of the week (`comparisonWeights`) were cut from 0.9 and 0.7 to 0.5 and 0.35 on 2026-11-23, so they no longer show unless nothing else says as much (see the Comparison weight section of [facts.md](facts.md)). That left Today empty on 28 of 144 sample days, from 16, so check how often a quiet day is bare, and whether a lower bar for Today or another measure should fill it. The 2020 Observatory Hill station change (minimums about 0.3 °C cooler) matters less now that "coldest for 9 November since…" nights rarely show.
   - The 9am and 3pm readings are compared only with the past year (see Series in [facts.md](facts.md)), so their facts are sinces within the year or ranks "in the past year". Check how often they get in: they first showed in a selection snapshot as "the lowest 9 am humidity since 21 September".
   - Gust facts (`gust`, weight 0.9) are new, and come from the runs until the DWO is imported. Check how often a running gust gets into Today. Past-year series now reach full strength with a year rather than 30, so their ranks score much more: check that the readings' and gusts' ranks don't crowd Past week, as at Sydney Airport on 7 November 2026, where "the equal seventh gustiest day in the past year" (3.44) took a place.
   - Wind facts (`wind`, weight 0.9) are new. Check how often a calm day gets in: at Sydney Airport "the calmest day since 18 October" (1.98) took Past week's last place on 27 October 2026. Olympic Park's sheltered site makes its windiest days much less windy than the airport's.
   - On 2026-11-16 the one-per-family limit and Past week's 2 a day were dropped, Past week's later facts went from 3.5 to 1.75, Past month's bar from 5 to 3, and wind, solar and humidity left Today. Check Past week and Past month aren't now crowded by weak facts, and Today isn't often bare. Later that day Past week's bar went up to 2.75, as all 12 of its places were filling with facts scoring about 2.4 and up, and the site's standout marks were found to be still on the old bars (3.5 and 5): they now share `furtherFactScores`, so Past month marks from 3.69 rather than 5.69. Check it doesn't now mark too much. Since then every marked fact glows and sends out a ripple, stronger the higher it scores, so marking too much now shows as too much movement.
-  - Calendar periods now have solar, wind, humidity, rain days and mean temperature as well as the rain total and mean maximum and minimum, and up to 3 show in Past month. A short record's outright record shows however little it scores, so at Olympic Park and Norah Head (and for solar, wind and humidity everywhere, from 2009) a weak record such as "the windiest since 2011" for 12 days of February can take a place: in the Olympic Park snapshot (to 12 February 2020) all 3 went to records scoring 1.98, 1.98 and 2.20. Check how often that happens, and whether a record in a record shorter than about 15 years should need a minimum score. A hot month can now show its mean maximum, minimum and mean temperature together, which says much the same three times: check they don't crowd Past month.
-  - The coming week's fallback (`forecastFloor`) can pick a conditional fact over a plainer forecast one, such as "A top of 18°C on Friday (forecast 20°C) would make it the coldest day since 3 November". Decide whether a fallback should prefer forecast facts.
+  - All caps were removed on 2026-11-23: the totals, the per-day limits and conditional facts' one per family now leave only the bars. At a bar of 3, Past month held 10 to 24 facts per location on 2026-11-22, so its bar went to 4, which gives 5 to 10 (`furtherFactScores.pastMonth`). Check how long Past month, Past week, Today and the coming week run over a few weeks, and raise a bar where it is too long. The coming week's forecast facts need 2 and its conditional facts 4: at one shared bar of 2.75 an ordinary week showed only conditional facts, since they score above the forecast's own.
+  - Past year is new, and was set from one day's output (2026-11-22): a bar of 4 (12 facts at Observatory Hill, 10 at Sydney Airport, 0 to 2 elsewhere, plus short records' outright records, which need log(12), about 2.48, and also apply to the month so far in Past month). The marks start at 4.69, so check they don't mark most of it. On that day Observatory Hill and Sydney Airport were mostly warm-year records, such as "the warmest nights since records began" for May, winter, June and the year so far, which say much the same.
+  - A short record's outright record can still let in weak ones at 2.5 to 3 in Past year, such as "the calmest since 2009" for Sydney Airport (2.60): check how often.
 - Done when: the retuning is reviewed with the user and the snapshot tests updated.
 
 ---

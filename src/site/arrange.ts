@@ -16,6 +16,7 @@ export interface Page {
   comingWeek: Fact[];
   pastWeek: Fact[];
   pastMonth: Fact[];
+  thisYear: Fact[];
   /** The facts that stand out, judged in the section the pipeline chose them for. */
   standouts: ReadonlyMap<Fact, number>;
 }
@@ -64,6 +65,7 @@ export function arrange(facts: PageFacts): Page {
     comingWeek: facts.comingWeek,
     pastWeek: facts.pastWeek,
     pastMonth: facts.pastMonth,
+    thisYear: facts.thisYear,
     standouts,
   };
 }
@@ -78,6 +80,7 @@ const sections: readonly Section[] = [
   "today",
   "pastWeek",
   "pastMonth",
+  "thisYear",
   "comingWeek",
 ];
 

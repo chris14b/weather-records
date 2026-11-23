@@ -167,6 +167,14 @@ describe("periodName", () => {
     ],
     [
       {
+        period: { kind: "season", toDate: false },
+        from: "2025-09-01",
+        date: "2025-11-30",
+      },
+      "spring 2025",
+    ],
+    [
+      {
         period: { kind: "year", toDate: false },
         from: "2025-01-01",
         date: "2025-12-31",
@@ -196,6 +204,19 @@ describe("periodName", () => {
     ],
   ] as const)("names %o", (named, expected) => {
     expect(periodName(named, today)).toBe(expected);
+  });
+
+  test("names a summer that ended in an earlier year by both years", () => {
+    expect(
+      periodName(
+        {
+          period: { kind: "season", toDate: false },
+          from: "2025-12-01",
+          date: "2026-02-28",
+        },
+        "2027-01-10",
+      ),
+    ).toBe("summer 2025\u201326");
   });
 });
 

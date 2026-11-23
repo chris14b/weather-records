@@ -27,11 +27,8 @@ interface SectionRule {
   minimumScore: number;
   /** For a day's second and later facts. */
   minimumExtraScore: number;
-  /** How many facts one day may have, if limited. */
-  perDay?: number;
-  total: number;
-  /** Whether to keep only the strongest fact per family and direction, whatever its date. */
-  oncePerFamily?: boolean;
+  /** What an all-time record must score to get in however little it scores otherwise. */
+  minimumRecordScore?: number;
 }
 
 // A week-long since scores log(7), so "the warmest day since last Tuesday" is enough for
@@ -40,53 +37,48 @@ const sectionRules: Record<Section, SectionRule> = {
   today: {
     minimumScore: 1.75,
     minimumExtraScore: furtherFactScores.today,
-    perDay: 3,
-    total: 3,
   },
   pastWeek: {
     minimumScore: furtherFactScores.pastWeek,
     minimumExtraScore: furtherFactScores.pastWeek,
-    total: 12,
   },
   pastMonth: {
     minimumScore: furtherFactScores.pastMonth,
     minimumExtraScore: furtherFactScores.pastMonth,
-    perDay: 1,
-    total: 5,
   },
+  // A record among under 12 periods is too easy to set.
+  thisYear: {
+    minimumScore: furtherFactScores.thisYear,
+    minimumExtraScore: furtherFactScores.thisYear,
+    minimumRecordScore: Math.log(12),
+  },
+  // An ordinary week's forecast scores low, and says what is coming, so its bar is a since
+  // of about a week. The standout marks go by `furtherFactScores.comingWeek` instead.
   comingWeek: {
-    minimumScore: 3.5,
-    minimumExtraScore: furtherFactScores.comingWeek,
-    perDay: 2,
-    total: 7,
+    minimumScore: 2,
+    minimumExtraScore: 2,
   },
 };
 
 /**
- * The latest months, seasons and years go in Past month, apart from its days. They are
- * scored among periods of their own kind, so a once-in-20-years period scores log(20).
+ * The month so far goes in Past month, after its days. A record among under 12 periods is
+ * too easy to set.
  */
-const calendarRule: SectionRule = {
-  minimumScore: 3,
-  minimumExtraScore: 3,
-  perDay: 3,
-  total: 3,
+const monthSoFarRule: SectionRule = {
+  minimumScore: furtherFactScores.pastMonth,
+  minimumExtraScore: furtherFactScores.pastMonth,
+  minimumRecordScore: Math.log(12),
 };
 
 /**
- * Conditional facts go in the coming week apart from the forecast's. Nearly every forecast
- * has a notable value within reach, and nearby days have much the same one.
+ * Conditional facts go in the coming week apart from the forecast's, on a higher bar. Nearly
+ * every forecast has a notable value within reach, so they score well above the forecast's
+ * own facts, and each must also beat the forecast's by `conditionalGain`.
  */
 const conditionalRule: SectionRule = {
   minimumScore: 4,
   minimumExtraScore: 4,
-  perDay: 1,
-  total: 2,
-  oncePerFamily: true,
 };
-
-/** The least a forecast fact must score to stand in when the coming days have nothing better. */
-const forecastFloor = 2;
 
 /** A conditional fact must be at least twice as rare as what the forecast gets. */
 const conditionalGain = Math.log(2);
@@ -184,8 +176,12 @@ export function selectFacts({
     `${families[fact.measure]} ${fact.direction} ${periodKind(fact)}`;
   const competesAs = ({ measure, period }: CandidateFact) =>
     isCalendar(period) ? (calendarFamilies[measure] ?? measure) : measure;
+  // The month, season and year so far all end today but say different things, and go in
+  // different sections, so they don't compete.
+  const scope = (fact: CandidateFact) =>
+    "toDate" in fact.period && fact.period.toDate ? fact.period.kind : "";
   const groupKey = ({ fact }: ScoredFact) =>
-    `${fact.date} ${competesAs(fact)} ${fact.direction} ${periodKind(fact)}`;
+    `${fact.date} ${competesAs(fact)} ${fact.direction} ${periodKind(fact)} ${scope(fact)}`;
   // A fact that a later day beat would only send the reader to that day's.
   const scored = facts
     .filter(({ beatenBy }) => beatenBy === null)
@@ -227,26 +223,23 @@ export function selectFacts({
         allowanceOf(fact) === allowance && sectionFor(fact) !== undefined,
     );
   // Today's forecasts and the coming week's are chosen together, by the same rules.
-  const outlook = withFallback(
-    [
-      ...pick(ahead("forecast"), sectionRules.comingWeek),
-      ...pick(ahead("conditional"), conditionalRule),
-    ],
-    [...ahead("forecast"), ...ahead("conditional")],
-    ({ fact }) => sectionFor(fact) === "comingWeek",
-  );
+  const outlook = [
+    ...pick(ahead("forecast"), sectionRules.comingWeek),
+    ...pick(ahead("conditional"), conditionalRule),
+  ];
   const presentAll = (candidates: readonly ScoredFact[]) =>
     candidates.map((candidate) => present(candidate, series, forecast));
   const section = (name: Section): Fact[] => {
-    const observed =
-      name === "comingWeek"
-        ? []
-        : [
-            ...pick(inSection(name, "days"), sectionRules[name]),
-            ...(name === "pastMonth"
-              ? pick(inSection(name, "calendar"), calendarRule)
-              : []),
-          ];
+    const observed = {
+      today: pick(inSection(name, "days"), sectionRules[name]),
+      pastWeek: pick(inSection(name, "days"), sectionRules[name]),
+      pastMonth: [
+        ...pick(inSection(name, "days"), sectionRules[name]),
+        ...pick(inSection(name, "calendar"), monthSoFarRule),
+      ],
+      thisYear: pick(inSection(name, "calendar"), sectionRules[name]),
+      comingWeek: [],
+    }[name];
     const daylightFacts = daylightSections.includes(name)
       ? daylight
           .filter((fact) => daylightSection(fact.date, date) === name)
@@ -270,6 +263,11 @@ export function selectFacts({
         return [...others, ...forecasts].toSorted(
           (a, b) => calendarLast(a) - calendarLast(b) || newestFirst(a, b),
         );
+      case "thisYear":
+        return others.toSorted(
+          (a, b) =>
+            yearSoFarFirst(a) - yearSoFarFirst(b) || newestThenStrongest(a, b),
+        );
     }
   };
   return {
@@ -277,6 +275,7 @@ export function selectFacts({
     today: section("today"),
     pastWeek: section("pastWeek"),
     pastMonth: section("pastMonth"),
+    thisYear: section("thisYear"),
     comingWeek: section("comingWeek"),
   };
 }
@@ -295,6 +294,19 @@ function newestFirst(a: Fact, b: Fact): number {
 
 function calendarLast(fact: Fact): number {
   return fact.kind === "record" && isCalendar(fact.period) ? 1 : 0;
+}
+
+function yearSoFarFirst(fact: Fact): number {
+  return fact.kind === "record" &&
+    fact.period.kind === "year" &&
+    fact.period.toDate
+    ? 0
+    : 1;
+}
+
+// Months, seasons and years have no part of a day, so those that end together run strongest first.
+function newestThenStrongest(a: Fact, b: Fact): number {
+  return b.date.localeCompare(a.date) || b.score - a.score;
 }
 
 // A night and its rain end at 9am on their date, then comes the 9am reading, then that
@@ -318,30 +330,6 @@ function alongside(a: Fact, b: Fact): number {
 function sameDayOrder(fact: Fact): number {
   if (fact.kind === "daylight") return 2;
   return fact.status === "conditional" ? 1 : 0;
-}
-
-/**
- * If nothing is left for the coming week once Today has its forecasts, the best forecast
- * fact for it stands in, if it is worth saying at all.
- */
-function withFallback(
-  picked: readonly ScoredFact[],
-  candidates: readonly ScoredFact[],
-  isAhead: (candidate: ScoredFact) => boolean,
-): ScoredFact[] {
-  if (picked.some(isAhead)) return [...picked];
-  const best = candidates
-    .filter(isAhead)
-    .reduce<ScoredFact | undefined>(
-      (strongestSoFar, candidate) =>
-        strongestSoFar === undefined || candidate.score > strongestSoFar.score
-          ? candidate
-          : strongestSoFar,
-      undefined,
-    );
-  return best === undefined || best.score < forecastFloor
-    ? [...picked]
-    : [...picked, best];
 }
 
 function isSettled(status: ValueStatus): boolean {
@@ -380,7 +368,11 @@ function candidateSection(
 ): Section | undefined {
   if (isForecastStatus(fact.status)) return forecastSection(fact, date);
   if (fact.status === "partial") return partialSection(fact, date);
-  if (isCalendar(fact.period)) return "pastMonth";
+  if (isCalendar(fact.period)) {
+    return fact.period.kind === "month" && fact.period.toDate
+      ? "pastMonth"
+      : "thisYear";
+  }
   const section = sectionOf(daysBetween(fact.from, date));
   if (leftOutOfToday.has(fact.measure)) {
     return section === "today" ? undefined : section;
@@ -447,14 +439,24 @@ function isPartOfSpell(
         : spell.score > score ||
           (spell.score === score && spell.fact.date > fact.date)) &&
       section !== undefined &&
-      meetsMinimum(spell, sectionRules[section].minimumScore)
+      meetsMinimum(
+        spell,
+        sectionRules[section].minimumScore,
+        sectionRules[section],
+      )
     );
   });
 }
 
 // A calendar period over a short record scores little even as a record, but is still news.
-function meetsMinimum({ fact, score }: ScoredFact, minimum: number): boolean {
-  return score >= minimum || isAllTimeRecord(fact);
+function meetsMinimum(
+  { fact, score }: ScoredFact,
+  minimum: number,
+  { minimumRecordScore = 0 }: SectionRule,
+): boolean {
+  return (
+    score >= minimum || (isAllTimeRecord(fact) && score >= minimumRecordScore)
+  );
 }
 
 /** The outright record among all days, or among its own kind of month, season or year. */
@@ -477,30 +479,15 @@ function stronger(best: ScoredFact, other: ScoredFact): ScoredFact {
   return other.score > best.score ? other : best;
 }
 
-function pick(
-  facts: readonly ScoredFact[],
-  {
-    minimumScore,
-    minimumExtraScore,
-    perDay,
-    total,
-    oncePerFamily = false,
-  }: SectionRule,
-): ScoredFact[] {
+function pick(facts: readonly ScoredFact[], rule: SectionRule): ScoredFact[] {
   const perDate = new Map<string, number>();
-  const familiesPicked = new Set<string>();
   const picked: ScoredFact[] = [];
-  const candidates = facts.toSorted((a, b) => b.score - a.score);
-  for (const candidate of candidates) {
-    if (picked.length === total) break;
-    const { date, measure, direction } = candidate.fact;
-    const family = `${families[measure]} ${direction}`;
+  for (const candidate of facts.toSorted((a, b) => b.score - a.score)) {
+    const { date } = candidate.fact;
     const count = perDate.get(date) ?? 0;
-    const minimum = count === 0 ? minimumScore : minimumExtraScore;
-    if (count === perDay || !meetsMinimum(candidate, minimum)) continue;
-    if (oncePerFamily && familiesPicked.has(family)) continue;
+    const minimum = count === 0 ? rule.minimumScore : rule.minimumExtraScore;
+    if (!meetsMinimum(candidate, minimum, rule)) continue;
     perDate.set(date, count + 1);
-    familiesPicked.add(family);
     picked.push(candidate);
   }
   return picked;
