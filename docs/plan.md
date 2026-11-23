@@ -97,17 +97,6 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 ---
 
-## T41: README
-
-**Status:** todo
-
-**Goal:** Document the project.
-
-- Scope: a README covering what the site is, how to refresh the ZIPs once a year (link to [refreshing-history.md](refreshing-history.md)), how to run the site locally, and the attribution.
-- Done when: the README is written.
-
----
-
 ## T18: Retuning
 
 **Status:** blocked (on a couple of weeks of output from the scheduled runs, which started on 2026-11-10, so not before about 2026-11-24)
