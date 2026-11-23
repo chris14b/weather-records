@@ -5,7 +5,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 ## How to use this plan
 
 - Each task has a permanent ID, such as `T15`. An ID is never reused or renumbered, and never has a letter after it (no `T5b`). A new task, including one split off another, takes the next ID, and goes where its priority puts it. Its place in the list, not its ID, sets its priority.
-- **Next ID:** T53
+- **Next ID:** T55
 - **Depends on** lists the tasks that must be finished first. A task that is no longer in this plan is finished. Keep every task below the tasks it depends on.
 - The next task is the first one that isn't deferred or blocked and whose dependencies are all finished.
 - Statuses: `todo`, `in progress`, `blocked` (say on what), `deferred` (skip until the user says otherwise). An open task can have **Notes** for whatever a later session needs.
@@ -327,3 +327,16 @@ The open tasks, in order of priority. Background and settled decisions are in [C
   - **Short dry spells.** Observatory Hill has about 29 runs of 3 or more dry days a year and 18 of 5 or more. A 2-day minimum put "the 2nd dry day in a row" in Today. Even at 5 days, about 16 dry spells a year score above 1.75, so Past week fills with ones like "the last of 5 dry days in a row, the longest dry spell since 24 June". A 7-day minimum or a weight might fix it. 0 mm needs no threshold, so dry spells work anywhere.
   - **Wet-day streaks** were tried and dropped. They mostly repeated the 3- and 7-day rain totals. At Olympic Park in February 2020, "the last of 5 days in a row with rain" took Past week's second slot for 10 February from "the wettest 3 days on record", because facts per day are counted by their last day.
   - **The station change.** 066214's minimums read about 0.3°C lower, which shortens runs of warm nights but would lengthen runs of cold nights since 2020. Settle T23 first.
+
+---
+
+## T53: Broken Hill's time zone
+
+**Status:** todo
+
+**Goal:** Broken Hill Airport's times are read on its own clock, Adelaide's, half an hour behind Sydney's all year.
+
+- Background: BOM's feeds give each station's own offset (`tz Australia/Adelaide`, `+10:30` in summer). The pipeline treats every location's clock as Sydney's, so the 9am and 3pm readings are Adelaide's 9am and 3pm, half an hour after Sydney's. The windows (6am–9pm, 6pm–9am), midnight for the rain since midnight and the day's gust, "today", the swing and the time of day for the sky are all half an hour out for it. The user chose to ignore it when adding the location, on 2026-11-23.
+- Scope: find every place that assumes Sydney's clock and make each use the location's own time zone. Check the live feeds' `time-local`, the 9am and 3pm readings, the running windows, `sydneyDate`, the page's "today" and the sky.
+- Scope: the update times in the footer and the daylight facts (sunrise and sunset come from the station's latitude and longitude, so they should already be right for the sun's time but not the clock's).
+- Done when: tests cover Broken Hill's readings and windows, and the real feeds give the same 9am and 3pm values as the DWO's `IDCJDW2168` for it.

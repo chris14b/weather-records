@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 import { type Location, locations } from "../src/shared/locations.ts";
+import { loadHistory } from "../src/pipeline/history.ts";
 import { joinStations, loadLocationHistory } from "../src/pipeline/stations.ts";
 
 const rawDir = join(import.meta.dirname, "..", "data", "raw");
@@ -47,6 +48,22 @@ describe("loadLocationHistory with the real files", () => {
       { date: "2020-09-01", station: "066214" },
     ]);
   });
+
+  test.each([["maxTemp"], ["minTemp"], ["rain"]] as const)(
+    "starts Broken Hill Airport's %s history at its usableFrom date",
+    async (measure) => {
+      const location = locationById("broken-hill-airport");
+      const unfiltered = await loadHistory(rawDir, "047048", measure);
+      const records = await loadLocationHistory(rawDir, location, measure);
+
+      const kept = unfiltered.filter(({ date }) => date >= "1995-01-01");
+
+      expect(kept.length).toBeLessThan(unfiltered.length);
+      expect(records.map(({ date }) => date)).toEqual(
+        kept.map(({ date }) => date),
+      );
+    },
+  );
 
   test.each(locations.map((l) => [l.id, l] as const))(
     "loads %s as one series in date order",

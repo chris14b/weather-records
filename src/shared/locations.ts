@@ -40,6 +40,8 @@ export interface Station extends StationPeriod {
   reads?: StationReadings;
   /** False for a station with no anemometer, so it has no wind or gusts. */
   measuresWind?: false;
+  /** The first date of its ZIP history to use, where the ZIPs have long gaps before it, so "since records began" stays true. */
+  usableFrom?: string;
 }
 
 export interface StationReadings {
@@ -185,6 +187,52 @@ export const locations: readonly Location[] = [
         },
         wmo: "94774",
         dwo: "IDCJDW2097",
+      },
+    ],
+  },
+  {
+    id: "perisher-valley",
+    name: "Perisher Valley",
+    forecastArea: { aac: "NSW_PT115", description: "Perisher Valley" },
+    latitude: -36.4069,
+    longitude: 148.4055,
+    stations: [
+      {
+        station: "071075",
+        name: "PERISHER VALLEY AWS",
+        dailyFolder: {
+          name: "perisher_valley",
+          from: "2010-05",
+          omitted: [
+            { from: "2014-05-16", to: "2014-05-19" },
+            { from: "2017-02-02", to: "2017-02-07" },
+            { from: "2017-12-27", to: "2017-12-31" },
+            { from: "2022-03-22", to: "2022-04-05" },
+          ],
+        },
+        wmo: "94915",
+        dwo: "IDCJDW2112",
+      },
+    ],
+  },
+  {
+    id: "broken-hill-airport",
+    name: "Broken Hill Airport",
+    forecastArea: { aac: "NSW_PT021", description: "Broken Hill" },
+    latitude: -32.0012,
+    longitude: 141.4694,
+    stations: [
+      {
+        station: "047048",
+        name: "BROKEN HILL AIRPORT AWS",
+        dailyFolder: {
+          name: "broken_hill_airport",
+          from: "2009-01",
+          omitted: [{ from: "2017-12-27", to: "2017-12-31" }],
+        },
+        wmo: "94691",
+        dwo: "IDCJDW2168",
+        usableFrom: "1995-01-01",
       },
     ],
   },

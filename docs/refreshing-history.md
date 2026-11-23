@@ -57,6 +57,18 @@ Open each page and click **All years of data** at the top right, as above. These
 - [Min temperature](https://www.bom.gov.au/jsp/ncc/cdio/weatherData/av?p_nccObsCode=123&p_display_type=dailyDataFile&p_startYear=&p_c=&p_stn_num=061366)
 - [Rainfall](https://www.bom.gov.au/jsp/ncc/cdio/weatherData/av?p_nccObsCode=136&p_display_type=dailyDataFile&p_startYear=&p_c=&p_stn_num=061366)
 
+## Perisher Valley (071075)
+
+- [Max temperature](https://www.bom.gov.au/jsp/ncc/cdio/weatherData/av?p_nccObsCode=122&p_display_type=dailyDataFile&p_startYear=&p_c=&p_stn_num=071075)
+- [Min temperature](https://www.bom.gov.au/jsp/ncc/cdio/weatherData/av?p_nccObsCode=123&p_display_type=dailyDataFile&p_startYear=&p_c=&p_stn_num=071075)
+- [Rainfall](https://www.bom.gov.au/jsp/ncc/cdio/weatherData/av?p_nccObsCode=136&p_display_type=dailyDataFile&p_startYear=&p_c=&p_stn_num=071075)
+
+## Broken Hill Airport (047048)
+
+- [Max temperature](https://www.bom.gov.au/jsp/ncc/cdio/weatherData/av?p_nccObsCode=122&p_display_type=dailyDataFile&p_startYear=&p_c=&p_stn_num=047048)
+- [Min temperature](https://www.bom.gov.au/jsp/ncc/cdio/weatherData/av?p_nccObsCode=123&p_display_type=dailyDataFile&p_startYear=&p_c=&p_stn_num=047048)
+- [Rainfall](https://www.bom.gov.au/jsp/ncc/cdio/weatherData/av?p_nccObsCode=136&p_display_type=dailyDataFile&p_startYear=&p_c=&p_stn_num=047048)
+
 ## The 9am and 3pm readings, and gusts
 
 The runs save each day's 9am and 3pm temperature and humidity from the live feed, so the saved readings start on the day saving began, and a missed run leaves a gap. They save each day's strongest gust too, but only as it stands at the last run, by 10:30pm, so a day's gust needs the DWO's for the whole day. BOM's Daily Weather Observations (DWO) on its website keep the current month and the 12 before it, so they can fill both. They block automated access too, so download them by hand.
@@ -77,5 +89,7 @@ The import fails, changing nothing, if a file names the wrong station for its te
 | Sydney Olympic Park       | `IDCJDW2061` | 066212                                                                                                                                                    |
 | Newcastle Nobbys          | `IDCJDW2097` | 061055 for temperature, humidity, wind and rainfall (its pressure and cloud are Williamtown's)                                                            |
 | Norah Head                | `IDCJDW2099` | 061366                                                                                                                                                    |
+| Perisher Valley           | `IDCJDW2112` | 071075                                                                                                                                                    |
+| Broken Hill Airport       | `IDCJDW2168` | 047048                                                                                                                                                    |
 
 A month's CSV is at `https://www.bom.gov.au/climate/dwo/YYYYMM/text/<product>.YYYYMM.csv`.

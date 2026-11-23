@@ -18,7 +18,14 @@ export async function loadLocationHistory(
       ),
     ),
   );
-  return joinStations(location.stations, histories);
+  const usableFrom = new Map(
+    location.stations.flatMap(({ station, usableFrom: from }) =>
+      from === undefined ? [] : [[station, from] as const],
+    ),
+  );
+  return joinStations(location.stations, histories).filter(
+    ({ station, date }) => date >= (usableFrom.get(station) ?? ""),
+  );
 }
 
 /**

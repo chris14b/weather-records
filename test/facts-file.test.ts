@@ -123,16 +123,16 @@ describe("buildFactsFile", () => {
       forecast: 25,
     });
     expect(facts?.rainToday).toEqual({ date: "2026-10-30", soFar: 0 });
-    expect(Object.keys(await savedFiles(root)).sort()).toEqual([
-      "ftp-history/061055.csv",
-      "ftp-history/061366.csv",
-      "ftp-history/066037.csv",
-      "ftp-history/066062.csv",
-      "ftp-history/066212.csv",
-      "ftp-history/066214.csv",
-      "recent/readings/066214.csv",
-      "recent/snapshots/066214.csv",
-    ]);
+    const history = (await readdir(dataDirs.ftpHistory)).map(
+      (name) => `ftp-history/${name}`,
+    );
+    expect(Object.keys(await savedFiles(root)).sort()).toEqual(
+      [
+        ...history,
+        "recent/readings/066214.csv",
+        "recent/snapshots/066214.csv",
+      ].sort(),
+    );
   }, 30_000);
 
   test("gives the same files and facts when run twice", async () => {
