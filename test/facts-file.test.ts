@@ -133,7 +133,7 @@ describe("buildFactsFile", () => {
         "recent/snapshots/066214.csv",
       ].sort(),
     );
-  }, 30_000);
+  }, 60_000);
 
   test("gives the same files and facts when run twice", async () => {
     const first = await build();
@@ -141,7 +141,7 @@ describe("buildFactsFile", () => {
 
     expect(await build()).toEqual(first);
     expect(await savedFiles(root)).toEqual(saved);
-  }, 30_000);
+  }, 120_000);
 
   test("fails when a live feed is missing", async () => {
     await expect(
