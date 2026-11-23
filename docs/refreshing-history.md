@@ -43,16 +43,30 @@ This station is closed, so its files will never change. Re-downloading them is o
 - [Min temperature](https://www.bom.gov.au/jsp/ncc/cdio/weatherData/av?p_display_type=dailyZippedDataFile&p_stn_num=066212&p_c=-876964639&p_nccObsCode=123&p_startYear=2026)
 - [Rainfall](https://www.bom.gov.au/jsp/ncc/cdio/weatherData/av?p_display_type=dailyZippedDataFile&p_stn_num=066212&p_c=-876967332&p_nccObsCode=136&p_startYear=2026)
 
+## Newcastle Nobbys (061055)
+
+Open each page and click **All years of data** at the top right, as above. These are pages rather than direct links, since a direct link carries a code that only BOM's page makes.
+
+- [Max temperature](https://www.bom.gov.au/jsp/ncc/cdio/weatherData/av?p_nccObsCode=122&p_display_type=dailyDataFile&p_startYear=&p_c=&p_stn_num=061055)
+- [Min temperature](https://www.bom.gov.au/jsp/ncc/cdio/weatherData/av?p_nccObsCode=123&p_display_type=dailyDataFile&p_startYear=&p_c=&p_stn_num=061055)
+- [Rainfall](https://www.bom.gov.au/jsp/ncc/cdio/weatherData/av?p_nccObsCode=136&p_display_type=dailyDataFile&p_startYear=&p_c=&p_stn_num=061055)
+
+## Norah Head (061366)
+
+- [Max temperature](https://www.bom.gov.au/jsp/ncc/cdio/weatherData/av?p_nccObsCode=122&p_display_type=dailyDataFile&p_startYear=&p_c=&p_stn_num=061366)
+- [Min temperature](https://www.bom.gov.au/jsp/ncc/cdio/weatherData/av?p_nccObsCode=123&p_display_type=dailyDataFile&p_startYear=&p_c=&p_stn_num=061366)
+- [Rainfall](https://www.bom.gov.au/jsp/ncc/cdio/weatherData/av?p_nccObsCode=136&p_display_type=dailyDataFile&p_startYear=&p_c=&p_stn_num=061366)
+
 ## The 9am and 3pm readings, and gusts
 
 The runs save each day's 9am and 3pm temperature and humidity from the live feed, so the saved readings start on the day saving began, and a missed run leaves a gap. They save each day's strongest gust too, but only as it stands at the last run, by 10:30pm, so a day's gust needs the DWO's for the whole day. BOM's Daily Weather Observations (DWO) on its website keep the current month and the 12 before it, so they can fill both. They block automated access too, so download them by hand.
 
-1. Run `npm run import:dwo`. It lists, for each location, every month in the last 13 months with a day missing a reading or, at Sydney Airport and Olympic Park, the DWO's gust, and writes `data/dwo/download.html`, a page linking each of those months' CSVs. It prints the page's address.
+1. Run `npm run import:dwo`. It lists, for each location, every month in the last 13 months with a day missing a reading or, at the stations that measure wind, the DWO's gust, and writes `data/dwo/download.html`, a page linking each of those months' CSVs. It prints the page's address.
 2. Open the page in a browser and save each file into `data/dwo/` under its own name, such as `IDCJDW2124.202611.csv`. That folder is ignored by git. To save straight there, turn on Chrome's **Ask where to save each file before downloading**, or set its download folder to `data/dwo/` for the time being.
 3. Run `npm run import:dwo` again. It checks each file, adds its readings to `data/recent/readings/` wherever a value is missing and its gusts to `data/recent/gusts/`, where the DWO's replace the runs', and lists what is still missing, on the page too. A day the DWO also leaves blank stays listed, marked as already downloaded once its file is in `data/dwo/`.
 4. Pull, since the runs commit `data/recent/` every 2 hours, then commit `data/recent/readings/` and `data/recent/gusts/`, and delete the files in `data/dwo/`.
 
-A run's gust is only the strongest by 10:30pm, so the page always lists the days since the last import at Sydney Airport and Olympic Park. Importing about once a month keeps their gusts whole, and a day left too long drops out of the DWO, keeping the runs' gust.
+A run's gust is only the strongest by 10:30pm, so the page always lists the days since the last import at those stations. Importing about once a month keeps their gusts whole, and a day left too long drops out of the DWO, keeping the runs' gust.
 
 The import fails, changing nothing, if a file names the wrong station for its temperature and humidity, or for its wind at a station that measures wind, if its columns have changed, or if it disagrees with a saved reading: temperatures must match, and humidity must be within 1%. A saved reading is never replaced.
 
@@ -61,5 +75,7 @@ The import fails, changing nothing, if a file names the wrong station for its te
 | Sydney - Observatory Hill | `IDCJDW2124` | 066214 for temperature and humidity (the file takes its wind from Fort Denison, so its gusts aren't used, and its cloud and pressure from Sydney Airport) |
 | Sydney Airport            | `IDCJDW2125` | 066037                                                                                                                                                    |
 | Sydney Olympic Park       | `IDCJDW2061` | 066212                                                                                                                                                    |
+| Newcastle Nobbys          | `IDCJDW2097` | 061055 for temperature, humidity, wind and rainfall (its pressure and cloud are Williamtown's)                                                            |
+| Norah Head                | `IDCJDW2099` | 061366                                                                                                                                                    |
 
 A month's CSV is at `https://www.bom.gov.au/climate/dwo/YYYYMM/text/<product>.YYYYMM.csv`.

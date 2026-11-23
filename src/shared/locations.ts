@@ -10,6 +10,12 @@ export interface MonthRange {
   to: string;
 }
 
+/** Days as YYYY-MM-DD, inclusive. */
+export interface DayRange {
+  from: string;
+  to: string;
+}
+
 export interface DailyFolder {
   /** As in BOM's folder listing, under `IDCKWCDEA0/tables/nsw/`. */
   name: string;
@@ -17,6 +23,8 @@ export interface DailyFolder {
   from: string;
   /** Months it has no file for. */
   missing?: readonly MonthRange[];
+  /** Days that its files leave out altogether, with no row, such as while a station was off. */
+  omitted?: readonly DayRange[];
 }
 
 export interface Station extends StationPeriod {
@@ -128,6 +136,55 @@ export const locations: readonly Location[] = [
         },
         wmo: "95765",
         dwo: "IDCJDW2061",
+      },
+    ],
+  },
+  {
+    id: "norah-head",
+    name: "Norah Head",
+    forecastArea: { aac: "NSW_PT216", description: "The Entrance" },
+    latitude: -33.2814,
+    longitude: 151.5766,
+    stations: [
+      {
+        station: "061366",
+        name: "NORAH HEAD AWS",
+        dailyFolder: {
+          name: "norah_head",
+          from: "2009-01",
+          omitted: [
+            { from: "2010-08-05", to: "2010-08-09" },
+            { from: "2013-12-27", to: "2014-01-05" },
+            { from: "2017-12-27", to: "2017-12-31" },
+            { from: "2023-04-14", to: "2023-04-25" },
+          ],
+        },
+        wmo: "95770",
+        dwo: "IDCJDW2099",
+      },
+    ],
+  },
+  {
+    id: "newcastle-nobbys",
+    name: "Newcastle Nobbys",
+    forecastArea: { aac: "NSW_PT102", description: "Newcastle" },
+    latitude: -32.9184,
+    longitude: 151.7985,
+    stations: [
+      {
+        station: "061055",
+        name: "NEWCASTLE NOBBYS SIGNAL STATION AWS",
+        dailyFolder: {
+          name: "newcastle_nobbys_signal_station",
+          from: "2009-01",
+          omitted: [
+            { from: "2016-07-30", to: "2016-07-31" },
+            { from: "2017-12-27", to: "2017-12-31" },
+            { from: "2025-05-02", to: "2025-05-14" },
+          ],
+        },
+        wmo: "94774",
+        dwo: "IDCJDW2097",
       },
     ],
   },

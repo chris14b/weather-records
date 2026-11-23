@@ -75,8 +75,8 @@ export async function downloadDailyFile(
 
 /**
  * Parses a monthly daily file. Its rows must run day by day from the 1st, so a missing
- * row is an error rather than a missing day. Leading rows that run up to the last day of
- * the month before are left out.
+ * row is an error rather than a missing day, unless the folder lists the day as omitted.
+ * Leading rows that run up to the last day of the month before are left out.
  */
 export function parseDailyFile(
   bytes: Uint8Array,
@@ -161,7 +161,11 @@ export function parseDailyFile(
       throw lineError(index, `invalid date ${date}`);
     }
     if (previousDate === undefined) {
-      if (isoDate !== monthStart && !isoDate.startsWith(monthBefore)) {
+      if (
+        isoDate !== monthStart &&
+        !isoDate.startsWith(monthBefore) &&
+        !allOmitted(file.station.dailyFolder, monthStart, isoDate)
+      ) {
         throw lineError(
           index,
           `expected ${monthStart} or a day of the month before, found ${date}`,
@@ -169,7 +173,10 @@ export function parseDailyFile(
       }
     } else {
       const expectedDate = addDays(previousDate, 1);
-      if (isoDate !== expectedDate) {
+      if (
+        isoDate !== expectedDate &&
+        !allOmitted(file.station.dailyFolder, expectedDate, isoDate)
+      ) {
         throw lineError(index, `expected ${expectedDate}, found ${date}`);
       }
     }
@@ -197,6 +204,18 @@ export function parseDailyFile(
     };
     if (isoDate >= monthStart) days.push(day);
   }
+}
+
+/** Whether every day from `first` up to, but not including, `end` is one the folder omits. */
+function allOmitted(folder: DailyFolder, first: string, end: string): boolean {
+  if (end <= first) return false;
+  for (let date = first; date < end; date = addDays(date, 1)) {
+    const day = date;
+    if (!folder.omitted?.some(({ from, to }) => day >= from && day <= to)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 // A station with no anemometer, such as Observatory Hill, reports 0.00 every day. No

@@ -176,6 +176,17 @@ describe("parseDailyFile with a real file", () => {
     );
   });
 
+  test("fails when a day is left out before the first row", async () => {
+    const text = (await readFixture()).replace(
+      /^SYDNEY \(OBSERVATORY HILL\),01\/10\/2026.*\n/m,
+      "",
+    );
+
+    expect(() => parseText(text)).toThrow(
+      "line 14: expected 2026-10-01 or a day of the month before, found 02/10/2026",
+    );
+  });
+
   test("fails on a value that isn't a number", async () => {
     const text = (await readFixture()).replace(
       "02/10/2026,2.7,0.0",
@@ -289,6 +300,61 @@ describe("parseDailyFile with a file that starts in the month before", () => {
     expect(() => parseDailyFile(file, observatoryHill)).toThrow(
       "line 45: 01/11/2026 is after October 2026",
     );
+  });
+});
+
+describe("parseDailyFile with days the folder omits", () => {
+  const nobbys = stationByNumber("061055");
+  const name = "NEWCASTLE NOBBYS SIGNAL STATION";
+  const omitting = (from: string, to: string) => ({
+    ...nobbys,
+    dailyFolder: { ...nobbys.dailyFolder, omitted: [{ from, to }] },
+  });
+  const days = (...dates: string[]) =>
+    dailyFile(
+      name,
+      dates.map((date) => ({ date, maxTemp: 20 })),
+    );
+
+  test("leaves a listed day out and keeps the others", () => {
+    const file = days("2025-05-01", "2025-05-04");
+
+    expect(
+      parseDailyFile(file, {
+        station: omitting("2025-05-02", "2025-05-03"),
+        month: "2025-05",
+      }).map(({ date }) => date),
+    ).toEqual(["2025-05-01", "2025-05-04"]);
+  });
+
+  test("leaves out days that run into the file's first row", () => {
+    const file = days("2025-05-03", "2025-05-04");
+
+    expect(
+      parseDailyFile(file, {
+        station: omitting("2025-05-01", "2025-05-02"),
+        month: "2025-05",
+      }).map(({ date }) => date),
+    ).toEqual(["2025-05-03", "2025-05-04"]);
+  });
+
+  test("fails on a day that isn't listed", () => {
+    const file = days("2025-05-01", "2025-05-04");
+
+    expect(() =>
+      parseDailyFile(file, {
+        station: omitting("2025-05-02", "2025-05-02"),
+        month: "2025-05",
+      }),
+    ).toThrow("line 15: expected 2025-05-02, found 04/05/2025");
+  });
+
+  test("lists the days the real folders omit", () => {
+    const folders = locations
+      .flatMap((l) => l.stations)
+      .flatMap((s) => s.dailyFolder.omitted ?? []);
+
+    expect(folders.every(({ from, to }) => from <= to)).toBe(true);
   });
 });
 

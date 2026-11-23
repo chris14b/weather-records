@@ -99,9 +99,13 @@ async function start(root: HTMLElement, loaded: FactsFile): Promise<void> {
         remember(location.id);
         replaceAddress(addressFor(new URL(window.location.href), location));
         show();
-        root
-          .querySelector<HTMLInputElement>(`input[value="${location.id}"]`)
-          ?.focus();
+        const select =
+          root.querySelector<HTMLSelectElement>(".location-select");
+        const toggled = root.querySelector<HTMLInputElement>(
+          `input[value="${location.id}"]`,
+        );
+        // Only one of the two controls is shown, whichever the screen's width picks.
+        (select?.offsetParent == null ? toggled : select)?.focus();
       },
     });
     paintSky();

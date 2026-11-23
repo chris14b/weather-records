@@ -18,48 +18,6 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 
 ---
 
-## T52: Forecast rain without a range for today
-
-**Status:** todo
-
-**Goal:** Stop BOM's missing rain range for day 0 from dropping the 7-day rain total on wet days, and decide what to do about rain facts for the rest of today.
-
-- Background: BOM's feeds never give day 0 a rain range (see Forecast in [pipeline.md](pipeline.md)). `forecastRain` in `forecast-facts.ts` then makes today's amount unknown at a chance of 50% or more, and `rainFacts` needs all 7 amounts, so on a wet day there is no 7-day total fact, which is when it would matter most. There are also no facts for the rain to 9 am tomorrow, which comes from day 0.
-- Scope: choose with the user between totalling the other six days with today unknown, saying so in the fact, and starting the run tomorrow. Update [facts.md](facts.md) (Rain over the next 7 days) and the wording.
-- Scope: check whether the 4am issue's day 0 has a range, since the 6:30am and 8:30am runs use it, and record it in [pipeline.md](pipeline.md).
-- Done when: tests cover a wet today with ranges for the following days, and a dry one.
-
----
-
-## T51: Newcastle Nobbys and Norah Head
-
-**Status:** todo
-
-**Goal:** Two more locations, Newcastle Nobbys and Norah Head, so the site covers Newcastle and the Central Coast as well as Sydney.
-
-- Background: both stations are in the live feed (`IDN60920`) with temperature, the running maximum and minimum, rain and wind with gusts, and both have monthly daily files from 2009-01 (checked on 2026-11-18). Neither has a gap in its files that was looked for yet.
-
-  | Location         | Station | WMO   | `stn-name` in the feed              | Daily folder                      | Forecast area              |
-  | ---------------- | ------- | ----- | ----------------------------------- | --------------------------------- | -------------------------- |
-  | Newcastle Nobbys | 061055  | 94774 | NEWCASTLE NOBBYS SIGNAL STATION AWS | `newcastle_nobbys_signal_station` | Newcastle (`NSW_PT102`)    |
-  | Norah Head       | 061366  | 95770 | NORAH HEAD AWS                      | `norah_head`                      | The Entrance (`NSW_PT216`) |
-
-- Background: Nobbys' record starts in 1862 (BOM's climate statistics page). Norah Head's start is unchecked. The coordinates are in the feed: -32.9184, 151.7985 and -33.2814, 151.5766.
-- Scope: list the three download links for each station in [refreshing-history.md](refreshing-history.md), and wait for the user to download the ZIPs into `data/raw/`. Code must never fetch them.
-- Scope: check from the ZIPs and the daily files whether either location has had more than one station, as Observatory Hill has, and whether the daily files and the ZIPs agree where they overlap. A station change needs its own entry and note, and its cutover and offsets are a decision for the user (see T23).
-- Scope: add both to `locations.ts`, with the names from the feed's `description`. Norah Head's forecast area is the nearest BOM has, as Sydney Airport's is Mascot, so ask the user whether that's acceptable, and name the location after the station, never the forecast area.
-- Scope: find each station's DWO product code, for `dwo` in the config and the saved 9am and 3pm readings and gusts (`npm run import:dwo`, [refreshing-history.md](refreshing-history.md)). A search on 2026-11-18 turned up `IDCJDW2097` as "Newcastle", but not which station it takes its values from, and nothing for Norah Head. If a DWO takes its wind from another station, as Sydney's does, say so as for Observatory Hill.
-- Scope: the build's checks, the live feed's and the forecast's, for the new stations (the station and product in a file, the column headers, a gap between the ZIP history and the recent data), and the first backfill of `data/ftp-history/`.
-- Scope: the page. The location toggle has five choices, which already wrap on a phone with three, so decide with the user how it should look, and check the sky for their latitude and longitude. A location's notes (`locationNotes` in `src/site/notes.ts`) only if something needs one.
-- Scope: update CLAUDE.md, which says "three locations" and has the Locations table, [pipeline.md](pipeline.md) and [facts.md](facts.md) where they name the three. Check the selection and snapshot tests, which are written for the existing locations.
-- Done when: both locations have facts for every section in `build:data`, tests cover the config checks, the toggle has been checked in the browser at desktop and phone widths, and the user has the DWO import working for both.
-
-**Notes:**
-
-- Considered and left out on 2026-11-18: Williamtown (061078), Cessnock (061260), Maitland (061428), Gosford (061425, whose daily files start in 2013-06), Terrey Hills (066059), Penrith (067113) and Richmond (067105). All report temperature, rain and wind in the live feed, so any of them can be a later task.
-
----
-
 ## T43: Forecast day-to-day changes
 
 **Status:** todo

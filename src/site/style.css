@@ -407,6 +407,10 @@ h1 {
   letter-spacing: 0.02em;
 }
 
+.locations {
+  display: contents;
+}
+
 .toggle {
   display: flex;
   flex-wrap: wrap;
@@ -448,16 +452,37 @@ h1 {
   outline-offset: 1px;
 }
 
+.location-select {
+  display: none;
+}
+
 @media (max-width: 40rem) {
   .toggle {
-    flex-direction: column;
-    width: 100%;
-    border-radius: 1rem;
+    display: none;
   }
 
-  .toggle span {
-    padding: 0.6rem 0.9rem;
-    border-radius: 0.8rem;
+  .location-select {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.6rem 2.5rem 0.6rem 1rem;
+    border: 1px solid var(--glass-edge);
+    border-radius: 999px;
+    appearance: none;
+    background-color: var(--glass);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E");
+    background-position: right 1rem center;
+    background-repeat: no-repeat;
+    backdrop-filter: blur(18px);
+    color: var(--text);
+    color-scheme: dark;
+    font: inherit;
+    font-size: 1rem;
+  }
+
+  .location-select:focus-visible {
+    outline: 2px solid var(--text);
+    outline-offset: 1px;
   }
 }
 

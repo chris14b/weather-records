@@ -1,6 +1,7 @@
 import type { Fact, FactsFile, ValueStatus } from "../shared/facts.ts";
 import { locations, type Location } from "../shared/locations.ts";
 import { arrange, headlineSize, type Page, pageFor } from "./arrange.ts";
+import { locationChoices } from "./choices.ts";
 import {
   daylightSentence,
   longDate,
@@ -272,23 +273,42 @@ function locationToggle(
   selected: Location,
   onSelect: (id: string) => void,
 ): HTMLElement {
-  return element("fieldset", { class: "toggle" }, [
+  const choices = locationChoices(locations, selected.id);
+  const toggle = element("fieldset", { class: "toggle" }, [
     element("legend", { class: "visually-hidden" }, ["Location"]),
-    ...locations.map((location) => {
+    ...choices.map((choice) => {
       const input = element("input", {
         type: "radio",
         name: "location",
-        value: location.id,
+        value: choice.id,
       });
-      input.checked = location.id === selected.id;
+      input.checked = choice.selected;
       input.addEventListener("change", () => {
-        onSelect(location.id);
+        onSelect(choice.id);
       });
-      return element("label", {}, [
-        input,
-        element("span", {}, [location.name]),
-      ]);
+      return element("label", {}, [input, element("span", {}, [choice.name])]);
     }),
+  ]);
+
+  const select = element(
+    "select",
+    { id: "location-select", class: "location-select" },
+    choices.map((choice) => {
+      const option = element("option", { value: choice.id }, [choice.name]);
+      option.selected = choice.selected;
+      return option;
+    }),
+  );
+  select.addEventListener("change", () => {
+    onSelect(select.value);
+  });
+
+  return element("div", { class: "locations" }, [
+    toggle,
+    element("label", { class: "visually-hidden", for: "location-select" }, [
+      "Location",
+    ]),
+    select,
   ]);
 }
 
