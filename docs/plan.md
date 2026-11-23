@@ -187,7 +187,7 @@ The open tasks, in order of priority. Background and settled decisions are in [C
 **Notes:**
 
 - The page is already white text on dark glass over the sky, so decide what dark mode should change, if anything, beyond a darker sky.
-- On a phone, the location toggle wraps onto two lines, and the headline's size is capped by the viewport width (`headline` in `src/site/render.ts`).
+- On a phone, the location dropdown wraps onto its own line, and the headline's size is capped by the viewport width (`headline` in `src/site/render.ts`).
 - Empty sections already show a line such as "Nothing notable in the forecast.", and an empty Today shows "Nothing notable yet today." If `facts.json` fails to load, the page shows one line of text.
 
 ---

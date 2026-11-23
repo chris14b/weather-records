@@ -6,10 +6,12 @@ export interface LocationChoice {
   selected: boolean;
 }
 
-/** The locations in order, with the one shown marked, for the toggle and the dropdown. */
+/** The locations by name, with the one shown marked, for the dropdown. */
 export function locationChoices(
   all: readonly Location[],
   selectedId: string,
 ): LocationChoice[] {
-  return all.map(({ id, name }) => ({ id, name, selected: id === selectedId }));
+  return all
+    .map(({ id, name }) => ({ id, name, selected: id === selectedId }))
+    .sort((a, b) => a.name.localeCompare(b.name, "en-AU"));
 }

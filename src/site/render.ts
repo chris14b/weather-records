@@ -328,31 +328,22 @@ function swingFigure(view: SwingView): HTMLElement {
   );
 }
 
-function locationToggle(
+export interface Locating {
+  /** What to tell the viewer: that it is looking, how far the station found is ("289 km"), or why it couldn't. */
+  message: string;
+  state: "finding" | "found" | "failed";
+}
+
+function locationSelect(
   selected: Location,
   onSelect: (id: string) => void,
+  onLocate: (() => void) | undefined,
+  locating: Locating | undefined,
 ): HTMLElement {
-  const choices = locationChoices(locations, selected.id);
-  const toggle = element("fieldset", { class: "toggle" }, [
-    element("legend", { class: "visually-hidden" }, ["Location"]),
-    ...choices.map((choice) => {
-      const input = element("input", {
-        type: "radio",
-        name: "location",
-        value: choice.id,
-      });
-      input.checked = choice.selected;
-      input.addEventListener("change", () => {
-        onSelect(choice.id);
-      });
-      return element("label", {}, [input, element("span", {}, [choice.name])]);
-    }),
-  ]);
-
   const select = element(
     "select",
     { id: "location-select", class: "location-select" },
-    choices.map((choice) => {
+    locationChoices(locations, selected.id).map((choice) => {
       const option = element("option", { value: choice.id }, [choice.name]);
       option.selected = choice.selected;
       return option;
@@ -362,13 +353,44 @@ function locationToggle(
     onSelect(select.value);
   });
 
-  return element("div", { class: "locations" }, [
-    toggle,
+  const picker = element("div", { class: "location-picker" });
+  if (locating !== undefined && locating.state !== "failed") {
+    picker.append(
+      element("span", { class: "distance", role: "status" }, [
+        locating.message,
+        ...(locating.state === "found"
+          ? [element("span", { class: "away" }, [" away"])]
+          : []),
+      ]),
+    );
+  }
+  picker.append(select);
+  if (onLocate !== undefined) {
+    const button = element("button", {
+      type: "button",
+      class: "locate",
+      title: "Use my location",
+      "aria-label": "Use my location",
+    });
+    button.disabled = locating?.state === "finding";
+    button.addEventListener("click", onLocate);
+    picker.append(button);
+  }
+
+  const children: Children = [
     element("label", { class: "visually-hidden", for: "location-select" }, [
       "Location",
     ]),
-    select,
-  ]);
+    picker,
+  ];
+  if (locating?.state === "failed") {
+    children.push(
+      element("p", { class: "locate-note", role: "status" }, [
+        locating.message,
+      ]),
+    );
+  }
+  return element("div", { class: "locations" }, children);
 }
 
 function legend(): HTMLElement {
@@ -420,12 +442,15 @@ export interface View {
   location: Location;
   now: Date;
   onSelect: (id: string) => void;
+  /** Absent where the browser can't find the viewer's location. */
+  onLocate: (() => void) | undefined;
+  locating: Locating | undefined;
 }
 
 /** Builds the whole page for one location as it reads at `now`. */
 export function render(
   root: HTMLElement,
-  { file, location, now, onSelect }: View,
+  { file, location, now, onSelect, onLocate, locating }: View,
 ): void {
   const today = sydneyDate(now);
   const facts = file.locations.find((l) => l.locationId === location.id);
@@ -439,7 +464,7 @@ export function render(
 
   const header = element("header", { class: "top" }, [
     element("h1", {}, ["Sydney Weather Records"]),
-    locationToggle(location, onSelect),
+    locationSelect(location, onSelect, onLocate, locating),
   ]);
 
   if (page === undefined) {

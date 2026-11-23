@@ -5,13 +5,15 @@ import { sunPosition, type SunPosition } from "../shared/sun.ts";
 import type { Weather } from "../shared/weather.ts";
 import { addressFor, startingAddress, startingLocation } from "./address.ts";
 import { sydneyDate } from "./naming.ts";
-import { render } from "./render.ts";
+import { distanceText, nearestLocation } from "./nearest.ts";
+import { type Locating, render } from "./render.ts";
 import { forecastWeather, skyStyle } from "./sky.ts";
 import type { SkyPreview } from "./sky-preview.ts";
 
 const storageKey = "location";
 const refreshEvery = 5 * 60_000;
 const skyEvery = 60_000;
+const findingAfter = 400;
 
 function rememberedId(): string | null {
   try {
@@ -89,26 +91,68 @@ async function start(root: HTMLElement, loaded: FactsFile): Promise<void> {
     drawSky(sunPosition(now, location), weather);
     previewPanel?.refresh();
   };
+  let locating: Locating | undefined;
   const show = () => {
     render(root, {
       file,
       location,
       now: new Date(),
       onSelect: (id) => {
-        location = locations.find((l) => l.id === id) ?? location;
-        remember(location.id);
-        replaceAddress(addressFor(new URL(window.location.href), location));
-        show();
-        const select =
-          root.querySelector<HTMLSelectElement>(".location-select");
-        const toggled = root.querySelector<HTMLInputElement>(
-          `input[value="${location.id}"]`,
-        );
-        // Only one of the two controls is shown, whichever the screen's width picks.
-        (select?.offsetParent == null ? toggled : select)?.focus();
+        locating = undefined;
+        choose(id, ".location-select");
       },
+      onLocate: "geolocation" in navigator ? locate : undefined,
+      locating,
     });
     paintSky();
+  };
+  const choose = (id: string, focus: string) => {
+    location = locations.find((l) => l.id === id) ?? location;
+    remember(location.id);
+    replaceAddress(addressFor(new URL(window.location.href), location));
+    show();
+    root.querySelector<HTMLElement>(focus)?.focus();
+  };
+  let findingTimer: number | undefined;
+  const finishLocating = (found: Locating, id?: string) => {
+    clearTimeout(findingTimer);
+    findingTimer = undefined;
+    locating = found;
+    if (id === undefined) {
+      show();
+      root.querySelector<HTMLElement>(".locate")?.focus();
+    } else choose(id, ".locate");
+  };
+  const locate = () => {
+    if (findingTimer !== undefined) return;
+    // A cached or already allowed position arrives at once; saying so would only flash.
+    findingTimer = window.setTimeout(() => {
+      locating = { message: "Finding you…", state: "finding" };
+      show();
+    }, findingAfter);
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        const nearest = nearestLocation(coords, locations);
+        if (nearest === undefined) return;
+        finishLocating(
+          {
+            message: distanceText(nearest.kilometres),
+            state: "found",
+          },
+          nearest.location.id,
+        );
+      },
+      (error) => {
+        finishLocating({
+          message:
+            error.code === error.PERMISSION_DENIED
+              ? "Location access was declined. Choose a station from the list."
+              : "Couldn't find your location. Choose a station from the list.",
+          state: "failed",
+        });
+      },
+      { timeout: 15_000, maximumAge: 10 * 60_000 },
+    );
   };
   const refresh = async () => {
     try {
