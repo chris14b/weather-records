@@ -463,7 +463,7 @@ export function render(
     facts === undefined ? undefined : rainView(facts.rainToday, today);
 
   const header = element("header", { class: "top" }, [
-    element("h1", {}, ["Sydney Weather Records"]),
+    element("h1", {}, ["NSW Weather Records"]),
     locationSelect(location, onSelect, onLocate, locating),
   ]);
 
